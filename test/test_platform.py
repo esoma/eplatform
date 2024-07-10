@@ -1,7 +1,9 @@
 # eplatform
+from eplatform import Mouse
 from eplatform import Platform
 from eplatform import Window
 from eplatform import get_gl_version
+from eplatform import get_mouse
 from eplatform import get_window
 
 # pytest
@@ -11,21 +13,21 @@ import pytest
 from unittest.mock import Mock
 
 
-def test_core_already_active(platform):
+def test_platform_already_active(platform):
     platform = Platform()
     with pytest.raises(RuntimeError) as excinfo:
         platform.__enter__()
     assert str(excinfo.value) == "platform already active"
 
 
-def test_core_instance_not_active():
+def test_platform_instance_not_active():
     platform = Platform()
     with pytest.raises(RuntimeError) as excinfo:
         platform.__exit__()
     assert str(excinfo.value) == "platform instance is not active"
 
 
-def test_get_window_no_core():
+def test_get_window_no_platform():
     with pytest.raises(RuntimeError) as excinfo:
         get_window()
     assert str(excinfo.value) == "platform is not active"
@@ -36,7 +38,18 @@ def test_get_window(platform):
     assert isinstance(window, Window)
 
 
-def test_get_gl_version_no_core():
+def test_get_mouse_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        get_mouse()
+    assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_mouse(platform):
+    mouse = get_mouse()
+    assert isinstance(mouse, Mouse)
+
+
+def test_get_gl_version_no_platform():
     with pytest.raises(RuntimeError) as excinfo:
         get_gl_version()
     assert str(excinfo.value) == "platform is not active"

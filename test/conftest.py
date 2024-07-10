@@ -1,5 +1,6 @@
 # eplatform
 from eplatform import Platform
+from eplatform import get_mouse
 from eplatform import get_window
 
 # pytest
@@ -21,3 +22,8 @@ def platform():
 @pytest.fixture
 def window(platform):
     return get_window()
+
+
+@pytest.fixture
+def mouse(platform):
+    return get_mouse()

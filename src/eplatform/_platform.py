@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "Platform",
     "get_gl_version",
+    "get_mouse",
     "get_window",
 ]
 
@@ -32,6 +33,11 @@ from typing import Callable
 from typing import ClassVar
 from typing import Final
 from typing import Self
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # eplatform
+    from ._mouse import Mouse
 
 _SDL_SUB_SYSTEMS: Final = SDL_INIT_VIDEO
 
@@ -40,15 +46,20 @@ class Platform:
     _deactivate_callbacks: ClassVar[list[Callable[[], None]]] = []
     _singleton: ClassVar[Self | None] = None
     _window: Window | None = None
+    _mouse: Mouse | None = None
     _gl_context: Any = None
     _gl_version: tuple[int, int] | None = None
 
     def __enter__(self) -> None:
+        # eplatform
+        from ._mouse import Mouse
+
         if self._singleton:
             raise RuntimeError("platform already active")
 
         SDL_InitSubSystem(_SDL_SUB_SYSTEMS)
         self._window = Window()
+        self._mouse = Mouse()
         self._setup_open_gl()
         self.__class__._singleton = self
 
@@ -117,6 +128,14 @@ def get_window() -> Window:
     window = Platform._singleton._window
     assert window is not None
     return window
+
+
+def get_mouse() -> Mouse:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    mouse = Platform._singleton._mouse
+    assert mouse is not None
+    return mouse
 
 
 def get_gl_version() -> tuple[int, int]:
