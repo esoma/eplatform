@@ -7,6 +7,9 @@ from eplatform import get_window
 # pytest
 import pytest
 
+# python
+from unittest.mock import Mock
+
 
 def test_core_already_active(platform):
     platform = Platform()
@@ -53,3 +56,12 @@ def test_get_gl_version(platform):
         (3, 2),
         (3, 1),
     ]
+
+
+def test_deactivate_callbacks():
+    mock_callback = Mock()
+    Platform.register_deactivate_callback(mock_callback)
+
+    with Platform():
+        mock_callback.assert_not_called()
+    mock_callback.assert_called_once_with()

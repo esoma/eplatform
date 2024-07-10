@@ -6,6 +6,11 @@ from eplatform import get_window
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _reset_platform_callbacks():
+    Platform._deactivate_callbacks.clear()
+
+
 @pytest.fixture
 def platform():
     platform = Platform()
