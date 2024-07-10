@@ -1,5 +1,6 @@
 # eplatform
 from eplatform import Platform
+from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_window
 
@@ -27,3 +28,8 @@ def window(platform):
 @pytest.fixture
 def mouse(platform):
     return get_mouse()
+
+
+@pytest.fixture
+def keyboard(platform):
+    return get_keyboard()

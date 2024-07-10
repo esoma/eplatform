@@ -3,11 +3,13 @@ from __future__ import annotations
 __all__ = [
     "Platform",
     "get_gl_version",
+    "get_keyboard",
     "get_mouse",
     "get_window",
 ]
 
 # eplatform
+from ._keyboard import Keyboard
 from ._window import Window
 
 # pyopengl
@@ -47,6 +49,7 @@ class Platform:
     _singleton: ClassVar[Self | None] = None
     _window: Window | None = None
     _mouse: Mouse | None = None
+    _keyboard: Keyboard | None = None
     _gl_context: Any = None
     _gl_version: tuple[int, int] | None = None
 
@@ -60,6 +63,7 @@ class Platform:
         SDL_InitSubSystem(_SDL_SUB_SYSTEMS)
         self._window = Window()
         self._mouse = Mouse()
+        self._keyboard = Keyboard()
         self._setup_open_gl()
         self.__class__._singleton = self
 
@@ -136,6 +140,14 @@ def get_mouse() -> Mouse:
     mouse = Platform._singleton._mouse
     assert mouse is not None
     return mouse
+
+
+def get_keyboard() -> Keyboard:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    keyboard = Platform._singleton._keyboard
+    assert keyboard is not None
+    return keyboard
 
 
 def get_gl_version() -> tuple[int, int]:

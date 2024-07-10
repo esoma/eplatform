@@ -1,8 +1,10 @@
 # eplatform
+from eplatform import Keyboard
 from eplatform import Mouse
 from eplatform import Platform
 from eplatform import Window
 from eplatform import get_gl_version
+from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_window
 
@@ -47,6 +49,17 @@ def test_get_mouse_no_platform():
 def test_get_mouse(platform):
     mouse = get_mouse()
     assert isinstance(mouse, Mouse)
+
+
+def test_get_keyboard_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        get_keyboard()
+    assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_keyboard(platform):
+    keyboard = get_keyboard()
+    assert isinstance(keyboard, Keyboard)
 
 
 def test_get_gl_version_no_platform():
