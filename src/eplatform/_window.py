@@ -1,7 +1,6 @@
 __all__ = ["Window", "WindowBufferSynchronization"]
 
 # eevent
-# eevent
 from eevent import Event
 
 # emath
