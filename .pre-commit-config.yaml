@@ -22,7 +22,9 @@ repos:
   repo: https://github.com/pycqa/flake8
   rev: 6.1.0
 - hooks:
-  - additional_dependencies: []
+  - additional_dependencies:
+    - eevent==0.1.0
+    - emath==0.1.13
     args: []
     id: mypy
     exclude: ^(test|examples)/.*
