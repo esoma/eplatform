@@ -29,6 +29,8 @@ def test_init(super_init):
 def test_attrs(window):
     assert isinstance(window, SdlWindow)
     assert window.size == IVector2(200, 200)
+    window.size = IVector2(301, 401)
+    assert window.size == IVector2(301, 401)
 
 
 @pytest.mark.parametrize("synchronization", list(WindowBufferSynchronization))
