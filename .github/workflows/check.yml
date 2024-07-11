@@ -38,7 +38,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
+        sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
@@ -49,8 +49,14 @@ jobs:
         poetry install
 
     - name: Test
+      if: runner.os != 'Linux'
       run: |
         poetry run pytest --cov=eplatform --cov-report=xml
+
+    - name: Test with Xvfb
+      if: runner.os != 'Linux'
+      run: |
+        xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
 
     - name: Codecov
       uses: codecov/codecov-action@v2
