@@ -43,6 +43,7 @@ jobs:
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
       uses: f3d-app/install-mesa-windows-action@v1
+      path: ${{github.workspace}}
 
     - name: Install
       run: |
