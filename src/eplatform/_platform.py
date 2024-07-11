@@ -10,7 +10,6 @@ __all__ = [
 
 # eplatform
 from ._keyboard import Keyboard
-from ._window import Window
 
 # pyopengl
 from OpenGL.GL import GL_VERSION
@@ -40,6 +39,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     # eplatform
     from ._mouse import Mouse
+    from ._window import Window
 
 _SDL_SUB_SYSTEMS: Final = SDL_INIT_VIDEO
 
@@ -56,6 +56,7 @@ class Platform:
     def __enter__(self) -> None:
         # eplatform
         from ._mouse import Mouse
+        from ._window import Window
 
         if self._singleton:
             raise RuntimeError("platform already active")

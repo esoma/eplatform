@@ -10,7 +10,9 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _reset_platform_callbacks():
-    Platform._deactivate_callbacks.clear()
+    callbacks = list(Platform._deactivate_callbacks)
+    yield
+    Platform._deactivate_callbacks = callbacks
 
 
 @pytest.fixture

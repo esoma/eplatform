@@ -1,4 +1,9 @@
+from __future__ import annotations
+
 __all__ = ["Window", "WindowBufferSynchronization"]
+
+# eplatform
+from ._render_target import set_draw_render_target
 
 # eevent
 from eevent import Event
@@ -7,10 +12,6 @@ from eevent import Event
 from emath import FMatrix4
 from emath import FVector4
 from emath import IVector2
-
-# pyopengl
-from OpenGL.GL import GL_DRAW_FRAMEBUFFER
-from OpenGL.GL import glBindFramebuffer
 
 # pysdl2
 from sdl2 import SDL_GL_SetSwapInterval
@@ -57,7 +58,7 @@ class Window(_Window):
         # using glBindFramebuffer(), this is the default and you won't have to
         # do anything extra.
         if sys.platform == "darwin":
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
+            set_draw_render_target(self)
         SDL_GL_SwapWindow(self.window)
 
     @property
@@ -76,3 +77,7 @@ class Window(_Window):
             self.screen_space_to_world_space_transform @ clip_space_position
         )
         return IVector2(int(world_space_mouse_position.x), int(world_space_mouse_position.y))
+
+    @property
+    def gl_framebuffer(self) -> int:
+        return 0
