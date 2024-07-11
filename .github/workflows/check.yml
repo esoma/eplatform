@@ -34,6 +34,12 @@ jobs:
     - name: Install Poetry
       uses: snok/install-poetry@v1
 
+    - name: Prepare Linux
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install libglu1-mesa-dev freeglut3-dev mesa-common-dev
+
     - name: Install
       run: |
         poetry install
