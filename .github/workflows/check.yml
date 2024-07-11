@@ -54,7 +54,7 @@ jobs:
         poetry run pytest --cov=eplatform --cov-report=xml
 
     - name: Test with Xvfb
-      if: runner.os != 'Linux'
+      if: runner.os == 'Linux'
       run: |
         xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
 
