@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 __all__ = [
+    "EventLoop",
     "get_keyboard",
     "get_mouse",
     "get_window",
@@ -21,6 +22,7 @@ __all__ = [
 ]
 
 # eplatform
+from ._event_loop import EventLoop
 from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey
 from ._keyboard import KeyboardKeyChanged

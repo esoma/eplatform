@@ -1,5 +1,5 @@
 # eplatform
-from eplatform._event_loop import EventLoop
+from eplatform import EventLoop
 from eplatform._event_loop import _Selector
 
 # emath
