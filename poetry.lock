@@ -163,6 +163,24 @@ files = [
 ]
 
 [[package]]
+name = "pysdl2-dll"
+version = "2.30.2"
+description = "Pre-built SDL2 binaries for PySDL2"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pysdl2-dll-2.30.2.tar.gz", hash = "sha256:fdde25cf1863c7cc538da4bb997f5bdf87cbbcf09aa6a736d11e6c3848d04900"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-macosx_10_11_universal2.whl", hash = "sha256:bfab2f1a34a9eced88e9a6846f807596ecdc3a706779763a2e2be014f468da14"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-macosx_10_11_x86_64.whl", hash = "sha256:890233f56f544d3f08c9a6cc1ca1d1ce9e2621983baaff74a949a93dc311ed9f"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-manylinux2014_i686.whl", hash = "sha256:d8534970c452bb0c5b7a2a24c39105e28c69438333be285b7ccdb8edab2e9e90"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-manylinux2014_x86_64.whl", hash = "sha256:e6a3b4fbca88c4a729610bf35a0968a906166441f38479a95214ef6e347b197e"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:dbb9bab74ed72912781523dbcaa537657faf9e3690d5c7f99712aea379dfe652"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:97e16b03b8d0a25c78dabb216ae741d9a2c174186d7544c93a4bce093b60bcca"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-win32.whl", hash = "sha256:2b710986fb7f0c36eebf0d75a8b1d96d47e3b31a926673a72f63d683494efbc9"},
+    {file = "pysdl2_dll-2.30.2-py2.py3-none-win_amd64.whl", hash = "sha256:1f243b9bd3f48a782f9feec26c261b0ae5ffbc3aa78756c5853e992fa5e7dfcf"},
+]
+
+[[package]]
 name = "pytest"
 version = "7.4.3"
 description = "pytest: simple powerful testing with Python"
@@ -203,4 +221,4 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "51a6680f1d3cf585f20140226c4a3d9f1ec07c5897c1974e5b5217300c205461"
+content-hash = "53fcce4079cb7e3e8214eb85bece4c81905bff11b115732f03651f453e887f12"
