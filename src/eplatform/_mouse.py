@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "Mouse",
     "MouseButton",
+    "MouseButtonChanged",
     "MouseButtonName",
     "MouseMoved",
     "MouseScrolled",
