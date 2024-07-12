@@ -58,7 +58,7 @@ class Platform:
         from ._mouse import Mouse
         from ._window import Window
 
-        if self._singleton:
+        if Platform._singleton:
             raise RuntimeError("platform already active")
 
         SDL_InitSubSystem(_SDL_SUB_SYSTEMS)
@@ -66,10 +66,10 @@ class Platform:
         self._mouse = Mouse()
         self._keyboard = Keyboard()
         self._setup_open_gl()
-        self.__class__._singleton = self
+        Platform._singleton = self
 
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
-        if self._singleton is not self:
+        if Platform._singleton is not self:
             raise RuntimeError("platform instance is not active")
 
         for callback in self._deactivate_callbacks:
@@ -82,7 +82,7 @@ class Platform:
         self._window = None
 
         SDL_QuitSubSystem(_SDL_SUB_SYSTEMS)
-        self.__class__._singleton = None
+        Platform._singleton = None
 
     def _setup_open_gl(self) -> None:
         assert self._window is not None
