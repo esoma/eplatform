@@ -16,12 +16,16 @@ from OpenGL.GL import GL_VERSION
 from OpenGL.GL import glGetString
 
 # pysdl2
+from sdl2 import SDL_GL_ALPHA_SIZE
+from sdl2 import SDL_GL_BLUE_SIZE
 from sdl2 import SDL_GL_CONTEXT_MAJOR_VERSION
 from sdl2 import SDL_GL_CONTEXT_MINOR_VERSION
 from sdl2 import SDL_GL_CONTEXT_PROFILE_CORE
 from sdl2 import SDL_GL_CONTEXT_PROFILE_MASK
 from sdl2 import SDL_GL_CreateContext
 from sdl2 import SDL_GL_DeleteContext
+from sdl2 import SDL_GL_GREEN_SIZE
+from sdl2 import SDL_GL_RED_SIZE
 from sdl2 import SDL_GL_SetAttribute
 from sdl2 import SDL_GetError
 from sdl2 import SDL_INIT_VIDEO
@@ -86,6 +90,12 @@ class Platform:
 
     def _setup_open_gl(self) -> None:
         assert self._window is not None
+
+        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8)
+        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8)
+        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8)
+        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8)
+
         for major, minor in [
             (4, 6),
             (4, 5),
