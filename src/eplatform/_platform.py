@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__ = [
     "Platform",
+    "get_color_bits",
     "get_gl_version",
     "get_keyboard",
     "get_mouse",
@@ -24,8 +25,8 @@ from sdl2 import SDL_GL_CONTEXT_PROFILE_CORE
 from sdl2 import SDL_GL_CONTEXT_PROFILE_MASK
 from sdl2 import SDL_GL_CreateContext
 from sdl2 import SDL_GL_DeleteContext
-from sdl2 import SDL_GL_FRAMEBUFFER_SRGB_CAPABLE
 from sdl2 import SDL_GL_GREEN_SIZE
+from sdl2 import SDL_GL_GetAttribute
 from sdl2 import SDL_GL_RED_SIZE
 from sdl2 import SDL_GL_SetAttribute
 from sdl2 import SDL_GetError
@@ -34,6 +35,7 @@ from sdl2 import SDL_InitSubSystem
 from sdl2 import SDL_QuitSubSystem
 
 # python
+import ctypes
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -57,6 +59,7 @@ class Platform:
     _keyboard: Keyboard | None = None
     _gl_context: Any = None
     _gl_version: tuple[int, int] | None = None
+    _color_bits: tuple[int, int, int, int] | None = None
 
     def __enter__(self) -> None:
         # eplatform
@@ -92,12 +95,6 @@ class Platform:
     def _setup_open_gl(self) -> None:
         assert self._window is not None
 
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8)
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8)
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8)
-        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8)
-        SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 0)
-
         for major, minor in [
             (4, 6),
             (4, 5),
@@ -126,6 +123,17 @@ class Platform:
         self._gl_version: tuple[int, int] = tuple(  # type: ignore
             int(v) for v in gl_version.split(" ")[0].split(".")[:2]
         )
+
+        bits = ctypes.c_int(0)
+        SDL_GL_GetAttribute(SDL_GL_RED_SIZE, ctypes.byref(bits))
+        red_bits = bits.value
+        SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, ctypes.byref(bits))
+        green_bits = bits.value
+        SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, ctypes.byref(bits))
+        blue_bits = bits.value
+        SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, ctypes.byref(bits))
+        alpha_bits = bits.value
+        self._color_bits = (red_bits, green_bits, blue_bits, alpha_bits)
 
     def _teardown_open_gl(self) -> None:
         if self._gl_context is not None:
@@ -169,3 +177,11 @@ def get_gl_version() -> tuple[int, int]:
     gl_version = Platform._singleton._gl_version
     assert gl_version is not None
     return gl_version
+
+
+def get_color_bits() -> tuple[int, int, int, int]:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    color_bits = Platform._singleton._color_bits
+    assert color_bits is not None
+    return color_bits

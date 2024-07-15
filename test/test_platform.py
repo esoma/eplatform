@@ -3,6 +3,7 @@ from eplatform import Keyboard
 from eplatform import Mouse
 from eplatform import Platform
 from eplatform import Window
+from eplatform import get_color_bits
 from eplatform import get_gl_version
 from eplatform import get_keyboard
 from eplatform import get_mouse
@@ -91,3 +92,16 @@ def test_deactivate_callbacks():
     with Platform():
         mock_callback.assert_not_called()
     mock_callback.assert_called_once_with()
+
+
+def test_get_color_bits_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        get_color_bits()
+    assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_color_bits(platform):
+    color_bits = get_color_bits()
+    assert isinstance(color_bits, tuple)
+    assert len(color_bits) == 4
+    assert all(isinstance(b, int) for b in color_bits)

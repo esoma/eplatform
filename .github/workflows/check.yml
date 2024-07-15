@@ -51,11 +51,13 @@ jobs:
     - name: Test
       if: runner.os != 'Linux'
       run: |
+        poetry run python .github/info.py
         poetry run pytest --cov=eplatform --cov-report=xml
 
     - name: Test with Xvfb
       if: runner.os == 'Linux'
       run: |
+        xvfb-run -a poetry run python .github/info.py
         xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
 
     - name: Codecov

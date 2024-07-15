@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__ = [
     "EventLoop",
+    "get_color_bits",
     "get_keyboard",
     "get_mouse",
     "get_window",
@@ -38,6 +39,7 @@ from ._mouse import MouseMoved
 from ._mouse import MouseScrolled
 from ._mouse import MouseScrolledDirection
 from ._platform import Platform
+from ._platform import get_color_bits
 from ._platform import get_gl_version
 from ._platform import get_keyboard
 from ._platform import get_mouse
