@@ -31,7 +31,6 @@ def test_attrs(window):
     assert window.size == IVector2(200, 200)
     window.size = IVector2(301, 401)
     assert window.size == IVector2(301, 401)
-    assert window.gl_framebuffer == 0
 
 
 @pytest.mark.parametrize("synchronization", list(WindowBufferSynchronization))

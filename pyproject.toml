@@ -8,7 +8,6 @@ authors = ["Erik Soma <stillusingirc@gmail.com>"]
 python = "^3.12"
 emath = "^0.1.13"
 eevent = "^0.1.0"
-pyopengl = "^3.1.7"
 pysdl2 = "^0.9.16"
 
 [tool.poetry.group.dev.dependencies]

@@ -3,7 +3,6 @@ from __future__ import annotations
 __all__ = [
     "Platform",
     "get_color_bits",
-    "get_gl_version",
     "get_keyboard",
     "get_mouse",
     "get_window",
@@ -11,10 +10,6 @@ __all__ = [
 
 # eplatform
 from ._keyboard import Keyboard
-
-# pyopengl
-from OpenGL.GL import GL_VERSION
-from OpenGL.GL import glGetString
 
 # pysdl2
 from sdl2 import SDL_GL_ALPHA_SIZE
@@ -119,11 +114,6 @@ class Platform:
         if self._gl_context is None:
             raise RuntimeError(SDL_GetError().decode("utf8"))
 
-        gl_version = glGetString(GL_VERSION).decode("utf8")
-        self._gl_version: tuple[int, int] = tuple(  # type: ignore
-            int(v) for v in gl_version.split(" ")[0].split(".")[:2]
-        )
-
         bits = ctypes.c_int(0)
         SDL_GL_GetAttribute(SDL_GL_RED_SIZE, ctypes.byref(bits))
         red_bits = bits.value
@@ -169,14 +159,6 @@ def get_keyboard() -> Keyboard:
     keyboard = Platform._singleton._keyboard
     assert keyboard is not None
     return keyboard
-
-
-def get_gl_version() -> tuple[int, int]:
-    if Platform._singleton is None:
-        raise RuntimeError("platform is not active")
-    gl_version = Platform._singleton._gl_version
-    assert gl_version is not None
-    return gl_version
 
 
 def get_color_bits() -> tuple[int, int, int, int]:

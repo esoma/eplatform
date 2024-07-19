@@ -4,7 +4,6 @@ from eplatform import Mouse
 from eplatform import Platform
 from eplatform import Window
 from eplatform import get_color_bits
-from eplatform import get_gl_version
 from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_window
@@ -61,28 +60,6 @@ def test_get_keyboard_no_platform():
 def test_get_keyboard(platform):
     keyboard = get_keyboard()
     assert isinstance(keyboard, Keyboard)
-
-
-def test_get_gl_version_no_platform():
-    with pytest.raises(RuntimeError) as excinfo:
-        get_gl_version()
-    assert str(excinfo.value) == "platform is not active"
-
-
-def test_get_gl_version(platform):
-    gl_version = get_gl_version()
-    assert gl_version in [
-        (4, 6),
-        (4, 5),
-        (4, 4),
-        (4, 3),
-        (4, 2),
-        (4, 1),
-        (4, 0),
-        (3, 3),
-        (3, 2),
-        (3, 1),
-    ]
 
 
 def test_deactivate_callbacks():

@@ -6,7 +6,6 @@ __all__ = [
     "get_keyboard",
     "get_mouse",
     "get_window",
-    "get_gl_version",
     "Keyboard",
     "KeyboardKey",
     "KeyboardKeyChanged",
@@ -19,8 +18,6 @@ __all__ = [
     "MouseScrolled",
     "MouseScrolledDirection",
     "Platform",
-    "RenderTarget",
-    "set_draw_render_target",
     "Window",
     "WindowBufferSynchronization",
 ]
@@ -40,11 +37,8 @@ from ._mouse import MouseScrolled
 from ._mouse import MouseScrolledDirection
 from ._platform import Platform
 from ._platform import get_color_bits
-from ._platform import get_gl_version
 from ._platform import get_keyboard
 from ._platform import get_mouse
 from ._platform import get_window
-from ._render_target import RenderTarget
-from ._render_target import set_draw_render_target
 from ._window import Window
 from ._window import WindowBufferSynchronization
