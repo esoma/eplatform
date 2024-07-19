@@ -56,18 +56,42 @@ class Platform:
     _gl_version: tuple[int, int] | None = None
     _color_bits: tuple[int, int, int, int] | None = None
 
-    def __enter__(self) -> None:
-        # eplatform
-        from ._mouse import Mouse
-        from ._window import Window
+    def __init__(
+        self,
+        *,
+        window_cls: type[Window] | None = None,
+        mouse_cls: type[Mouse] | None = None,
+        keyboard_cls: type[Keyboard] | None = None,
+    ) -> None:
+        if window_cls is None:
+            # eplatform
+            from ._window import Window
 
+            self._window_cls = Window
+        else:
+            self._window_cls = window_cls
+
+        if mouse_cls is None:
+            # eplatform
+            from ._mouse import Mouse
+
+            self._mouse_cls = Mouse
+        else:
+            self._mouse_cls = mouse_cls
+
+        if keyboard_cls is None:
+            self._keyboard_cls = Keyboard
+        else:
+            self._keyboard_cls = keyboard_cls
+
+    def __enter__(self) -> None:
         if Platform._singleton:
             raise RuntimeError("platform already active")
 
         SDL_InitSubSystem(_SDL_SUB_SYSTEMS)
-        self._window = Window()
-        self._mouse = Mouse()
-        self._keyboard = Keyboard()
+        self._window = self._window_cls()
+        self._mouse = self._mouse_cls()
+        self._keyboard = self._keyboard_cls()
         self._setup_open_gl()
         Platform._singleton = self
 

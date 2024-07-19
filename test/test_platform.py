@@ -82,3 +82,22 @@ def test_get_color_bits(platform):
     assert isinstance(color_bits, tuple)
     assert len(color_bits) == 4
     assert all(isinstance(b, int) for b in color_bits)
+
+
+def test_platform_custom_cls():
+    class CustomWindow(Window):
+        pass
+
+    class CustomMouse(Mouse):
+        pass
+
+    class CustomKeyboard(Keyboard):
+        pass
+
+    platform = Platform(
+        window_cls=CustomWindow, mouse_cls=CustomMouse, keyboard_cls=CustomKeyboard
+    )
+    with platform:
+        assert isinstance(get_window(), CustomWindow)
+        assert isinstance(get_mouse(), CustomMouse)
+        assert isinstance(get_keyboard(), CustomKeyboard)
