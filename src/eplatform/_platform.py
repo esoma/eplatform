@@ -3,8 +3,10 @@ from __future__ import annotations
 __all__ = [
     "Platform",
     "get_color_bits",
+    "get_depth_bits",
     "get_keyboard",
     "get_mouse",
+    "get_stencil_bits",
     "get_window",
 ]
 
@@ -19,10 +21,12 @@ from sdl2 import SDL_GL_CONTEXT_MINOR_VERSION
 from sdl2 import SDL_GL_CONTEXT_PROFILE_CORE
 from sdl2 import SDL_GL_CONTEXT_PROFILE_MASK
 from sdl2 import SDL_GL_CreateContext
+from sdl2 import SDL_GL_DEPTH_SIZE
 from sdl2 import SDL_GL_DeleteContext
 from sdl2 import SDL_GL_GREEN_SIZE
 from sdl2 import SDL_GL_GetAttribute
 from sdl2 import SDL_GL_RED_SIZE
+from sdl2 import SDL_GL_STENCIL_SIZE
 from sdl2 import SDL_GL_SetAttribute
 from sdl2 import SDL_GetError
 from sdl2 import SDL_INIT_VIDEO
@@ -55,6 +59,8 @@ class Platform:
     _gl_context: Any = None
     _gl_version: tuple[int, int] | None = None
     _color_bits: tuple[int, int, int, int] | None = None
+    _depth_bits: int | None = None
+    _stencil_bits: int | None = None
 
     def __init__(
         self,
@@ -147,7 +153,13 @@ class Platform:
         blue_bits = bits.value
         SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, ctypes.byref(bits))
         alpha_bits = bits.value
+        SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, ctypes.byref(bits))
+        depth_bits = bits.value
+        SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, ctypes.byref(bits))
+        stencil_bits = bits.value
         self._color_bits = (red_bits, green_bits, blue_bits, alpha_bits)
+        self._depth_bits = depth_bits
+        self._stencil_bits = stencil_bits
 
     def _teardown_open_gl(self) -> None:
         if self._gl_context is not None:
@@ -191,3 +203,19 @@ def get_color_bits() -> tuple[int, int, int, int]:
     color_bits = Platform._singleton._color_bits
     assert color_bits is not None
     return color_bits
+
+
+def get_depth_bits() -> int:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    depth_bits = Platform._singleton._depth_bits
+    assert depth_bits is not None
+    return depth_bits
+
+
+def get_stencil_bits() -> int:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    stencil_bits = Platform._singleton._stencil_bits
+    assert stencil_bits is not None
+    return stencil_bits

@@ -4,8 +4,10 @@ from eplatform import Mouse
 from eplatform import Platform
 from eplatform import Window
 from eplatform import get_color_bits
+from eplatform import get_depth_bits
 from eplatform import get_keyboard
 from eplatform import get_mouse
+from eplatform import get_stencil_bits
 from eplatform import get_window
 
 # pytest
@@ -82,6 +84,28 @@ def test_get_color_bits(platform):
     assert isinstance(color_bits, tuple)
     assert len(color_bits) == 4
     assert all(isinstance(b, int) for b in color_bits)
+
+
+def test_get_depth_bits_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        get_depth_bits()
+    assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_depth_bits(platform):
+    depth_bits = get_depth_bits()
+    assert isinstance(depth_bits, int)
+
+
+def test_get_stencil_bits_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        get_stencil_bits()
+    assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_stencil_bits(platform):
+    stencil_bits = get_stencil_bits()
+    assert isinstance(stencil_bits, int)
 
 
 def test_platform_custom_cls():

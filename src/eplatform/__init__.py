@@ -3,8 +3,10 @@ from __future__ import annotations
 __all__ = [
     "EventLoop",
     "get_color_bits",
+    "get_depth_bits",
     "get_keyboard",
     "get_mouse",
+    "get_stencil_bits",
     "get_window",
     "Keyboard",
     "KeyboardKey",
@@ -37,8 +39,10 @@ from ._mouse import MouseScrolled
 from ._mouse import MouseScrolledDirection
 from ._platform import Platform
 from ._platform import get_color_bits
+from ._platform import get_depth_bits
 from ._platform import get_keyboard
 from ._platform import get_mouse
+from ._platform import get_stencil_bits
 from ._platform import get_window
 from ._window import Window
 from ._window import WindowBufferSynchronization
