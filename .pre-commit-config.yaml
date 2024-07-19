@@ -27,6 +27,6 @@ repos:
     - emath==0.1.13
     args: []
     id: mypy
-    exclude: ^(test|examples)/.*
+    exclude: ^(.github|test|examples)/.*
   repo: https://github.com/pre-commit/mirrors-mypy
   rev: v1.6.1
