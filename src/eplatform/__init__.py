@@ -13,6 +13,7 @@ __all__ = [
     "KeyboardKey",
     "KeyboardKeyChanged",
     "KeyboardKeyName",
+    "KeyboardTextInput",
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
@@ -32,6 +33,7 @@ from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey
 from ._keyboard import KeyboardKeyChanged
 from ._keyboard import KeyboardKeyName
+from ._keyboard import KeyboardTextInput
 from ._mouse import Mouse
 from ._mouse import MouseButton
 from ._mouse import MouseButtonChanged
