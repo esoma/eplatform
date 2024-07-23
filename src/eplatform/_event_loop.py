@@ -28,6 +28,7 @@ from sdl2 import SDL_MOUSEWHEEL_FLIPPED
 from sdl2 import SDL_PRESSED
 from sdl2 import SDL_PollEvent
 from sdl2 import SDL_QUIT
+from sdl2 import SDL_TEXTINPUT
 
 # python
 from asyncio import SelectorEventLoop
@@ -108,6 +109,12 @@ class _Selector(SelectSelector):
         except KeyError:
             return False
         keyboard.change_key(key_name, event.key.state == SDL_PRESSED)
+        return True
+
+    def _handle_sdl_text_input(self, event: SDL_Event) -> bool:
+        assert event.type == SDL_TEXTINPUT
+        keyboard = get_keyboard()
+        keyboard.input_text(event.text.text.decode("utf8"))
         return True
 
     _SDL_MOUSE_BUTTON_TO_NAME: Final[dict[Any, MouseButtonName]] = {
@@ -386,4 +393,5 @@ class _Selector(SelectSelector):
         SDL_MOUSEBUTTONUP: _handle_sdl_mouse_button_changed,
         SDL_KEYDOWN: _handle_sdl_key_changed,
         SDL_KEYUP: _handle_sdl_key_changed,
+        SDL_TEXTINPUT: _handle_sdl_text_input,
     }

@@ -29,9 +29,12 @@ from sdl2 import SDL_GL_RED_SIZE
 from sdl2 import SDL_GL_STENCIL_SIZE
 from sdl2 import SDL_GL_SetAttribute
 from sdl2 import SDL_GetError
+from sdl2 import SDL_HINT_IME_SHOW_UI
 from sdl2 import SDL_INIT_VIDEO
 from sdl2 import SDL_InitSubSystem
 from sdl2 import SDL_QuitSubSystem
+from sdl2 import SDL_SetHint
+from sdl2 import SDL_StopTextInput
 
 # python
 import ctypes
@@ -95,6 +98,9 @@ class Platform:
             raise RuntimeError("platform already active")
 
         SDL_InitSubSystem(_SDL_SUB_SYSTEMS)
+        SDL_StopTextInput()
+        SDL_SetHint(SDL_HINT_IME_SHOW_UI, b"1")
+
         self._window = self._window_cls()
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()

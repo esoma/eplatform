@@ -87,6 +87,20 @@ files = [
 ]
 
 [[package]]
+name = "egeometry"
+version = "0.3.0"
+description = "Python geometry library."
+optional = false
+python-versions = "<4.0,>=3.12"
+files = [
+    {file = "egeometry-0.3.0-py3-none-any.whl", hash = "sha256:54c4013553ee1ddb319bb250037ea31d73ad87c759eebf3963db1236b4f60d23"},
+    {file = "egeometry-0.3.0.tar.gz", hash = "sha256:23b96cd3eea11c138e344673376fdd25d7ea7fba47f023a86a36f7033c9796be"},
+]
+
+[package.dependencies]
+emath = ">=0.1.13,<0.2.0"
+
+[[package]]
 name = "emath"
 version = "0.1.13"
 description = "Fast immutable math primitives."
@@ -210,4 +224,4 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtuale
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ce63f3aacaefa0b3d6ac85ee0d863bcc3d96013e7ddb33bc866978f10ceaf680"
+content-hash = "097d75c532fc746104cba11bdd169a5070921465074f3bfbb51ef8c1becde815"

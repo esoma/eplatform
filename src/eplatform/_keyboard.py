@@ -1,11 +1,22 @@
 from __future__ import annotations
 
-__all__ = ["Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyName"]
+__all__ = ["Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyName", "KeyboardTextInput"]
 
 # eevent
 from eevent import Event
 
+# egeometry
+from egeometry import IRectangle
+
+# pysdl2
+from sdl2 import SDL_Rect
+from sdl2 import SDL_SetTextInputRect
+from sdl2 import SDL_StartTextInput
+from sdl2 import SDL_StopTextInput
+
 # python
+from contextlib import contextmanager
+from typing import Generator
 from typing import Literal
 from typing import TypeAlias
 from typing import TypedDict
@@ -521,6 +532,7 @@ class Keyboard:
         self.key_changed: Event[KeyboardKeyChanged] = Event()
         self.key_pressed: Event[KeyboardKeyChanged] = Event()
         self.key_released: Event[KeyboardKeyChanged] = Event()
+        self.text_input: Event[KeyboardTextInput] = Event()
 
     def change_key(self, name: KeyboardKeyName, is_pressed: bool) -> None:
         key: KeyboardKey = getattr(self, name)
@@ -535,7 +547,33 @@ class Keyboard:
             self.key_released(data)
             key.released(data)
 
+    def input_text(self, text: str) -> None:
+        self.text_input({"text": text})
+
+    def start_input(self, rect: IRectangle) -> None:
+        sdl_rect = SDL_Rect()
+        sdl_rect.x = rect.position.x
+        sdl_rect.y = rect.position.y
+        sdl_rect.w = rect.size.x
+        sdl_rect.h = rect.size.y
+
+        SDL_SetTextInputRect(sdl_rect)
+        SDL_StartTextInput()
+
+    def stop_input(self) -> None:
+        SDL_StopTextInput()
+
+    @contextmanager
+    def input(self, rect: IRectangle) -> Generator[None, None, None]:
+        self.start_input(rect)
+        yield
+        self.stop_input()
+
 
 class KeyboardKeyChanged(TypedDict):
     key: KeyboardKey
     is_pressed: bool
+
+
+class KeyboardTextInput(TypedDict):
+    text: str

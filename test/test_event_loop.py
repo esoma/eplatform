@@ -24,6 +24,7 @@ from sdl2 import SDL_MOUSEWHEEL_NORMAL
 from sdl2 import SDL_PRESSED
 from sdl2 import SDL_QUIT
 from sdl2 import SDL_RELEASED
+from sdl2 import SDL_TEXTINPUT
 
 # pytest
 import pytest
@@ -499,3 +500,15 @@ def test_selector_handle_sdl_key_changed_unexpected(keyboard, is_pressed, event_
     with patch.object(keyboard, "change_key") as change_key:
         assert not selector._handle_sdl_key_changed(event)
     change_key.assert_not_called()
+
+
+@pytest.mark.parametrize("text", ["", "hello", "私"])
+def test_selector_handle_sdl_text_input(keyboard, text):
+    selector = _Selector()
+    event = SDL_Event()
+    event.type = SDL_TEXTINPUT
+    event.text.text = text.encode("utf8")
+
+    with patch.object(keyboard, "input_text") as input_text:
+        assert selector._handle_sdl_text_input(event)
+    input_text.assert_called_once_with(text)

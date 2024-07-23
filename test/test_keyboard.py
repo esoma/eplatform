@@ -6,6 +6,12 @@ from eplatform import KeyboardKeyName
 # eevent
 from eevent import Event
 
+# egeometry
+from egeometry import IRectangle
+
+# emath
+from emath import IVector2
+
 # pytest
 import pytest
 
@@ -54,6 +60,24 @@ def test_change_key(keyboard, key_name, is_pressed):
         keyboard_key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
         key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
     assert key.is_pressed == is_pressed
+
+
+@pytest.mark.parametrize("text", ["", "hello", "私"])
+def test_input_text(keyboard, text):
+    with patch.object(keyboard, "text_input", new=MagicMock()) as text_input:
+        keyboard.input_text(text)
+    text_input.assert_called_once_with({"text": text})
+
+
+def test_start_stop_input(keyboard):
+    rect = IRectangle(IVector2(0), IVector2(1))
+    keyboard.start_input(rect)
+    keyboard.start_input(rect)
+    keyboard.stop_input()
+    keyboard.stop_input()
+
+    with keyboard.input(rect):
+        pass
 
 
 @pytest.mark.parametrize("key_name", get_args(KeyboardKeyName))
