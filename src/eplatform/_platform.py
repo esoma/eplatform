@@ -2,12 +2,14 @@ from __future__ import annotations
 
 __all__ = [
     "Platform",
+    "get_clipboard",
     "get_color_bits",
     "get_depth_bits",
     "get_keyboard",
     "get_mouse",
     "get_stencil_bits",
     "get_window",
+    "set_clipboard",
 ]
 
 # eplatform
@@ -28,13 +30,16 @@ from sdl2 import SDL_GL_GetAttribute
 from sdl2 import SDL_GL_RED_SIZE
 from sdl2 import SDL_GL_STENCIL_SIZE
 from sdl2 import SDL_GL_SetAttribute
+from sdl2 import SDL_GetClipboardText
 from sdl2 import SDL_GetError
 from sdl2 import SDL_HINT_IME_SHOW_UI
 from sdl2 import SDL_INIT_VIDEO
 from sdl2 import SDL_InitSubSystem
 from sdl2 import SDL_QuitSubSystem
+from sdl2 import SDL_SetClipboardText
 from sdl2 import SDL_SetHint
 from sdl2 import SDL_StopTextInput
+from sdl2 import SDL_free
 
 # python
 import ctypes
@@ -225,3 +230,27 @@ def get_stencil_bits() -> int:
     stencil_bits = Platform._singleton._stencil_bits
     assert stencil_bits is not None
     return stencil_bits
+
+
+def get_clipboard() -> bytes:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    # pysdl2 does not handle the SDL_GetClipboardText contract correctly, so we need to hack it
+    original_restype = SDL_GetClipboardText.restype
+    try:
+        SDL_GetClipboardText.restype = ctypes.c_void_p
+        try:
+            data = SDL_GetClipboardText()
+            result = ctypes.cast(data, ctypes.c_char_p).value
+            assert isinstance(result, bytes)
+            return result
+        finally:
+            SDL_free(data)
+    finally:
+        SDL_GetClipboardText.restype = original_restype
+
+
+def set_clipboard(data: bytes) -> None:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    SDL_SetClipboardText(data)

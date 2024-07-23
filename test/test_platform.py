@@ -3,12 +3,14 @@ from eplatform import Keyboard
 from eplatform import Mouse
 from eplatform import Platform
 from eplatform import Window
+from eplatform import get_clipboard
 from eplatform import get_color_bits
 from eplatform import get_depth_bits
 from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_stencil_bits
 from eplatform import get_window
+from eplatform import set_clipboard
 
 # pytest
 import pytest
@@ -125,3 +127,19 @@ def test_platform_custom_cls():
         assert isinstance(get_window(), CustomWindow)
         assert isinstance(get_mouse(), CustomMouse)
         assert isinstance(get_keyboard(), CustomKeyboard)
+
+
+@pytest.mark.parametrize("data", [b"", b"one two three"])
+def test_clipboard(platform, data):
+    set_clipboard(data)
+    assert get_clipboard() == data
+
+
+def test_clipboard_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        set_clipboard(b"")
+    assert str(excinfo.value) == "platform is not active"
+
+    with pytest.raises(RuntimeError) as excinfo:
+        get_clipboard()
+    assert str(excinfo.value) == "platform is not active"
