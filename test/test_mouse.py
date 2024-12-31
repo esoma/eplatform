@@ -34,6 +34,7 @@ def test_attrs(mouse, window):
     ):
         assert mouse.world_position == IVector2(5, 5)
     assert isinstance(mouse.moved, Event)
+    assert mouse.visible
 
     assert isinstance(mouse.scrolled, Event)
     assert isinstance(mouse.scrolled_vertically, Event)
@@ -144,3 +145,15 @@ def test_change_button(mouse, button_name, is_pressed):
 def test_button_repr(mouse, button_name):
     button = getattr(mouse, button_name)
     assert repr(button) == f"<MouseButton {button_name!r}>"
+
+
+def test_visibility(mouse):
+    assert mouse.visible
+    mouse.visible = True
+    assert mouse.visible
+    mouse.visible = False
+    assert not mouse.visible
+    mouse.visible = False
+    assert not mouse.visible
+    mouse.visible = True
+    assert mouse.visible

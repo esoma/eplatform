@@ -19,6 +19,12 @@ from eevent import Event
 # emath
 from emath import IVector2
 
+# pysdl2
+from sdl2 import SDL_DISABLE
+from sdl2 import SDL_ENABLE
+from sdl2 import SDL_QUERY
+from sdl2 import SDL_ShowCursor
+
 # python
 from typing import Literal
 from typing import TypeAlias
@@ -105,6 +111,14 @@ class Mouse:
         else:
             self.button_released(event_data)
             button.released(event_data)
+
+    @property
+    def visible(self) -> bool:
+        return SDL_ShowCursor(SDL_QUERY) == 1  # type: ignore
+
+    @visible.setter
+    def visible(self, value: bool) -> None:
+        SDL_ShowCursor(SDL_ENABLE if value else SDL_DISABLE)
 
     @property
     def world_position(self) -> IVector2:
