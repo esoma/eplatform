@@ -13,6 +13,8 @@ from emath import IVector2
 # pysdl2
 from sdl2 import SDL_GL_SetSwapInterval
 from sdl2 import SDL_GL_SwapWindow
+from sdl2 import SDL_SetWindowPosition
+from sdl2 import SDL_WINDOWPOS_CENTERED
 from sdl2 import SDL_WINDOW_HIDDEN
 from sdl2 import SDL_WINDOW_OPENGL
 from sdl2.ext import Window as _Window
@@ -32,6 +34,9 @@ class Window(_Window):
         super().__init__("", (200, 200), flags=SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL)
         self.closed: Event[None] = Event()
         self.screen_space_to_world_space_transform = FMatrix4(1)
+
+    def center(self) -> None:
+        SDL_SetWindowPosition(self.window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED)
 
     def refresh(
         self, synchronization: WindowBufferSynchronization = WindowBufferSynchronization.IMMEDIATE

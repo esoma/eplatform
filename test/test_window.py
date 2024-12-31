@@ -33,6 +33,10 @@ def test_attrs(window):
     assert window.size == IVector2(301, 401)
 
 
+def test_center(window):
+    window.center()
+
+
 @pytest.mark.parametrize("synchronization", list(WindowBufferSynchronization))
 def test_refresh(window, synchronization: WindowBufferSynchronization) -> None:
     window.refresh(synchronization)
