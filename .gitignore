@@ -9,3 +9,6 @@ build/
 dist/
 
 test.py
+
+*.so
+*.dll

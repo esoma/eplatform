@@ -1,5 +1,4 @@
 # eplatform
-from eplatform import Mouse
 from eplatform import MouseButton
 from eplatform import MouseButtonName
 
@@ -21,8 +20,6 @@ from unittest.mock import patch
 
 
 def test_attrs(mouse, window):
-    assert isinstance(mouse, Mouse)
-
     assert mouse.position == IVector2(0, 0)
     mouse.position = IVector2(10, 10)
     with patch.object(
@@ -34,7 +31,6 @@ def test_attrs(mouse, window):
     ):
         assert mouse.world_position == IVector2(5, 5)
     assert isinstance(mouse.moved, Event)
-    assert mouse.visible
 
     assert isinstance(mouse.scrolled, Event)
     assert isinstance(mouse.scrolled_vertically, Event)
@@ -148,12 +144,8 @@ def test_button_repr(mouse, button_name):
 
 
 def test_visibility(mouse):
-    assert mouse.visible
-    mouse.visible = True
-    assert mouse.visible
-    mouse.visible = False
-    assert not mouse.visible
-    mouse.visible = False
-    assert not mouse.visible
-    mouse.visible = True
-    assert mouse.visible
+    mouse.show()
+    mouse.hide()
+    mouse.hide()
+    mouse.show()
+    mouse.show()

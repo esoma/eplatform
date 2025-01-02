@@ -11,6 +11,8 @@ __all__ = [
 ]
 
 # eplatform
+from ._eplatform import hide_cursor
+from ._eplatform import show_cursor
 from ._platform import get_window
 
 # eevent
@@ -18,12 +20,6 @@ from eevent import Event
 
 # emath
 from emath import IVector2
-
-# pysdl2
-from sdl2 import SDL_DISABLE
-from sdl2 import SDL_ENABLE
-from sdl2 import SDL_QUERY
-from sdl2 import SDL_ShowCursor
 
 # python
 from typing import Literal
@@ -112,13 +108,11 @@ class Mouse:
             self.button_released(event_data)
             button.released(event_data)
 
-    @property
-    def visible(self) -> bool:
-        return SDL_ShowCursor(SDL_QUERY) == 1  # type: ignore
+    def show(self) -> None:
+        show_cursor()
 
-    @visible.setter
-    def visible(self, value: bool) -> None:
-        SDL_ShowCursor(SDL_ENABLE if value else SDL_DISABLE)
+    def hide(self) -> None:
+        hide_cursor()
 
     @property
     def world_position(self) -> IVector2:

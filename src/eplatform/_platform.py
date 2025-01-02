@@ -13,40 +13,19 @@ __all__ = [
 ]
 
 # eplatform
+from ._eplatform import create_sdl_gl_context
+from ._eplatform import deinitialize_sdl
+from ._eplatform import delete_sdl_gl_context
+from ._eplatform import get_clipboard as _get_clipboard
+from ._eplatform import get_gl_attrs
+from ._eplatform import initialize_sdl
+from ._eplatform import set_clipboard as _set_clipboard
 from ._keyboard import Keyboard
 
-# pysdl2
-from sdl2 import SDL_GL_ALPHA_SIZE
-from sdl2 import SDL_GL_BLUE_SIZE
-from sdl2 import SDL_GL_CONTEXT_MAJOR_VERSION
-from sdl2 import SDL_GL_CONTEXT_MINOR_VERSION
-from sdl2 import SDL_GL_CONTEXT_PROFILE_CORE
-from sdl2 import SDL_GL_CONTEXT_PROFILE_MASK
-from sdl2 import SDL_GL_CreateContext
-from sdl2 import SDL_GL_DEPTH_SIZE
-from sdl2 import SDL_GL_DeleteContext
-from sdl2 import SDL_GL_GREEN_SIZE
-from sdl2 import SDL_GL_GetAttribute
-from sdl2 import SDL_GL_RED_SIZE
-from sdl2 import SDL_GL_STENCIL_SIZE
-from sdl2 import SDL_GL_SetAttribute
-from sdl2 import SDL_GetClipboardText
-from sdl2 import SDL_GetError
-from sdl2 import SDL_HINT_IME_SHOW_UI
-from sdl2 import SDL_INIT_VIDEO
-from sdl2 import SDL_InitSubSystem
-from sdl2 import SDL_QuitSubSystem
-from sdl2 import SDL_SetClipboardText
-from sdl2 import SDL_SetHint
-from sdl2 import SDL_StopTextInput
-from sdl2 import SDL_free
-
 # python
-import ctypes
 from typing import Any
 from typing import Callable
 from typing import ClassVar
-from typing import Final
 from typing import Self
 from typing import TYPE_CHECKING
 
@@ -54,8 +33,6 @@ if TYPE_CHECKING:
     # eplatform
     from ._mouse import Mouse
     from ._window import Window
-
-_SDL_SUB_SYSTEMS: Final = SDL_INIT_VIDEO
 
 
 class Platform:
@@ -65,7 +42,6 @@ class Platform:
     _mouse: Mouse | None = None
     _keyboard: Keyboard | None = None
     _gl_context: Any = None
-    _gl_version: tuple[int, int] | None = None
     _color_bits: tuple[int, int, int, int] | None = None
     _depth_bits: int | None = None
     _stencil_bits: int | None = None
@@ -101,11 +77,7 @@ class Platform:
     def __enter__(self) -> None:
         if Platform._singleton:
             raise RuntimeError("platform already active")
-
-        SDL_InitSubSystem(_SDL_SUB_SYSTEMS)
-        SDL_StopTextInput()
-        SDL_SetHint(SDL_HINT_IME_SHOW_UI, b"1")
-
+        initialize_sdl()
         self._window = self._window_cls()
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()
@@ -120,63 +92,34 @@ class Platform:
             callback()
 
         self._teardown_open_gl()
-
         assert self._window is not None
         self._window.close()
         self._window = None
 
-        SDL_QuitSubSystem(_SDL_SUB_SYSTEMS)
+        deinitialize_sdl()
         Platform._singleton = None
 
     def _setup_open_gl(self) -> None:
         assert self._window is not None
 
-        for major, minor in [
-            (4, 6),
-            (4, 5),
-            (4, 4),
-            (4, 3),
-            (4, 2),
-            (4, 1),
-            (4, 0),
-            (3, 3),
-            (3, 2),
-            (3, 1),
-        ]:
-            if SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major) != 0:
-                raise RuntimeError(SDL_GetError().decode("utf8"))
-            if SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor) != 0:
-                raise RuntimeError(SDL_GetError().decode("utf8"))
-            if SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE) != 0:
-                raise RuntimeError(SDL_GetError().decode("utf8"))
-            self._gl_context = SDL_GL_CreateContext(self._window.window)
-            if self._gl_context is not None:
-                break
-        if self._gl_context is None:
-            raise RuntimeError(SDL_GetError().decode("utf8"))
+        # eplatform
+        from ._window import get_sdl_window
 
-        bits = ctypes.c_int(0)
-        SDL_GL_GetAttribute(SDL_GL_RED_SIZE, ctypes.byref(bits))
-        red_bits = bits.value
-        SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, ctypes.byref(bits))
-        green_bits = bits.value
-        SDL_GL_GetAttribute(SDL_GL_BLUE_SIZE, ctypes.byref(bits))
-        blue_bits = bits.value
-        SDL_GL_GetAttribute(SDL_GL_ALPHA_SIZE, ctypes.byref(bits))
-        alpha_bits = bits.value
-        SDL_GL_GetAttribute(SDL_GL_DEPTH_SIZE, ctypes.byref(bits))
-        depth_bits = bits.value
-        SDL_GL_GetAttribute(SDL_GL_STENCIL_SIZE, ctypes.byref(bits))
-        stencil_bits = bits.value
-        self._color_bits = (red_bits, green_bits, blue_bits, alpha_bits)
-        self._depth_bits = depth_bits
-        self._stencil_bits = stencil_bits
+        sdl_window = get_sdl_window(self._window)
+        self._gl_context = create_sdl_gl_context(sdl_window)
+
+        r, g, b, a, d, s = get_gl_attrs()
+        self._color_bits = (r, g, b, a)
+        self._depth_bits = d
+        self._stencil_bits = s
 
     def _teardown_open_gl(self) -> None:
         if self._gl_context is not None:
-            SDL_GL_DeleteContext(self._gl_context)
+            delete_sdl_gl_context(self._gl_context)
             self._gl_context = None
-            self._gl_version = None
+            self._color_bits = None
+            self._depth_bits = None
+            self._stencil_bits = None
 
     @classmethod
     def register_deactivate_callback(cls, callback: Callable[[], None]) -> Callable[[], None]:
@@ -232,25 +175,13 @@ def get_stencil_bits() -> int:
     return stencil_bits
 
 
-def get_clipboard() -> bytes:
+def get_clipboard() -> str:
     if Platform._singleton is None:
         raise RuntimeError("platform is not active")
-    # pysdl2 does not handle the SDL_GetClipboardText contract correctly, so we need to hack it
-    original_restype = SDL_GetClipboardText.restype
-    try:
-        SDL_GetClipboardText.restype = ctypes.c_void_p
-        try:
-            data = SDL_GetClipboardText()
-            result = ctypes.cast(data, ctypes.c_char_p).value
-            assert isinstance(result, bytes)
-            return result
-        finally:
-            SDL_free(data)
-    finally:
-        SDL_GetClipboardText.restype = original_restype
+    return _get_clipboard()
 
 
-def set_clipboard(data: bytes) -> None:
+def set_clipboard(text: str) -> None:
     if Platform._singleton is None:
         raise RuntimeError("platform is not active")
-    SDL_SetClipboardText(data)
+    _set_clipboard(text)

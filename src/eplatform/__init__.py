@@ -13,7 +13,6 @@ __all__ = [
     "KeyboardKey",
     "KeyboardKeyChanged",
     "KeyboardKeyName",
-    "KeyboardTextInput",
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
@@ -25,6 +24,8 @@ __all__ = [
     "set_clipboard",
     "Window",
     "WindowBufferSynchronization",
+    "WindowDestroyedError",
+    "WindowTextInputted",
 ]
 
 # eplatform
@@ -33,7 +34,6 @@ from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey
 from ._keyboard import KeyboardKeyChanged
 from ._keyboard import KeyboardKeyName
-from ._keyboard import KeyboardTextInput
 from ._mouse import Mouse
 from ._mouse import MouseButton
 from ._mouse import MouseButtonChanged
@@ -52,3 +52,5 @@ from ._platform import get_window
 from ._platform import set_clipboard
 from ._window import Window
 from ._window import WindowBufferSynchronization
+from ._window import WindowDestroyedError
+from ._window import WindowTextInputted

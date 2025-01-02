@@ -6,12 +6,6 @@ from eplatform import KeyboardKeyName
 # eevent
 from eevent import Event
 
-# egeometry
-from egeometry import IRectangle
-
-# emath
-from emath import IVector2
-
 # pytest
 import pytest
 
@@ -38,49 +32,31 @@ def test_attrs(keyboard):
         assert isinstance(key.pressed, Event)
 
 
-@pytest.mark.parametrize("key_name", get_args(KeyboardKeyName))
 @pytest.mark.parametrize("is_pressed", [False, True])
-def test_change_key(keyboard, key_name, is_pressed):
-    key = getattr(keyboard, key_name)
-    with (
-        patch.object(keyboard, "key_changed", new=MagicMock()) as keyboard_key_changed,
-        patch.object(keyboard, "key_pressed", new=MagicMock()) as keyboard_key_pressed,
-        patch.object(keyboard, "key_released", new=MagicMock()) as keyboard_key_released,
-        patch.object(key, "changed", new=MagicMock()) as key_changed,
-        patch.object(key, "pressed", new=MagicMock()) as key_pressed,
-        patch.object(key, "released", new=MagicMock()) as key_released,
-    ):
-        keyboard.change_key(key_name, is_pressed)
-    keyboard_key_changed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-    key_changed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-    if is_pressed:
-        keyboard_key_pressed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-        key_pressed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-    else:
-        keyboard_key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-        key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-    assert key.is_pressed == is_pressed
+def test_change_key(keyboard, is_pressed):
+    for key_name in get_args(KeyboardKeyName):
+        key = getattr(keyboard, key_name)
+        with (
+            patch.object(keyboard, "key_changed", new=MagicMock()) as keyboard_key_changed,
+            patch.object(keyboard, "key_pressed", new=MagicMock()) as keyboard_key_pressed,
+            patch.object(keyboard, "key_released", new=MagicMock()) as keyboard_key_released,
+            patch.object(key, "changed", new=MagicMock()) as key_changed,
+            patch.object(key, "pressed", new=MagicMock()) as key_pressed,
+            patch.object(key, "released", new=MagicMock()) as key_released,
+        ):
+            keyboard.change_key(key_name, is_pressed)
+        keyboard_key_changed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+        key_changed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+        if is_pressed:
+            keyboard_key_pressed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+            key_pressed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+        else:
+            keyboard_key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+            key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+        assert key.is_pressed == is_pressed
 
 
-@pytest.mark.parametrize("text", ["", "hello", "私"])
-def test_input_text(keyboard, text):
-    with patch.object(keyboard, "text_input", new=MagicMock()) as text_input:
-        keyboard.input_text(text)
-    text_input.assert_called_once_with({"text": text})
-
-
-def test_start_stop_input(keyboard):
-    rect = IRectangle(IVector2(0), IVector2(1))
-    keyboard.start_input(rect)
-    keyboard.start_input(rect)
-    keyboard.stop_input()
-    keyboard.stop_input()
-
-    with keyboard.input(rect):
-        pass
-
-
-@pytest.mark.parametrize("key_name", get_args(KeyboardKeyName))
-def test_key_repr(keyboard, key_name):
-    key = getattr(keyboard, key_name)
-    assert repr(key) == f"<KeyboardKey {key_name!r}>"
+def test_key_repr(keyboard):
+    for key_name in get_args(KeyboardKeyName):
+        key = getattr(keyboard, key_name)
+        assert repr(key) == f"<KeyboardKey {key_name!r}>"

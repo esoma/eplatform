@@ -129,7 +129,7 @@ def test_platform_custom_cls():
         assert isinstance(get_keyboard(), CustomKeyboard)
 
 
-@pytest.mark.parametrize("data", [b"", b"one two three"])
+@pytest.mark.parametrize("data", ["", "one two three"])
 def test_clipboard(platform, data):
     set_clipboard(data)
     assert get_clipboard() == data
@@ -137,7 +137,7 @@ def test_clipboard(platform, data):
 
 def test_clipboard_no_platform():
     with pytest.raises(RuntimeError) as excinfo:
-        set_clipboard(b"")
+        set_clipboard("")
     assert str(excinfo.value) == "platform is not active"
 
     with pytest.raises(RuntimeError) as excinfo:
