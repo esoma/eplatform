@@ -38,13 +38,13 @@ jobs:
       run: |
         git submodule update --init --recursive
 
-    - name: Prepare Linux Environment
+    - name: Install Mesa Linux
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
-    - name: Prepare Windows Environment
+    - name: Install Mesa Windows
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
 
@@ -57,7 +57,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        cmake .
+        cmake . -D CMAKE_SYSTEM_VERSION=10.0.26100.0
         msbuild SDL3-shared.vcxproj /p:Configuration=Release
         cp Release/SDL3.dll ../../SDL3.dll
 
