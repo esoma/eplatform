@@ -46,7 +46,7 @@ jobs:
         arch: ${{ matrix.arch }}
 
     - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
