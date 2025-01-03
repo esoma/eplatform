@@ -55,6 +55,7 @@ jobs:
     - name: Build SDL3 Windows
       working-directory: vendor/SDL
       if: runner.os == 'Windows'
+      shell: pwsh
       run: |
         cmake .
         msbuild SDL3-shared.vcxproj /p:Configuration=Release
