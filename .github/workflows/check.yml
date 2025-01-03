@@ -22,12 +22,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.version }}
-        architecture: ${{ matrix.arch }}
-
     - name: Initialize Submodules
       run: |
         git submodule update --init --recursive
@@ -50,6 +44,12 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: ${{ matrix.arch }}
+
+    - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.version }}
+        architecture: ${{ matrix.arch }}
 
     - name: Install Poetry
       uses: snok/install-poetry@v1.3.2
