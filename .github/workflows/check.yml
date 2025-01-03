@@ -56,7 +56,7 @@ jobs:
 
     - name: Install
       run: |
-        echo %PATH%
+        echo $env:PATH
         poetry install
 
     - name: Test
