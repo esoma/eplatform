@@ -10,9 +10,6 @@ on:
 jobs:
   test:
 
-    defaults:
-      run:
-        shell: bash
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -32,7 +29,6 @@ jobs:
         architecture: ${{ matrix.python-arch }}
 
     - name: Install Poetry
-      shell: pwsh
       uses: snok/install-poetry@v1
 
     - name: Initialize Submodules
@@ -59,7 +55,6 @@ jobs:
         arch: ${{ matrix.arch }}
 
     - name: Install Windows
-      shell: pwsh
       run: |
         poetry install
       env:
