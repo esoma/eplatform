@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from platform import system
 import shutil
+import subprocess
 import sys
 
 _coverage_compile_args: list[str] = []
@@ -46,27 +47,29 @@ _eplatform = Extension(
     define_macros=define_macros,
 )
 
-"""
+
 def _build_sdl() -> None:
-    subprocess.run(["cmake", "."], cwd="vendor/SDL", check=True)
-    if system() == "Windows":
-        from setuptools.msvc import EnvironmentInfo
-        ms_env = EnvironmentInfo(machine())
-        env = os.environ.copy()
-        env["PATH"] = ";".join((*ms_env.VCTools, *env["PATH"].split(";")))
-        subprocess.run(
-            ["msbuild", "SDL3-shared.vcxproj", "/p:Configuration=Release"],
-            cwd="vendor/SDL",
-            check=True,
-            env=env
-        )
+    subprocess.run(
+        [
+            "cmake",
+            ".",
+            "-D",
+            "CMAKE_BUILD_TYPE=Release",
+            "-D",
+            "SDL_TESTS=0",
+            "-D",
+            "SDL_TEST_LIBRARY=0",
+        ],
+        cwd="vendor/SDL",
+        check=True,
+    )
+    subprocess.run(["cmake", "--build", ".", "--config", "Release"], cwd="vendor/SDL", check=True)
+    if system() == "Window":
         shutil.copyfile("vendor/SDL/Release/SDL3.dll", "SDL3.dll")
-    else:
-        raise RuntimeError("idk how to build SDL")
-"""
 
 
 def _build() -> None:
+    _build_sdl()
     cmd = build_ext(Distribution({"name": "extended", "ext_modules": [_eplatform]}))
     cmd.ensure_finalized()
     cmd.run()
