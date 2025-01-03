@@ -1,3 +1,8 @@
+# python
+import os
+
+os.add_dll_directory(os.getcwd())
+
 # eplatform
 from eplatform import EventLoop
 from eplatform import Platform

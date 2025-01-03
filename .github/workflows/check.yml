@@ -34,19 +34,33 @@ jobs:
     - name: Install Poetry
       uses: snok/install-poetry@v1
 
-    - name: Install Mesa Linux
+    - name: Initialize Submodules
+      run: |
+        git submodule update --init --recursive
+
+    - name: Prepare Linux Environment
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev
 
-    - name: Install Mesa Windows
+    - name: Prepare Windows Environment
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
+
+    - name: Build SDL3 Windows
+      working-direction: vendor/SDL
+      if: runner.os == 'Windows'
+      run: |
+        cmake .
+        msbuild SDL3-shared.vcxproj /p:Configuration=Release
+        cp Release/SDL3.dll ../../SDL3.dll
 
     - name: Install
       run: |
         poetry install
+      env:
+        EPLATFORM_BUILD_WITH_COVERAGE: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
 
     - name: Test
       if: runner.os != 'Linux'
