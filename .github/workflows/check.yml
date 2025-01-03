@@ -56,6 +56,7 @@ jobs:
         poetry install
       env:
         EPLATFORM_BUILD_WITH_COVERAGE: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
+        CC: ${{ matrix.os == 'windows-latest' && 'cl' || '' }}
 
     - name: Test
       if: runner.os != 'Linux'
