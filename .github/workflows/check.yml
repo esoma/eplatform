@@ -28,9 +28,6 @@ jobs:
         python-version: ${{ matrix.version }}
         architecture: ${{ matrix.arch }}
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1.3.2
-
     - name: Initialize Submodules
       run: |
         git submodule update --init --recursive
@@ -53,6 +50,9 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: ${{ matrix.arch }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1.3.2
 
     - name: Install
       run: |
