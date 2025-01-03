@@ -51,12 +51,18 @@ jobs:
     - name: Install ninja
       uses: seanmiddleditch/gha-setup-ninja@v5
 
-    - name: Install
+    - name: Setup MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch }}
+
+    - name: Install Windows
+      shell: pwsh
       run: |
         poetry install
       env:
-        EPLATFORM_BUILD_WITH_COVERAGE: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
-        CC: ${{ matrix.os == 'windows-latest' && 'cl' || '' }}
+        CC: cl
 
     - name: Test
       if: runner.os != 'Linux'
