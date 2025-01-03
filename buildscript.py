@@ -30,7 +30,7 @@ extra_link_args: list[str] = []
 define_macros: list[tuple[str, None]] = []
 if system() == "Windows":
     libraries.append("SDL3")
-    library_dirs.append("vendor/SDL/Release")
+    library_dirs.append("vendor/SDL")
 elif system() == "Darwin":
     pass
 else:
@@ -53,19 +53,17 @@ def _build_sdl() -> None:
         [
             "cmake",
             ".",
-            "-D",
-            "CMAKE_BUILD_TYPE=Release",
-            "-D",
-            "SDL_TESTS=0",
-            "-D",
-            "SDL_TEST_LIBRARY=0",
+            "-GNinja",
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DSDL_TESTS=0",
+            "-DSDL_TEST_LIBRARY=0",
         ],
         cwd="vendor/SDL",
         check=True,
     )
     subprocess.run(["cmake", "--build", ".", "--config", "Release"], cwd="vendor/SDL", check=True)
     if system() == "Window":
-        shutil.copyfile("vendor/SDL/Release/SDL3.dll", "SDL3.dll")
+        shutil.copyfile("vendor/SDL/SDL3.dll", "SDL3.dll")
 
 
 def _build() -> None:

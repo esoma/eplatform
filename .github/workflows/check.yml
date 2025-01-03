@@ -48,6 +48,9 @@ jobs:
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
 
+    - name: Install ninja
+      uses: seanmiddleditch/gha-setup-ninja@v5
+
     - name: Install
       run: |
         poetry install
