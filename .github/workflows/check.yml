@@ -54,11 +54,9 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
 
-    - name: Install Windows
+    - name: Install
       run: |
         poetry install
-      env:
-        CC: cl
 
     - name: Test
       if: runner.os != 'Linux'
