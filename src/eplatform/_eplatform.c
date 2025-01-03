@@ -341,14 +341,7 @@ set_clipboard(PyObject *module, PyObject *py_str)
     Py_ssize_t str_size;
     const char *str = PyUnicode_AsUTF8AndSize(py_str, &str_size);
     if (!str){ goto error; }
-    /*if (str_size == 0)
-    {
-        if (!SDL_ClearClipboardData()){ RAISE_SDL_ERROR(); }
-    }
-    else*/
-    {
-        if (!SDL_SetClipboardText(str)){ RAISE_SDL_ERROR(); }
-    }
+    if (!SDL_SetClipboardText(str)){ RAISE_SDL_ERROR(); }
     Py_RETURN_NONE;
 error:
     return 0;
