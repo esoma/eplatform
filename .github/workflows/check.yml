@@ -58,7 +58,6 @@ jobs:
         arch: ${{ matrix.arch }}
 
     - name: Install Windows
-      shell: pwsh
       run: |
         poetry install
       env:
