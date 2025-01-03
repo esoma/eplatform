@@ -1,3 +1,8 @@
+# python
+import os
+
+os.add_dll_directory(os.getcwd())
+
 # eplatform
 from eplatform import Platform
 from eplatform import get_color_bits
