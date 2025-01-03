@@ -48,7 +48,7 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.version }}
+        python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.arch }}
 
     - name: Install Poetry
