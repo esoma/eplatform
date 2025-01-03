@@ -52,13 +52,13 @@ jobs:
       if: runner.os == 'Windows'
       uses: microsoft/setup-msbuild@v2
 
-    #- name: Build SDL3 Windows
-    #  working-directory: vendor/SDL
-    #  if: runner.os == 'Windows'
-    #  shell: pwsh
-    #  run: |
-    #    cmake . -D CMAKE_SYSTEM_VERSION=10.0.26100.0
-    #    msbuild SDL3-shared.vcxproj /p:Configuration=Release
+    - name: Build SDL3 Windows
+      working-directory: vendor/SDL
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        cmake . -D CMAKE_SYSTEM_VERSION=10.0.26100.0
+        msbuild SDL3-shared.vcxproj /p:Configuration=Release
     #    cp Release/SDL3.dll ../../SDL3.dll
 
     - name: Install
