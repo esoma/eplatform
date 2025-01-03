@@ -33,7 +33,7 @@ if system() == "Windows":
 elif system() == "Darwin":
     pass
 else:
-    pass
+    libraries.append("SDL3")
 
 _eplatform = Extension(
     "eplatform._eplatform",

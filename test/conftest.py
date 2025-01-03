@@ -1,7 +1,8 @@
 # python
 import os
 
-os.add_dll_directory(os.getcwd())
+if hasattr(os, "add_dll_directory"):
+    os.add_dll_directory(os.getcwd())
 
 # eplatform
 from eplatform import EventLoop

@@ -258,6 +258,10 @@ create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
     {
         RAISE_SDL_ERROR();
     }
+    if (!SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1))
+    {
+        RAISE_SDL_ERROR();
+    }
     static const int gl_versions[][2] = {
         {4, 6},
         {4, 5},
@@ -316,12 +320,12 @@ error:
 static PyObject *
 get_gl_attrs(PyObject *module, PyObject *unused)
 {
-    int red;
-    int green;
-    int blue;
-    int alpha;
-    int depth;
-    int stencil;
+    int red = 0;
+    int green = 0;
+    int blue = 0;
+    int alpha = 0;
+    int depth = 0;
+    int stencil = 0;
 
     if (!SDL_GL_GetAttribute(SDL_GL_RED_SIZE, &red)){ RAISE_SDL_ERROR(); }
     if (!SDL_GL_GetAttribute(SDL_GL_GREEN_SIZE, &green)){ RAISE_SDL_ERROR(); }
@@ -605,8 +609,8 @@ static PyMethodDef module_PyMethodDef[] = {
     {"clear_sdl_events", clear_sdl_events, METH_NOARGS, 0},
     {"push_sdl_event", (PyCFunction)push_sdl_event, METH_FASTCALL, 0},
     {"get_sdl_event", get_sdl_event, METH_NOARGS, 0},
-    {"show_cursor", get_clipboard, METH_NOARGS, 0},
-    {"hide_cursor", get_sdl_event, METH_NOARGS, 0},
+    {"show_cursor", show_cursor, METH_NOARGS, 0},
+    {"hide_cursor", hide_cursor, METH_NOARGS, 0},
     {0},
 };
 
