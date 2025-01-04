@@ -55,4 +55,4 @@ before-all = [
 before-all = [
     "brew install ninja",
 ]
-repair-wheel-command = "DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH && delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
+repair-wheel-command = ""
