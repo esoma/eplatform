@@ -47,7 +47,7 @@ before-all = "apk add ninja-build"
 
 [tool.cibuildwheel.windows]
 before-all = [
-    "winget install Ninja-build.Ninja",
+    "choco install ninja",
 ]
 
 [tool.cibuildwheel.macos]
