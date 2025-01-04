@@ -6,6 +6,10 @@ name = "eplatform"
 version = "0.7.0"
 description = "Operating System Library"
 authors = ["Erik Soma <stillusingirc@gmail.com>"]
+include = [
+    {path = "src/eplatform/*.so", format = "wheel"},
+    {path = "src/eplatform/*.pyd", format = "wheel"},
+]
 
 [tool.poetry.build]
 generate-setup-file = false
