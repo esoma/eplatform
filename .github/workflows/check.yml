@@ -71,7 +71,7 @@ jobs:
     - name: Test Mac
       if: runner.os == 'macOS'
       run: |
-        export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
+        export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
         poetry run pytest --cov=eplatform --cov-report=xml
       env:

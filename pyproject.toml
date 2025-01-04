@@ -6,6 +6,10 @@ name = "eplatform"
 version = "0.7.0"
 description = "Operating System Library"
 authors = ["Erik Soma <stillusingirc@gmail.com>"]
+include = [
+    {path = "src/eplatform/*.so", format = "wheel"},
+    {path = "src/eplatform/*.pyd", format = "wheel"},
+]
 
 [tool.poetry.build]
 generate-setup-file = false
@@ -31,3 +35,24 @@ in-project = true
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install ninja-build -y",
+]
+repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.0' {wheel}"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = "apk add samurai"
+
+[tool.cibuildwheel.windows]
+before-all = [
+    "choco install ninja",
+]
+
+[tool.cibuildwheel.macos]
+before-all = [
+    "brew install ninja",
+]
+repair-wheel-command = ""
