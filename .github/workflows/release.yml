@@ -27,6 +27,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install ninja
+      uses: seanmiddleditch/gha-setup-ninja@v5
+
     - name: Initialize Submodules
       run: |
         git submodule update --init --recursive
