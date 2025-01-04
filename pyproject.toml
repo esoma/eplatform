@@ -44,7 +44,7 @@ repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.0'
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
-before-all = "apk add ninja-build"
+before-all = "apk add samurai"
 
 [tool.cibuildwheel.windows]
 before-all = [
