@@ -69,11 +69,11 @@ jobs:
     - name: Test with Xvfb
       if: runner.os == 'Linux'
       run: |
+        export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
         xvfb-run -a poetry run python .github/info.py
         xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
-        LD_LIBRARY_PATH: ${{ inputs.working_directory }}/vendor/SDL
 
     - name: Codecov
       uses: codecov/codecov-action@v5
