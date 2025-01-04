@@ -32,6 +32,11 @@ in-project = true
 venvPath = "."
 venv = ".venv"
 
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install ninja-build -y",
+]
+
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
-before-all = "apk add mesa-gl glu-dev"
+before-all = "apk add ninja-build"
