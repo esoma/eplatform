@@ -5,6 +5,7 @@
 *.pyc
 *.pyd
 *.egg-info
+*.whl
 build/
 dist/
 
