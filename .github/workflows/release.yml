@@ -43,6 +43,8 @@ jobs:
 
     - name: Build Wheels
       uses: pypa/cibuildwheel@v2.19.2
+      env:
+        CIBW_ARGS: native
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'
