@@ -30,10 +30,12 @@ extra_link_args: list[str] = []
 define_macros: list[tuple[str, None]] = []
 if system() == "Windows":
     libraries.append("SDL3")
+    library_dirs.append("vendor/SDL")
 elif system() == "Darwin":
     pass
 else:
     libraries.append("SDL3")
+    library_dirs.append("vendor/SDL")
 
 _eplatform = Extension(
     "eplatform._eplatform",
@@ -61,9 +63,6 @@ def _build_sdl() -> None:
         check=True,
     )
     subprocess.run(["cmake", "--build", ".", "--config", "Release"], cwd="vendor/SDL", check=True)
-    if system() == "Windows":
-        shutil.copyfile("vendor/SDL/SDL3.dll", "SDL3.dll")
-        shutil.copyfile("vendor/SDL/SDL3.lib", "SDL3.lib")
 
 
 def _build() -> None:
