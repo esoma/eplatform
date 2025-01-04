@@ -1,3 +1,6 @@
+[project]
+requires-python = ">=3.12"
+
 [tool.poetry]
 name = "eplatform"
 version = "0.6.0"
