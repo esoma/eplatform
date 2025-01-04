@@ -40,3 +40,13 @@ before-all = [
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
 before-all = "apk add ninja-build"
+
+[tool.cibuildwheel.windows]
+before-all = [
+    "winget install Ninja-build.Ninja",
+]
+
+[tool.cibuildwheel.macos]
+before-all = [
+    "brew install ninja",
+]
