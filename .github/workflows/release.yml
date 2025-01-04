@@ -41,6 +41,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
         architecture: ${{ matrix.arch }}
 
+    - name: Setup MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch }}
+
     - name: Build Wheels
       uses: pypa/cibuildwheel@v2.19.2
       env:
