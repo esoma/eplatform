@@ -1,22 +1,10 @@
-from __future__ import annotations
-
-__all__ = ["Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyName", "KeyboardTextInput"]
+__all__ = ["Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyName"]
 
 # eevent
 from eevent import Event
 
-# egeometry
-from egeometry import IRectangle
-
-# pysdl2
-from sdl2 import SDL_Rect
-from sdl2 import SDL_SetTextInputRect
-from sdl2 import SDL_StartTextInput
-from sdl2 import SDL_StopTextInput
-
 # python
-from contextlib import contextmanager
-from typing import Generator
+from inspect import get_annotations
 from typing import Literal
 from typing import TypeAlias
 from typing import TypedDict
@@ -104,26 +92,18 @@ KeyboardKeyName: TypeAlias = Literal[
     "thousands_separator",
     "again",
     "alt_erase",
-    "start_application_1",
-    "start_application_2",
     "context_menu",
     "backspace",
-    "brightness_down",
-    "brightness_up",
-    "calculator",
     "cancel",
     "capslock",
     "clear",
     "clear_again",
-    "computer",
     "copy",
     "crsel",
     "currency_sub_unit",
     "currency_unit",
     "cut",
     "delete",
-    "display_switch",
-    "eject",
     "end",
     "escape",
     "execute",
@@ -132,15 +112,10 @@ KeyboardKeyName: TypeAlias = Literal[
     "help",
     "home",
     "insert",
-    "keyboard_illumination_down",
-    "keyboard_illumination_toggle",
-    "keyboard_illumination_up",
     "left_alt",
     "left_control",
     "left_special",
     "left_shift",
-    "mail",
-    "media_select",
     "menu",
     "mode",
     "mute",
@@ -167,14 +142,14 @@ KeyboardKeyName: TypeAlias = Literal[
     "undo",
     "volume_down",
     "volume_up",
-    "www",
-    "audio_fast_forward",
-    "audio_mute",
-    "audio_next",
-    "audio_play",
-    "audio_previous",
-    "audio_rewind",
-    "audio_stop",
+    "media_eject",
+    "media_fast_forward",
+    "media_next_track",
+    "media_play",
+    "media_previous_track",
+    "media_rewind",
+    "media_select",
+    "media_stop",
     "ac_back",
     "ac_bookmarks",
     "ac_forward",
@@ -363,26 +338,18 @@ class Keyboard:
     thousands_separator: KeyboardKey
     again: KeyboardKey
     alt_erase: KeyboardKey
-    start_application_1: KeyboardKey
-    start_application_2: KeyboardKey
     context_menu: KeyboardKey
     backspace: KeyboardKey
-    brightness_down: KeyboardKey
-    brightness_up: KeyboardKey
-    calculator: KeyboardKey
     cancel: KeyboardKey
     capslock: KeyboardKey
     clear: KeyboardKey
     clear_again: KeyboardKey
-    computer: KeyboardKey
     copy: KeyboardKey
     crsel: KeyboardKey
     currency_sub_unit: KeyboardKey
     currency_unit: KeyboardKey
     cut: KeyboardKey
     delete: KeyboardKey
-    display_switch: KeyboardKey
-    eject: KeyboardKey
     end: KeyboardKey
     escape: KeyboardKey
     execute: KeyboardKey
@@ -391,15 +358,10 @@ class Keyboard:
     help: KeyboardKey
     home: KeyboardKey
     insert: KeyboardKey
-    keyboard_illumination_down: KeyboardKey
-    keyboard_illumination_toggle: KeyboardKey
-    keyboard_illumination_up: KeyboardKey
     left_alt: KeyboardKey
     left_control: KeyboardKey
     left_special: KeyboardKey
     left_shift: KeyboardKey
-    mail: KeyboardKey
-    media_select: KeyboardKey
     menu: KeyboardKey
     mode: KeyboardKey
     mute: KeyboardKey
@@ -426,14 +388,14 @@ class Keyboard:
     undo: KeyboardKey
     volume_down: KeyboardKey
     volume_up: KeyboardKey
-    www: KeyboardKey
-    audio_fast_forward: KeyboardKey
-    audio_mute: KeyboardKey
-    audio_next: KeyboardKey
-    audio_play: KeyboardKey
-    audio_previous: KeyboardKey
-    audio_rewind: KeyboardKey
-    audio_stop: KeyboardKey
+    media_eject: KeyboardKey
+    media_fast_forward: KeyboardKey
+    media_next_track: KeyboardKey
+    media_play: KeyboardKey
+    media_previous_track: KeyboardKey
+    media_rewind: KeyboardKey
+    media_select: KeyboardKey
+    media_stop: KeyboardKey
     ac_back: KeyboardKey
     ac_bookmarks: KeyboardKey
     ac_forward: KeyboardKey
@@ -528,11 +490,9 @@ class Keyboard:
     def __init__(self) -> None:
         for key_name in get_args(KeyboardKeyName):
             setattr(self, key_name, KeyboardKey(key_name))
-
         self.key_changed: Event[KeyboardKeyChanged] = Event()
         self.key_pressed: Event[KeyboardKeyChanged] = Event()
         self.key_released: Event[KeyboardKeyChanged] = Event()
-        self.text_input: Event[KeyboardTextInput] = Event()
 
     def change_key(self, name: KeyboardKeyName, is_pressed: bool) -> None:
         key: KeyboardKey = getattr(self, name)
@@ -547,33 +507,16 @@ class Keyboard:
             self.key_released(data)
             key.released(data)
 
-    def input_text(self, text: str) -> None:
-        self.text_input({"text": text})
-
-    def start_input(self, rect: IRectangle) -> None:
-        sdl_rect = SDL_Rect()
-        sdl_rect.x = rect.position.x
-        sdl_rect.y = rect.position.y
-        sdl_rect.w = rect.size.x
-        sdl_rect.h = rect.size.y
-
-        SDL_SetTextInputRect(sdl_rect)
-        SDL_StartTextInput()
-
-    def stop_input(self) -> None:
-        SDL_StopTextInput()
-
-    @contextmanager
-    def input(self, rect: IRectangle) -> Generator[None, None, None]:
-        self.start_input(rect)
-        yield
-        self.stop_input()
-
 
 class KeyboardKeyChanged(TypedDict):
     key: KeyboardKey
     is_pressed: bool
 
 
-class KeyboardTextInput(TypedDict):
-    text: str
+if __debug__:
+    _key_names = set(get_args(KeyboardKeyName))
+    _class_names = {n for n, v in get_annotations(Keyboard).items() if v is KeyboardKey}
+    _extra_key_names = _key_names - _class_names
+    assert not _extra_key_names, _extra_key_names
+    _extra_class_names = _class_names - _key_names
+    assert not _extra_class_names, _extra_class_names

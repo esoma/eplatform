@@ -10,9 +10,6 @@ on:
 jobs:
   test:
 
-    defaults:
-      run:
-        shell: bash
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -20,19 +17,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.12']
-        python-arch: [x64]
+        arch: [x64]
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python ${{ matrix.python-version }}-${{ matrix.python-arch }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-        architecture: ${{ matrix.python-arch }}
-
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
+    - name: Initialize Submodules
+      run: |
+        git submodule update --init --recursive
 
     - name: Install Mesa Linux
       if: runner.os == 'Linux'
@@ -44,24 +36,60 @@ jobs:
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
 
+    - name: Install ninja
+      uses: seanmiddleditch/gha-setup-ninja@v5
+
+    - name: Setup MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch }}
+
+    - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.arch }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1.3.2
+
     - name: Install
       run: |
         poetry install
+      env:
+        EPLATFORM_BUILD_WITH_COVERAGE: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
 
-    - name: Test
-      if: runner.os != 'Linux'
+    - name: Test Window
+      if: runner.os == 'Windows'
       run: |
         poetry run python .github/info.py
         poetry run pytest --cov=eplatform --cov-report=xml
+      env:
+        LIBGL_ALWAYS_SOFTWARE: "true"
 
-    - name: Test with Xvfb
+    - name: Test Mac
+      if: runner.os == 'macOS'
+      run: |
+        export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
+        poetry run python .github/info.py
+        poetry run pytest --cov=eplatform --cov-report=xml
+      env:
+        LIBGL_ALWAYS_SOFTWARE: "true"
+
+    - name: Test Linux
       if: runner.os == 'Linux'
       run: |
+        export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
         xvfb-run -a poetry run python .github/info.py
         xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
+      env:
+        LIBGL_ALWAYS_SOFTWARE: "true"
 
     - name: Codecov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v5
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 
   static-analysis:

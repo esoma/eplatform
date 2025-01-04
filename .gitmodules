@@ -1,0 +1,6 @@
+[submodule "vendor/SDL"]
+	path = vendor/SDL
+	url = https://github.com/libsdl-org/SDL
+[submodule "vendor/emath"]
+	path = vendor/emath
+	url = https://github.com/esoma/emath
