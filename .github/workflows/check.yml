@@ -52,9 +52,7 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Install Poetry
-      uses: snok/install-poetry@v1.4.1
-      with:
-        virtualenvs-in-project: true
+      uses: snok/install-poetry@v1.3.2
 
     - name: Install
       run: |
