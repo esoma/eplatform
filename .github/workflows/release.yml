@@ -29,6 +29,8 @@ jobs:
         arch: [x86, x64]
 
         exclude:
+          - os: ubuntu-latest
+            arch: x86
           - os: macos-13
             arch: x86
           - os: macos-14
@@ -53,10 +55,23 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
 
+    - name: Setup Build Env
+      if: runner.os != 'Windows'
+      run: |
+        export CIBW_ARCHS=native
+
+    - name: Setup Build Env (Windows x86)
+      if: runner.os != 'Windows' && matrix.arch == 'x86'
+      run: |
+        set CIBW_ARCHS=x86
+
+    - name: Setup Build Env (Windows x64)
+      if: runner.os != 'Windows' && matrix.arch == 'x64'
+      run: |
+        set CIBW_ARCHS=AMD64
+
     - name: Build Wheels
       uses: pypa/cibuildwheel@v2.19.2
-      env:
-        CIBW_ARCHS: native
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'
