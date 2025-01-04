@@ -63,4 +63,5 @@ def _build() -> None:
 
 
 if __name__ == "__main__":
-    _build()
+    if os.environ.get("EPLATFORM_BUILD_EXTENSION", "1") == "1":
+        _build()
