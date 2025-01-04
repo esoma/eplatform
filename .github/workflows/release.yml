@@ -44,6 +44,23 @@ jobs:
     - name: Install ninja
       uses: seanmiddleditch/gha-setup-ninja@v5
 
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install build-essential git make \
+          pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+          libaudio-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+          libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev \
+          libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+          libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev fcitx-libs-dev
+
+    - name: Setup MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ matrix.arch }}
+
     - name: Install Poetry
       uses: snok/install-poetry@v1.3.2
 
