@@ -8,7 +8,17 @@ __all__ = [
     "WindowDestroyedError",
 ]
 
-# eplatform
+from contextlib import contextmanager
+from enum import Enum
+from typing import Generator
+from typing import TypedDict
+
+from eevent import Event
+from egeometry import IRectangle
+from emath import FMatrix4
+from emath import FVector4
+from emath import IVector2
+
 from ._eplatform import center_sdl_window
 from ._eplatform import create_sdl_window
 from ._eplatform import delete_sdl_window
@@ -19,23 +29,6 @@ from ._eplatform import set_sdl_window_size
 from ._eplatform import show_sdl_window
 from ._eplatform import swap_sdl_window
 from ._type import SdlWindow
-
-# eevent
-from eevent import Event
-
-# egeometry
-from egeometry import IRectangle
-
-# emath
-from emath import FMatrix4
-from emath import FVector4
-from emath import IVector2
-
-# python
-from contextlib import contextmanager
-from enum import Enum
-from typing import Generator
-from typing import TypedDict
 
 
 class WindowBufferSynchronization(Enum):

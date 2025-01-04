@@ -1,6 +1,12 @@
 # eplatform
-from eplatform import MouseButton
-from eplatform import MouseButtonName
+# python
+from typing import get_args
+from unittest.mock import MagicMock
+from unittest.mock import PropertyMock
+from unittest.mock import patch
+
+# pytest
+import pytest
 
 # eevent
 from eevent import Event
@@ -9,14 +15,8 @@ from eevent import Event
 from emath import FMatrix4
 from emath import IVector2
 
-# pytest
-import pytest
-
-# python
-from typing import get_args
-from unittest.mock import MagicMock
-from unittest.mock import PropertyMock
-from unittest.mock import patch
+from eplatform import MouseButton
+from eplatform import MouseButtonName
 
 
 def test_attrs(mouse, window):

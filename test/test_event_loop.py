@@ -1,19 +1,19 @@
 # eplatform
+# python
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
+# pytest
+import pytest
+
+# emath
+from emath import IVector2
+
 from eplatform import EventLoop
 from eplatform import _eplatform
 from eplatform._eplatform import clear_sdl_events
 from eplatform._eplatform import push_sdl_event
 from eplatform._event_loop import _Selector
-
-# emath
-from emath import IVector2
-
-# pytest
-import pytest
-
-# python
-from unittest.mock import MagicMock
-from unittest.mock import patch
 
 
 @pytest.fixture

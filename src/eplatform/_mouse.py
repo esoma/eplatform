@@ -10,21 +10,16 @@ __all__ = [
     "MouseScrolledDirection",
 ]
 
-# eplatform
-from ._eplatform import hide_cursor
-from ._eplatform import show_cursor
-from ._platform import get_window
-
-# eevent
-from eevent import Event
-
-# emath
-from emath import IVector2
-
-# python
 from typing import Literal
 from typing import TypeAlias
 from typing import TypedDict
+
+from eevent import Event
+from emath import IVector2
+
+from ._eplatform import hide_cursor
+from ._eplatform import show_cursor
+from ._platform import get_window
 
 MouseButtonName: TypeAlias = Literal["left", "right", "middle", "forward", "back"]
 

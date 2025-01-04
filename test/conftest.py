@@ -5,17 +5,17 @@ if hasattr(os, "add_dll_directory"):
     os.add_dll_directory(os.getcwd() + "/vendor/SDL")
 
 # eplatform
+# python
+import asyncio
+
+# pytest
+import pytest
+
 from eplatform import EventLoop
 from eplatform import Platform
 from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_window
-
-# pytest
-import pytest
-
-# python
-import asyncio
 
 
 @pytest.fixture(autouse=True)

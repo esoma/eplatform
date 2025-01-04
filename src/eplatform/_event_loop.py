@@ -1,6 +1,16 @@
 __all__ = ["EventLoop"]
 
-# eplatform
+from asyncio import SelectorEventLoop
+from selectors import SelectSelector
+from time import time
+from typing import Any
+from typing import Callable
+from typing import Final
+from typing import Mapping
+from typing import get_args
+
+from emath import IVector2
+
 from . import _eplatform
 from ._eplatform import get_sdl_event
 from ._keyboard import KeyboardKeyName
@@ -11,19 +21,6 @@ from ._platform import get_window
 from ._type import SdlEventType
 from ._type import SdlMouseButton
 from ._type import SdlScancode
-
-# emath
-from emath import IVector2
-
-# python
-from asyncio import SelectorEventLoop
-from selectors import SelectSelector
-from time import time
-from typing import Any
-from typing import Callable
-from typing import Final
-from typing import Mapping
-from typing import get_args
 
 
 class EventLoop(SelectorEventLoop):

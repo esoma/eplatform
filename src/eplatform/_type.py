@@ -1,6 +1,5 @@
 __all__ = ["SdlEventType", "SdlGlContext", "SdlMouseButton", "SdlScancode", "SdlWindow"]
 
-# python
 from typing import NewType
 
 SdlGlContext = NewType("SdlGlContext", object)

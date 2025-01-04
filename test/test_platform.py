@@ -1,4 +1,10 @@
 # eplatform
+# python
+from unittest.mock import Mock
+
+# pytest
+import pytest
+
 from eplatform import Keyboard
 from eplatform import Mouse
 from eplatform import Platform
@@ -11,12 +17,6 @@ from eplatform import get_mouse
 from eplatform import get_stencil_bits
 from eplatform import get_window
 from eplatform import set_clipboard
-
-# pytest
-import pytest
-
-# python
-from unittest.mock import Mock
 
 
 def test_platform_already_active(platform):

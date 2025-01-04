@@ -12,7 +12,12 @@ __all__ = [
     "set_clipboard",
 ]
 
-# eplatform
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Callable
+from typing import ClassVar
+from typing import Self
+
 from ._eplatform import create_sdl_gl_context
 from ._eplatform import deinitialize_sdl
 from ._eplatform import delete_sdl_gl_context
@@ -22,15 +27,7 @@ from ._eplatform import initialize_sdl
 from ._eplatform import set_clipboard as _set_clipboard
 from ._keyboard import Keyboard
 
-# python
-from typing import Any
-from typing import Callable
-from typing import ClassVar
-from typing import Self
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
-    # eplatform
     from ._mouse import Mouse
     from ._window import Window
 
@@ -54,7 +51,6 @@ class Platform:
         keyboard_cls: type[Keyboard] | None = None,
     ) -> None:
         if window_cls is None:
-            # eplatform
             from ._window import Window
 
             self._window_cls = Window
@@ -62,7 +58,6 @@ class Platform:
             self._window_cls = window_cls
 
         if mouse_cls is None:
-            # eplatform
             from ._mouse import Mouse
 
             self._mouse_cls = Mouse
@@ -102,7 +97,6 @@ class Platform:
     def _setup_open_gl(self) -> None:
         assert self._window is not None
 
-        # eplatform
         from ._window import get_sdl_window
 
         sdl_window = get_sdl_window(self._window)

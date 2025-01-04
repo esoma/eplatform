@@ -28,7 +28,6 @@ __all__ = [
     "WindowTextInputted",
 ]
 
-# eplatform
 from ._event_loop import EventLoop
 from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey

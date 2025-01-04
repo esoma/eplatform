@@ -1,7 +1,10 @@
 # eplatform
-from eplatform import Window
-from eplatform import WindowBufferSynchronization
-from eplatform import WindowDestroyedError
+# python
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
+# pytest
+import pytest
 
 # egeometry
 from egeometry import IRectangle
@@ -10,12 +13,9 @@ from egeometry import IRectangle
 from emath import FMatrix4
 from emath import IVector2
 
-# pytest
-import pytest
-
-# python
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from eplatform import Window
+from eplatform import WindowBufferSynchronization
+from eplatform import WindowDestroyedError
 
 
 @patch("eplatform._window.create_sdl_window")
@@ -112,31 +112,19 @@ def test_refresh(window, synchronization: WindowBufferSynchronization) -> None:
 @pytest.mark.parametrize(
     "transform, screen_coordinate, expected_world_coordinate",
     [
-        (
-            FMatrix4.orthographic(0, 100, 100, 0, -1000, 1000).inverse(),
-            IVector2(0),
-            IVector2(0),
-        ),
+        (FMatrix4.orthographic(0, 100, 100, 0, -1000, 1000).inverse(), IVector2(0), IVector2(0)),
         (
             FMatrix4.orthographic(0, 100, 100, 0, -1000, 1000).inverse(),
             IVector2(10, 20),
             IVector2(5, 10),
         ),
-        (
-            FMatrix4.orthographic(0, 200, 200, 0, -1000, 1000).inverse(),
-            IVector2(0),
-            IVector2(0),
-        ),
+        (FMatrix4.orthographic(0, 200, 200, 0, -1000, 1000).inverse(), IVector2(0), IVector2(0)),
         (
             FMatrix4.orthographic(0, 200, 200, 0, -1000, 1000).inverse(),
             IVector2(10, 20),
             IVector2(10, 20),
         ),
-        (
-            FMatrix4.orthographic(0, 400, 400, 0, -1000, 1000).inverse(),
-            IVector2(0),
-            IVector2(0),
-        ),
+        (FMatrix4.orthographic(0, 400, 400, 0, -1000, 1000).inverse(), IVector2(0), IVector2(0)),
         (
             FMatrix4.orthographic(0, 400, 400, 0, -1000, 1000).inverse(),
             IVector2(10, 20),

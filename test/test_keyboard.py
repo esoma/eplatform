@@ -1,18 +1,18 @@
 # eplatform
-from eplatform import Keyboard
-from eplatform import KeyboardKey
-from eplatform import KeyboardKeyName
-
-# eevent
-from eevent import Event
-
-# pytest
-import pytest
-
 # python
 from typing import get_args
 from unittest.mock import MagicMock
 from unittest.mock import patch
+
+# pytest
+import pytest
+
+# eevent
+from eevent import Event
+
+from eplatform import Keyboard
+from eplatform import KeyboardKey
+from eplatform import KeyboardKeyName
 
 
 def test_attrs(keyboard):

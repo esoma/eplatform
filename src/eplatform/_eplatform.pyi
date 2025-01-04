@@ -1,17 +1,12 @@
-__all__ = [
-    "center_sdl_window",
-    "create_sdl_window",
-]
+__all__ = ["center_sdl_window", "create_sdl_window"]
 
-# eplatform
+from emath import IVector2
+
 from ._type import SdlEventType
 from ._type import SdlGlContext
 from ._type import SdlMouseButton
 from ._type import SdlScancode
 from ._type import SdlWindow
-
-# emath
-from emath import IVector2
 
 # sdl core
 def initialize_sdl() -> None: ...

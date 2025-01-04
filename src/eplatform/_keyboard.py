@@ -1,14 +1,12 @@
 __all__ = ["Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyName"]
 
-# eevent
-from eevent import Event
-
-# python
 from inspect import get_annotations
 from typing import Literal
 from typing import TypeAlias
 from typing import TypedDict
 from typing import get_args
+
+from eevent import Event
 
 KeyboardKeyName: TypeAlias = Literal[
     "zero",
