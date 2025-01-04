@@ -74,7 +74,7 @@ jobs:
         pipx install auditwheel
         WHEEL="$(ls dist)"
         export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
-        pipx run auditwheel repair $WHEEL
+        pipx run audiwheel repair $WHEEL
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'
