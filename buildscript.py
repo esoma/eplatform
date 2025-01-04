@@ -24,28 +24,14 @@ if os.environ.get("EPLATFORM_BUILD_WITH_COVERAGE", "0") == "1":
     _coverage_compile_args = ["-fprofile-arcs", "-ftest-coverage", "-O0"]
     _coverage_links_args = ["-fprofile-arcs"]
 
-libraries: list[str] = []
-library_dirs: list[str] = []
-extra_link_args: list[str] = []
-define_macros: list[tuple[str, None]] = []
-if system() == "Windows":
-    libraries.append("SDL3")
-    library_dirs.append("vendor/SDL")
-elif system() == "Darwin":
-    pass
-else:
-    libraries.append("SDL3")
-    library_dirs.append("vendor/SDL")
-
 _eplatform = Extension(
     "eplatform._eplatform",
-    library_dirs=library_dirs,
-    libraries=libraries,
+    library_dirs=["vendor/SDL"],
+    libraries=["SDL3"],
     include_dirs=["src/eplatform", "vendor/SDL/include", "vendor/emath/include"],
     sources=["src/eplatform/_eplatform.c"],
     extra_compile_args=_coverage_compile_args,
-    extra_link_args=_coverage_links_args + extra_link_args,
-    define_macros=define_macros,
+    extra_link_args=_coverage_links_args,
 )
 
 
