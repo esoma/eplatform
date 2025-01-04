@@ -2,6 +2,10 @@
 name: release
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
   release:
     types: [created]
 
@@ -27,9 +31,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install ninja
-      uses: seanmiddleditch/gha-setup-ninja@v5
-
     - name: Initialize Submodules
       run: |
         git submodule update --init --recursive
@@ -44,6 +45,7 @@ jobs:
       uses: pypa/cibuildwheel@v2.19.2
 
     - name: Upload Github Wheel Release Artifact
+      if: event_name == 'release'
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -52,6 +54,7 @@ jobs:
         tag: ${{ github.ref }}
 
     - name: Upload Wheels to PyPi
+      if: event_name == 'release'
       run: |
         pipx run twine upload wheelhouse/* --skip-existing
       env:
@@ -65,7 +68,7 @@ jobs:
         pipx run build --sdist
 
     - name: Upload Github Wheel Source Artifact
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' && event_name == 'release'
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -74,7 +77,7 @@ jobs:
         tag: ${{ github.ref }}
 
     - name: Upload Source to PyPi
-      if: runner.os == 'Linux'
+      if: runner.os == 'Linux' && event_name == 'release'
       run: |
         pipx run twine upload dist/* --skip-existing
       env:

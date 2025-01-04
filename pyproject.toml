@@ -31,3 +31,7 @@ in-project = true
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+[[tool.cibuildwheel.overrides]]
+select = "*-musllinux*"
+before-all = "apk add mesa-gl glu-dev"
