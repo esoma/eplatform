@@ -40,7 +40,7 @@ venv = ".venv"
 before-all = [
     "yum install ninja-build -y",
 ]
-repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.*' {wheel}"
+repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.0' {wheel}"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
