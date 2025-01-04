@@ -64,9 +64,17 @@ jobs:
     - name: Install Poetry
       uses: snok/install-poetry@v1.3.2
 
-    - name: Install
+    - name: Build
       run: |
         poetry build
+
+    - name: Repair Wheel (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        pipx install auditwheel
+        WHEEL="$(ls dist)"
+        export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
+        pipx run audiwheel repair $WHEEL
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'
