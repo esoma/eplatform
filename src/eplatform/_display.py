@@ -111,6 +111,8 @@ class Display:
 
     @property
     def is_primary(self) -> bool:
+        if not self.is_connected:
+            raise DisplayDisconnectedError()
         return self.bounds.position == IVector2(0)
 
     @property
@@ -163,11 +165,8 @@ def connect_display(sdl_display: SdlDisplayId) -> None:
         display_modes,
     ) = get_sdl_display_details(sdl_display)
 
-    try:
-        display = _displays[sdl_display]
-        display._sdl_display = sdl_display
-    except KeyError:
-        _displays[sdl_display] = display = Display()
+    assert sdl_display not in _displays
+    _displays[sdl_display] = display = Display()
 
     display._sdl_display = sdl_display
     display._name = display_name

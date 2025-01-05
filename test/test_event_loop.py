@@ -806,7 +806,7 @@ def test_selector_handle_sdl_event_display_moved():
     change_display_position.assert_called_once_with(sdl_display, position)
 
 
-def _handle_sdl_event_current_mode_changed():
+def test_handle_sdl_event_current_mode_changed():
     sdl_display = MagicMock()
     size = MagicMock()
     refresh_rate = MagicMock()
@@ -817,4 +817,4 @@ def _handle_sdl_event_current_mode_changed():
     ):
         assert selector._handle_sdl_event_current_mode_changed(sdl_display, size, refresh_rate)
     change_display_size.assert_called_once_with(sdl_display, size)
-    change_display_size.assert_called_once_with(sdl_display, refresh_rate)
+    change_display_refresh_rate.assert_called_once_with(sdl_display, refresh_rate)

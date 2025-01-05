@@ -2,6 +2,9 @@ from __future__ import annotations
 
 __all__ = [
     "Display",
+    "DisplayDisconnectedError",
+    "DisplayMode",
+    "DisplayOrientation",
     "EventLoop",
     "get_clipboard",
     "get_color_bits",
@@ -31,6 +34,9 @@ __all__ = [
 ]
 
 from ._display import Display
+from ._display import DisplayDisconnectedError
+from ._display import DisplayMode
+from ._display import DisplayOrientation
 from ._event_loop import EventLoop
 from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey
