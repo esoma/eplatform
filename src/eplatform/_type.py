@@ -1,5 +1,6 @@
 __all__ = [
     "SdlDisplayId",
+    "SdlDisplayOrientation",
     "SdlEventType",
     "SdlGlContext",
     "SdlMouseButton",
@@ -15,3 +16,4 @@ SdlEventType = NewType("SdlEventType", int)
 SdlMouseButton = NewType("SdlMouseButton", int)
 SdlScancode = NewType("SdlScancode", int)
 SdlDisplayId = NewType("SdlDisplayId", int)
+SdlDisplayOrientation = NewType("SdlDisplayOrientation", int)

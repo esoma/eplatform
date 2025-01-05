@@ -13,6 +13,7 @@ from . import _eplatform
 from ._eplatform import get_sdl_display_details
 from ._eplatform import get_sdl_displays
 from ._type import SdlDisplayId
+from ._type import SdlDisplayOrientation
 
 
 class DisplayDisconnectedError(RuntimeError):
@@ -54,6 +55,26 @@ class DisplayConnectionChanged(TypedDict):
     is_connected: bool
 
 
+class DisplayOrientationChanged(TypedDict):
+    display: "Display"
+    orientation: DisplayOrientation
+
+
+class DisplayMoved(TypedDict):
+    display: "Display"
+    position: IVector2
+
+
+class DisplayResized(TypedDict):
+    display: "Display"
+    size: IVector2
+
+
+class DisplayRefreshRateChanged(TypedDict):
+    display: "Display"
+    refresh_rate: float
+
+
 class Display:
     _sdl_display: SdlDisplayId | None = None
     _name: str = ""
@@ -65,10 +86,18 @@ class Display:
     connection_changed: Event[DisplayConnectionChanged] = Event()
     connected: Event[DisplayConnectionChanged] = Event()
     disconnected: Event[DisplayConnectionChanged] = Event()
+    orientation_changed: Event[DisplayOrientationChanged] = Event()
+    moved: Event[DisplayMoved] = Event()
+    resized: Event[DisplayResized] = Event()
+    refresh_rate_changed: Event[DisplayRefreshRateChanged] = Event()
 
     def __init__(self) -> None:
         self.connection_changed = Event()
         self.disconnected = Event()
+        self.orientation_changed = Event()
+        self.moved = Event()
+        self.resized = Event()
+        self.refresh_rate_changed = Event()
 
     def __repr__(self) -> str:
         if self._sdl_display is None:
@@ -168,3 +197,41 @@ def discover_displays() -> None:
 def forget_displays() -> None:
     for display in list(_displays.keys()):
         disconnect_display(display)
+
+
+def change_display_orientation(
+    sdl_display: SdlDisplayId, sdl_display_orientation: SdlDisplayOrientation
+) -> None:
+    display = _displays[sdl_display]
+    display._orientation = DisplayOrientation(sdl_display_orientation)
+
+    data: DisplayOrientationChanged = {"display": display, "orientation": display._orientation}
+    Display.orientation_changed(data)
+    display.orientation_changed(data)
+
+
+def change_display_position(sdl_display: SdlDisplayId, position: IVector2) -> None:
+    display = _displays[sdl_display]
+    display._bounds = IRectangle(position, display._bounds.size)
+
+    data: DisplayMoved = {"display": display, "position": position}
+    Display.moved(data)
+    display.moved(data)
+
+
+def change_display_size(sdl_display: SdlDisplayId, size: IVector2) -> None:
+    display = _displays[sdl_display]
+    display._bounds = IRectangle(display._bounds.position, size)
+
+    data: DisplayResized = {"display": display, "size": size}
+    Display.resized(data)
+    display.resized(data)
+
+
+def change_display_refresh_rate(sdl_display: SdlDisplayId, refresh_rate: float) -> None:
+    display = _displays[sdl_display]
+    display._refresh_rate = refresh_rate
+
+    data: DisplayRefreshRateChanged = {"display": display, "refresh_rate": refresh_rate}
+    Display.refresh_rate_changed(data)
+    display.refresh_rate_changed(data)

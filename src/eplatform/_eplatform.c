@@ -410,7 +410,6 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
         case SDL_EVENT_MOUSE_WHEEL:
         {
             CHECK_UNEXPECTED_ARG_COUNT_ERROR(4);
-
             event.wheel.direction = SDL_MOUSEWHEEL_NORMAL;
             if (args[1] == Py_True)
             {
@@ -426,7 +425,6 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
         case SDL_EVENT_MOUSE_BUTTON_UP:
         {
             CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
-
             event.button.button = (Uint8)PyLong_AsLong(args[1]);
             CHECK_UNEXPECTED_PYTHON_ERROR();
             event.button.down = args[2] == Py_True;
@@ -436,7 +434,6 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
         case SDL_EVENT_KEY_UP:
         {
             CHECK_UNEXPECTED_ARG_COUNT_ERROR(4);
-
             event.key.scancode = PyLong_AsLong(args[1]);
             CHECK_UNEXPECTED_PYTHON_ERROR();
             event.key.down = args[2] == Py_True;
@@ -453,7 +450,6 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
         case SDL_EVENT_WINDOW_RESIZED:
         {
             CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
-
             event.window.data1 = PyLong_AsLong(args[1]);
             CHECK_UNEXPECTED_PYTHON_ERROR();
             event.window.data2 = PyLong_AsLong(args[2]);
@@ -464,6 +460,28 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
         case SDL_EVENT_DISPLAY_REMOVED:
         {
             CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+            event.display.displayID = PyLong_AsLong(args[1]);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            break;
+        }
+        case SDL_EVENT_DISPLAY_ORIENTATION:
+        {
+            CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
+            event.display.displayID = PyLong_AsLong(args[1]);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            event.display.data1 = PyLong_AsLong(args[2]);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            break;
+        }
+        case SDL_EVENT_DISPLAY_MOVED:
+        {
+            CHECK_UNEXPECTED_ARG_COUNT_ERROR(4);
+            event.display.displayID = PyLong_AsLong(args[1]);
+            break;
+        }
+        case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
+        {
+            CHECK_UNEXPECTED_ARG_COUNT_ERROR(5);
             event.display.displayID = PyLong_AsLong(args[1]);
             break;
         }
@@ -575,6 +593,65 @@ get_sdl_event(PyObject *module, PyObject *unused)
         case SDL_EVENT_DISPLAY_REMOVED:
         {
             return Py_BuildValue("(ii)", event.type, event.display.displayID);
+        }
+        case SDL_EVENT_DISPLAY_ORIENTATION:
+        {
+            return Py_BuildValue(
+                "(iii)",
+                event.type,
+                event.display.displayID,
+                event.display.data1
+            );
+        }
+        case SDL_EVENT_DISPLAY_MOVED:
+        {
+            SDL_Rect display_bounds;
+            if (!SDL_GetDisplayBounds(event.display.displayID, &display_bounds))
+            {
+                RAISE_SDL_ERROR();
+            }
+
+            emath_api = EMathApi_Get();
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+
+            const int position[2] = {display_bounds.x, display_bounds.y};
+            PyObject *py_position = emath_api->IVector2_Create(position);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+
+            EMathApi_Release();
+            emath_api = 0;
+
+            return Py_BuildValue("(iiO)", event.type, event.display.displayID, py_position);
+        }
+        case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
+        {
+            SDL_Rect display_bounds;
+            if (!SDL_GetDisplayBounds(event.display.displayID, &display_bounds))
+            {
+                RAISE_SDL_ERROR();
+            }
+            const SDL_DisplayMode *display_mode = SDL_GetCurrentDisplayMode(
+                event.display.displayID
+            );
+            if (!display_mode){ RAISE_SDL_ERROR(); }
+
+            emath_api = EMathApi_Get();
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+
+            const int size[2] = {display_bounds.w, display_bounds.h};
+            PyObject *py_size = emath_api->IVector2_Create(size);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+
+            EMathApi_Release();
+            emath_api = 0;
+
+            return Py_BuildValue(
+                "(iiOf)",
+                event.type,
+                event.display.displayID,
+                py_size,
+                display_mode->refresh_rate
+            );
         }
     }
 
@@ -775,6 +852,9 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_WINDOW_HIDDEN);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_ADDED);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_REMOVED);
+    ADD_CONSTANT(SDL_EVENT_DISPLAY_ORIENTATION);
+    ADD_CONSTANT(SDL_EVENT_DISPLAY_MOVED);
+    ADD_CONSTANT(SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED);
 
     ADD_CONSTANT(SDL_ORIENTATION_UNKNOWN);
     ADD_CONSTANT(SDL_ORIENTATION_LANDSCAPE);
