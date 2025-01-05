@@ -192,4 +192,7 @@ def set_clipboard(text: str) -> None:
 def get_displays() -> Generator[Display, None, None]:
     if Platform._singleton is None:
         raise RuntimeError("platform is not active")
-    yield from _get_displays()
+    for display in _get_displays():
+        if Platform._singleton is None:
+            raise RuntimeError("platform is not active")
+        yield display
