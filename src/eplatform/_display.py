@@ -1,4 +1,23 @@
-__all__ = ["Display", "discover_displays", "forget_displays", "get_displays"]
+__all__ = [
+    "change_display_orientation",
+    "change_display_position",
+    "change_display_refresh_rate",
+    "change_display_size",
+    "connect_display",
+    "disconnect_display",
+    "discover_displays",
+    "Display",
+    "DisplayConnectionChanged",
+    "DisplayDisconnectedError",
+    "DisplayMode",
+    "DisplayMoved",
+    "DisplayOrientation",
+    "DisplayOrientationChanged",
+    "DisplayRefreshRateChanged",
+    "DisplayResized",
+    "forget_displays",
+    "get_displays",
+]
 
 from enum import Enum
 from typing import Collection
