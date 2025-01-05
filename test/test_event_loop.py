@@ -1,16 +1,14 @@
-# eplatform
-# python
+import platform
+from contextlib import contextmanager
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-# pytest
 import pytest
-
-# emath
 from emath import IVector2
 
 from eplatform import EventLoop
 from eplatform import _eplatform
+from eplatform import get_displays
 from eplatform._eplatform import clear_sdl_events
 from eplatform._eplatform import push_sdl_event
 from eplatform._event_loop import _Selector
@@ -195,6 +193,202 @@ def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
 
 
 @pytest.mark.parametrize(
+    "event_type", [_eplatform.SDL_EVENT_DISPLAY_ADDED, _eplatform.SDL_EVENT_DISPLAY_REMOVED]
+)
+@pytest.mark.parametrize("sdl_display", [1, 100])
+def test_selector_poll_sdl_events_display_added_removed(platform, event_type, sdl_display):
+    selector = _Selector()
+    selector._poll_sdl_events()
+
+    clear_sdl_events()
+    push_sdl_event(event_type, sdl_display)
+    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
+        assert selector._poll_sdl_events()
+    handle_sdl_event.assert_called_once_with(event_type, sdl_display)
+
+
+@pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_DISPLAY_ORIENTATION])
+@pytest.mark.parametrize("sdl_display", [1, 100])
+@pytest.mark.parametrize("orientation", [2, 200])
+def test_selector_poll_sdl_events_display_orientation(
+    platform, event_type, sdl_display, orientation
+):
+    selector = _Selector()
+    selector._poll_sdl_events()
+
+    clear_sdl_events()
+    push_sdl_event(event_type, sdl_display, orientation)
+    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
+        assert selector._poll_sdl_events()
+    handle_sdl_event.assert_called_once_with(event_type, sdl_display, orientation)
+
+
+move_display = None
+
+if platform.system() == "Windows":
+
+    @contextmanager
+    def move_display(display, position):
+        import pywintypes
+        import win32api
+        import win32con
+
+        # find the windows display that matches the Display
+        i = -1
+        while True:
+            i += 1
+            try:
+                win_display = win32api.EnumDisplayDevices(None, i)
+            except pywintypes.error:
+                raise RuntimeError("unable to find display")
+            try:
+                win_display_settings = win32api.EnumDisplaySettingsEx(
+                    win_display.DeviceName, win32con.ENUM_CURRENT_SETTINGS
+                )
+            except pywintypes.error:
+                # display is not connected
+                continue
+            if (
+                display.bounds.position.x == win_display_settings.Position_x
+                and display.bounds.position.y == win_display_settings.Position_y
+            ):
+                break
+        original_x = win_display_settings.Position_x
+        original_y = win_display_settings.Position_y
+        win_display_settings.Position_x = position.x
+        win_display_settings.Position_y = position.y
+        win32api.ChangeDisplaySettingsEx(win_display.DeviceName, win_display_settings, 0)
+        try:
+            yield
+        finally:
+            win_display_settings.Position_x = original_x
+            win_display_settings.Position_y = original_y
+            win32api.ChangeDisplaySettingsEx(win_display.DeviceName, win_display_settings, 0)
+
+
+@pytest.mark.disruptive
+def test_selector_poll_sdl_events_display_moved(platform, capture_event):
+    # The SDL event does not contain the position of the display, we get it from the actual
+    # state of the system instead. This means we can't just send a mock event, we need to actually
+    # change the state of the system to test this event.
+
+    displays = tuple(get_displays())
+    if len(displays) < 2:
+        pytest.skip("test requires at least 2 displays")
+    if move_display is None:
+        pytest.skip("unable to move display on this system")
+
+    display_to_move = [d for d in displays if not d.is_primary][0]
+    other_displays = [d for d in displays if d is not display_to_move]
+    bottom_right_display = sorted(other_displays, key=lambda d: d.bounds.extent)[-1]
+    position = bottom_right_display.bounds.extent + IVector2(0, -1)
+
+    selector = _Selector()
+    clear_sdl_events()
+    with move_display(display_to_move, position):
+        with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
+            selector._poll_sdl_events()
+        handle_sdl_event.assert_called_once_with(
+            _eplatform.SDL_EVENT_DISPLAY_MOVED, display_to_move._sdl_display, position
+        )
+
+
+change_display_mode = None
+
+if platform.system() == "Windows":
+
+    @contextmanager
+    def change_display_mode(display, size, refresh_rate):
+        import pywintypes
+        import win32api
+        import win32con
+
+        # find the windows display that matches the Display
+        i = -1
+        while True:
+            i += 1
+            try:
+                win_display = win32api.EnumDisplayDevices(None, i)
+            except pywintypes.error:
+                raise RuntimeError("unable to find display")
+            try:
+                win_display_settings = win32api.EnumDisplaySettingsEx(
+                    win_display.DeviceName, win32con.ENUM_CURRENT_SETTINGS
+                )
+            except pywintypes.error:
+                # display is not connected
+                continue
+            if (
+                display.bounds.position.x == win_display_settings.Position_x
+                and display.bounds.position.y == win_display_settings.Position_y
+            ):
+                break
+        # find the closest display mode
+        i = -1
+        while True:
+            i += 1
+            try:
+                new_win_display_settings = win32api.EnumDisplaySettingsEx(
+                    win_display.DeviceName, i
+                )
+            except pywintypes.error:
+                raise RuntimeError("unable to find display mode")
+            if (
+                new_win_display_settings.PelsWidth == size.x
+                and new_win_display_settings.PelsHeight == size.y
+                and new_win_display_settings.DisplayFrequency == int(refresh_rate)
+            ):
+                break
+
+        original_w = win_display_settings.PelsWidth
+        original_h = win_display_settings.PelsHeight
+        original_r = win_display_settings.DisplayFrequency
+        original_b = win_display_settings.BitsPerPel
+        win_display_settings.PelsWidth = new_win_display_settings.PelsWidth
+        win_display_settings.PelsHeight = new_win_display_settings.PelsHeight
+        win_display_settings.DisplayFrequency = new_win_display_settings.DisplayFrequency
+        win_display_settings.BitsPerPel = new_win_display_settings.BitsPerPel
+        win32api.ChangeDisplaySettingsEx(win_display.DeviceName, win_display_settings, 0)
+        try:
+            yield new_win_display_settings.DisplayFrequency
+        finally:
+            win_display_settings.PelsWidth = original_w
+            win_display_settings.PelsHeight = original_h
+            win_display_settings.DisplayFrequency = original_r
+            win_display_settings.BitsPerPel = original_b
+            win32api.ChangeDisplaySettingsEx(win_display.DeviceName, win_display_settings, 0)
+
+
+@pytest.mark.disruptive
+def test_selector_poll_sdl_events_mode_changed(platform):
+    # The SDL event does not contain the mode of the display, we get it from the actual
+    # state of the system instead. This means we can't just send a mock event, we need to actually
+    # change the state of the system to test this event.
+
+    displays = tuple(get_displays())
+    if len(displays) < 1:
+        pytest.skip("test requires at least 1 display")
+    if change_display_mode is None:
+        pytest.skip("unable to move display on this system")
+
+    display = displays[0]
+    different_mode = [m for m in display.modes if m.size != display.bounds.size][0]
+
+    selector = _Selector()
+    clear_sdl_events()
+    with change_display_mode(display, different_mode.size, different_mode.refresh_rate):
+        with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
+            while selector._poll_sdl_events():
+                pass
+        handle_sdl_event.assert_any_call(
+            _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED,
+            display._sdl_display,
+            different_mode.size,
+            different_mode.refresh_rate,
+        )
+
+
+@pytest.mark.parametrize(
     "event_type, handler_name",
     [
         (_eplatform.SDL_EVENT_QUIT, "_handle_sdl_event_quit"),
@@ -208,6 +402,14 @@ def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
         (_eplatform.SDL_EVENT_WINDOW_RESIZED, "_handle_sdl_event_window_resized"),
         (_eplatform.SDL_EVENT_WINDOW_SHOWN, "_handle_sdl_event_window_shown"),
         (_eplatform.SDL_EVENT_WINDOW_HIDDEN, "_handle_sdl_event_window_hidden"),
+        (_eplatform.SDL_EVENT_DISPLAY_ADDED, "_handle_sdl_event_display_added"),
+        (_eplatform.SDL_EVENT_DISPLAY_REMOVED, "_handle_sdl_event_display_removed"),
+        (_eplatform.SDL_EVENT_DISPLAY_ORIENTATION, "_handle_sdl_event_display_orientation"),
+        (_eplatform.SDL_EVENT_DISPLAY_MOVED, "_handle_sdl_event_display_moved"),
+        (
+            _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED,
+            "_handle_sdl_event_current_mode_changed",
+        ),
     ],
 )
 @pytest.mark.parametrize("return_value", [False, True])
@@ -568,3 +770,51 @@ def test_selector_handle_sdl_event_window_hidden(mock_window):
     selector = _Selector()
     assert selector._handle_sdl_event_window_hidden()
     assert not mock_window.is_visible
+
+
+def test_selector_handle_sdl_event_display_added():
+    sdl_display = MagicMock()
+    selector = _Selector()
+    with patch("eplatform._event_loop.connect_display") as connect_display:
+        assert selector._handle_sdl_event_display_added(sdl_display)
+    connect_display.assert_called_once_with(sdl_display)
+
+
+def test_selector_handle_sdl_event_display_removed():
+    sdl_display = MagicMock()
+    selector = _Selector()
+    with patch("eplatform._event_loop.disconnect_display") as disconnect_display:
+        assert selector._handle_sdl_event_display_removed(sdl_display)
+    disconnect_display.assert_called_once_with(sdl_display)
+
+
+def test_selector_handle_sdl_event_display_orientation():
+    sdl_display = MagicMock()
+    sdl_display_orientation = MagicMock()
+    selector = _Selector()
+    with patch("eplatform._event_loop.change_display_orientation") as change_display_orientation:
+        assert selector._handle_sdl_event_display_orientation(sdl_display, sdl_display_orientation)
+    change_display_orientation.assert_called_once_with(sdl_display, sdl_display_orientation)
+
+
+def test_selector_handle_sdl_event_display_moved():
+    sdl_display = MagicMock()
+    position = MagicMock()
+    selector = _Selector()
+    with patch("eplatform._event_loop.change_display_position") as change_display_position:
+        assert selector._handle_sdl_event_display_moved(sdl_display, position)
+    change_display_position.assert_called_once_with(sdl_display, position)
+
+
+def _handle_sdl_event_current_mode_changed():
+    sdl_display = MagicMock()
+    size = MagicMock()
+    refresh_rate = MagicMock()
+    selector = _Selector()
+    with (
+        patch("eplatform._event_loop.change_display_size") as change_display_size,
+        patch("eplatform._event_loop.change_display_refresh_rate") as change_display_refresh_rate,
+    ):
+        assert selector._handle_sdl_event_current_mode_changed(sdl_display, size, refresh_rate)
+    change_display_size.assert_called_once_with(sdl_display, size)
+    change_display_size.assert_called_once_with(sdl_display, refresh_rate)

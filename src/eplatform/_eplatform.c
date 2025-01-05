@@ -474,16 +474,14 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
             break;
         }
         case SDL_EVENT_DISPLAY_MOVED:
-        {
-            CHECK_UNEXPECTED_ARG_COUNT_ERROR(4);
-            event.display.displayID = PyLong_AsLong(args[1]);
-            break;
-        }
         case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
         {
-            CHECK_UNEXPECTED_ARG_COUNT_ERROR(5);
-            event.display.displayID = PyLong_AsLong(args[1]);
-            break;
+            PyErr_Format(
+                PyExc_RuntimeError,
+                "unable to meaningfully push this kind of event, "
+                "we really on SDL state to complete the event data when polling"
+            );
+            goto error;
         }
     }
 

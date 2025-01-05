@@ -1,14 +1,10 @@
-# python
 import os
 
 if hasattr(os, "add_dll_directory"):
     os.add_dll_directory(os.getcwd() + "/vendor/SDL")
 
-# eplatform
-# python
 import asyncio
 
-# pytest
 import pytest
 
 from eplatform import EventLoop
@@ -16,6 +12,28 @@ from eplatform import Platform
 from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_window
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--disruptive",
+        action="store_true",
+        dest="disruptive",
+        default=False,
+        help="enable tests which might be disruptive or fail due to user interaction",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "disruptive: a test which might be disruptive or fail due to user interaction"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        if not config.option.disruptive and "disruptive" in item.keywords:
+            item.add_marker(pytest.mark.skip(reason="skipping disruptive tests"))
 
 
 @pytest.fixture(autouse=True)

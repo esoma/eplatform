@@ -28,14 +28,14 @@ class DisplayOrientation(Enum):
     PORTRAIT_FLIPPED = _eplatform.SDL_ORIENTATION_PORTRAIT_FLIPPED
 
 
-class DisplayFullscreenMode:
+class DisplayMode:
     def __init__(self, size: IVector2, refresh_rate: float) -> None:
         self._size = size
         self._refresh_rate = refresh_rate
 
     def __repr__(self) -> str:
         return (
-            f"<DisplayFullscreenMode "
+            f"<DisplayMode "
             f"{self._size.x!r}x{self._size.y}px "
             f"@ {self._refresh_rate:.1f} hertz"
             f">"
@@ -81,7 +81,7 @@ class Display:
     _orientation: DisplayOrientation = DisplayOrientation.NONE
     _bounds: IRectangle = IRectangle(IVector2(0), IVector2(1))
     _refresh_rate: float | None = None
-    _fullscreen_modes: tuple[DisplayFullscreenMode, ...] = ()
+    _modes: tuple[DisplayMode, ...] = ()
 
     connection_changed: Event[DisplayConnectionChanged] = Event()
     connected: Event[DisplayConnectionChanged] = Event()
@@ -110,10 +110,14 @@ class Display:
         return self._sdl_display is not None
 
     @property
-    def fullscreen_modes(self) -> Collection[DisplayFullscreenMode]:
+    def is_primary(self) -> bool:
+        return self.bounds.position == IVector2(0)
+
+    @property
+    def modes(self) -> Collection[DisplayMode]:
         if not self.is_connected:
             raise DisplayDisconnectedError()
-        return self._fullscreen_modes
+        return self._modes
 
     @property
     def name(self) -> str:
@@ -156,7 +160,7 @@ def connect_display(sdl_display: SdlDisplayId) -> None:
         display_w,
         display_h,
         display_refresh_rate,
-        display_fullscreen_modes,
+        display_modes,
     ) = get_sdl_display_details(sdl_display)
 
     try:
@@ -170,9 +174,7 @@ def connect_display(sdl_display: SdlDisplayId) -> None:
     display._orientation = DisplayOrientation(display_orientation)
     display._bounds = IRectangle(IVector2(display_x, display_y), IVector2(display_w, display_h))
     display._refresh_rate = display_refresh_rate if display_refresh_rate > 0 else None
-    display._fullscreen_modes = tuple(
-        DisplayFullscreenMode(IVector2(w, h), rr) for w, h, rr in display_fullscreen_modes
-    )
+    display._modes = tuple(DisplayMode(IVector2(w, h), rr) for w, h, rr in display_modes)
 
     data: DisplayConnectionChanged = {"display": display, "is_connected": True}
     Display.connection_changed(data)

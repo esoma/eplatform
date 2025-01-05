@@ -64,7 +64,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         poetry run python .github/info.py
-        poetry run pytest --cov=eplatform --cov-report=xml
+        poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
@@ -73,7 +73,7 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
-        poetry run pytest --cov=eplatform --cov-report=xml
+        poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
@@ -82,7 +82,7 @@ jobs:
       run: |
         export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
         xvfb-run -a poetry run python .github/info.py
-        xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
+        xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 

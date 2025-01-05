@@ -66,6 +66,7 @@ def test_is_visible(window):
     window_hidden.assert_called_once_with({"is_visible": False})
 
 
+@pytest.mark.disruptive
 def test_show_hide(window, capture_event):
     def _():
         window.show()
