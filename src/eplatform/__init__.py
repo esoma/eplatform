@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 __all__ = [
+    "Display",
     "EventLoop",
     "get_clipboard",
     "get_color_bits",
@@ -29,6 +30,7 @@ __all__ = [
     "WindowTextInputted",
 ]
 
+from ._display import Display
 from ._event_loop import EventLoop
 from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey

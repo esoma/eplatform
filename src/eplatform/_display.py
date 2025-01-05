@@ -3,11 +3,14 @@ __all__ = ["Display", "discover_displays", "forget_displays", "get_displays"]
 from enum import Enum
 from typing import Collection
 from typing import Generator
+from typing import TypedDict
 
+from eevent import Event
 from egeometry import IRectangle
 from emath import IVector2
 
 from . import _eplatform
+from ._eplatform import get_sdl_display_details
 from ._eplatform import get_sdl_displays
 from ._type import SdlDisplayId
 
@@ -46,6 +49,11 @@ class DisplayFullscreenMode:
         return self._refresh_rate
 
 
+class DisplayConnectionChanged(TypedDict):
+    display: "Display"
+    is_connected: bool
+
+
 class Display:
     _sdl_display: SdlDisplayId | None = None
     _name: str = ""
@@ -53,6 +61,14 @@ class Display:
     _bounds: IRectangle = IRectangle(IVector2(0), IVector2(1))
     _refresh_rate: float | None = None
     _fullscreen_modes: tuple[DisplayFullscreenMode, ...] = ()
+
+    connection_changed: Event[DisplayConnectionChanged] = Event()
+    connected: Event[DisplayConnectionChanged] = Event()
+    disconnected: Event[DisplayConnectionChanged] = Event()
+
+    def __init__(self) -> None:
+        self.connection_changed = Event()
+        self.disconnected = Event()
 
     def __repr__(self) -> str:
         if self._sdl_display is None:
@@ -102,36 +118,8 @@ def get_displays() -> Generator[Display, None, None]:
     yield from _displays.values()
 
 
-def connect_display(
-    display: Display,
-    sdl_display: SdlDisplayId,
-    name: str,
-    orientation: DisplayOrientation,
-    bounds: IRectangle,
-    refresh_rate: float,
-    fullscreen_modes: tuple[DisplayFullscreenMode, ...],
-) -> None:
-    assert display._sdl_display is None
-    assert sdl_display not in _displays
-    display._sdl_display = sdl_display
-    display._name = name
-    display._orientation = orientation
-    display._bounds = bounds
-    display._refresh_rate = refresh_rate if refresh_rate > 0 else None
-    display._fullscreen_modes = fullscreen_modes
-    _displays[sdl_display] = display
-
-
-def disconnect_display(display: Display) -> None:
-    assert display._sdl_display is not None
-    sdl_display = display._sdl_display
-    display._sdl_display = None
-    del _displays[sdl_display]
-
-
-def discover_displays() -> None:
-    for (
-        sdl_display,
+def connect_display(sdl_display: SdlDisplayId) -> None:
+    (
         display_name,
         display_orientation,
         display_x,
@@ -140,21 +128,43 @@ def discover_displays() -> None:
         display_h,
         display_refresh_rate,
         display_fullscreen_modes,
-    ) in get_sdl_displays():
-        display = Display()
-        connect_display(
-            display,
-            sdl_display,
-            display_name,
-            DisplayOrientation(display_orientation),
-            IRectangle(IVector2(display_x, display_y), IVector2(display_w, display_h)),
-            display_refresh_rate,
-            tuple(
-                DisplayFullscreenMode(IVector2(w, h), rr) for w, h, rr in display_fullscreen_modes
-            ),
-        )
+    ) = get_sdl_display_details(sdl_display)
+
+    try:
+        display = _displays[sdl_display]
+        display._sdl_display = sdl_display
+    except KeyError:
+        _displays[sdl_display] = display = Display()
+
+    display._sdl_display = sdl_display
+    display._name = display_name
+    display._orientation = DisplayOrientation(display_orientation)
+    display._bounds = IRectangle(IVector2(display_x, display_y), IVector2(display_w, display_h))
+    display._refresh_rate = display_refresh_rate if display_refresh_rate > 0 else None
+    display._fullscreen_modes = tuple(
+        DisplayFullscreenMode(IVector2(w, h), rr) for w, h, rr in display_fullscreen_modes
+    )
+
+    data: DisplayConnectionChanged = {"display": display, "is_connected": True}
+    Display.connection_changed(data)
+    Display.connected(data)
+
+
+def disconnect_display(sdl_display: SdlDisplayId) -> None:
+    display = _displays.pop(sdl_display)
+    display._sdl_display = None
+
+    data: DisplayConnectionChanged = {"display": display, "is_connected": False}
+    Display.connection_changed(data)
+    Display.disconnected(data)
+    display.disconnected(data)
+
+
+def discover_displays() -> None:
+    for sdl_display in get_sdl_displays():
+        connect_display(sdl_display)
 
 
 def forget_displays() -> None:
-    for display in list(_displays.values()):
+    for display in list(_displays.keys()):
         disconnect_display(display)

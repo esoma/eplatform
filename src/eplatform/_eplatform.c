@@ -460,6 +460,13 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
             CHECK_UNEXPECTED_PYTHON_ERROR();
             break;
         }
+        case SDL_EVENT_DISPLAY_ADDED:
+        case SDL_EVENT_DISPLAY_REMOVED:
+        {
+            CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+            event.display.displayID = PyLong_AsLong(args[1]);
+            break;
+        }
     }
 
     if (!SDL_PushEvent(&event)){ RAISE_SDL_ERROR(); }
@@ -561,6 +568,14 @@ get_sdl_event(PyObject *module, PyObject *unused)
 
             return Py_BuildValue("(iO)", event.type, py_size);
         }
+        case SDL_EVENT_DISPLAY_ADDED:
+        {
+            return Py_BuildValue("(ii)", event.type, event.display.displayID);
+        }
+        case SDL_EVENT_DISPLAY_REMOVED:
+        {
+            return Py_BuildValue("(ii)", event.type, event.display.displayID);
+        }
     }
 
     return Py_BuildValue("(i)", event.type);
@@ -586,6 +601,34 @@ hide_cursor(PyObject *module, PyObject *unused)
     if (!SDL_HideCursor()){ RAISE_SDL_ERROR(); }
     Py_RETURN_NONE;
 error:
+    return 0;
+}
+
+static PyObject *
+get_sdl_displays(PyObject *module, PyObject *unused)
+{
+    PyObject *py_displays = 0;
+    int count;
+    SDL_DisplayID *displays = SDL_GetDisplays(&count);
+    if (displays == 0){ RAISE_SDL_ERROR(); }
+
+    py_displays = PyTuple_New(count);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    for (int i = 0; i < count; i++)
+    {
+        SDL_DisplayID display = displays[i];
+        PyObject *py_display = PyLong_FromUnsignedLong(display);
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        PyTuple_SET_ITEM(py_displays, i, py_display);
+    }
+
+    SDL_free(displays);
+    displays = 0;
+
+    return py_displays;
+error:
+    Py_XDECREF(py_displays);
+    SDL_free(displays);
     return 0;
 }
 
@@ -619,54 +662,36 @@ error:
 }
 
 static PyObject *
-get_sdl_displays(PyObject *module, PyObject *unused)
+get_sdl_display_details(PyObject *module, PyObject *py_display)
 {
-    PyObject *py_displays = 0;
-    PyObject *py_display_modes = 0;
-    int count;
-    SDL_DisplayID *displays = SDL_GetDisplays(&count);
-    if (displays == 0){ RAISE_SDL_ERROR(); }
-
-    py_displays = PyTuple_New(count);
+    SDL_DisplayID display = PyLong_AsLong(py_display);
     CHECK_UNEXPECTED_PYTHON_ERROR();
-    for (int i = 0; i < count; i++)
-    {
-        SDL_DisplayID display = displays[i];
-        const char *display_name = SDL_GetDisplayName(display);
-        if (!display_name){ RAISE_SDL_ERROR(); }
-        SDL_DisplayOrientation display_orientation = SDL_GetCurrentDisplayOrientation(display);
-        SDL_Rect display_bounds;
-        if (!SDL_GetDisplayBounds(display, &display_bounds)){ RAISE_SDL_ERROR(); }
-        const SDL_DisplayMode *display_mode = SDL_GetCurrentDisplayMode(display);
-        if (!display_mode){ RAISE_SDL_ERROR(); }
-        py_display_modes = get_sdl_display_display_modes_(display);
-        CHECK_UNEXPECTED_PYTHON_ERROR();
 
-        PyObject *py_item = Py_BuildValue(
-            "(ksiiiiifO)",
-            display,
-            display_name,
-            display_orientation,
-            display_bounds.x,
-            display_bounds.y,
-            display_bounds.w,
-            display_bounds.h,
-            display_mode->refresh_rate,
-            py_display_modes
-        );
-        CHECK_UNEXPECTED_PYTHON_ERROR();
-        py_display_modes = 0;
-        PyTuple_SET_ITEM(py_displays, i, py_item);
-    }
+    const char *display_name = SDL_GetDisplayName(display);
+    if (!display_name){ RAISE_SDL_ERROR(); }
+    SDL_DisplayOrientation display_orientation = SDL_GetCurrentDisplayOrientation(display);
+    SDL_Rect display_bounds;
+    if (!SDL_GetDisplayBounds(display, &display_bounds)){ RAISE_SDL_ERROR(); }
+    const SDL_DisplayMode *display_mode = SDL_GetCurrentDisplayMode(display);
+    if (!display_mode){ RAISE_SDL_ERROR(); }
+    PyObject *py_display_modes = get_sdl_display_display_modes_(display);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
 
-    SDL_free(displays);
-    displays = 0;
-
-    return py_displays;
+    PyObject *py_details = Py_BuildValue(
+        "(siiiiifO)",
+        display_name,
+        display_orientation,
+        display_bounds.x,
+        display_bounds.y,
+        display_bounds.w,
+        display_bounds.h,
+        display_mode->refresh_rate,
+        py_display_modes
+    );
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    Py_DECREF(py_display_modes);
+    return py_details;
 error:
-    Py_XDECREF(py_display_modes);
-    Py_XDECREF(py_displays);
-    SDL_free(displays);
     return 0;
 }
 
@@ -693,6 +718,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"show_cursor", show_cursor, METH_NOARGS, 0},
     {"hide_cursor", hide_cursor, METH_NOARGS, 0},
     {"get_sdl_displays", get_sdl_displays, METH_NOARGS, 0},
+    {"get_sdl_display_details", get_sdl_display_details, METH_O, 0},
     {0},
 };
 
@@ -747,6 +773,8 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_WINDOW_RESIZED);
     ADD_CONSTANT(SDL_EVENT_WINDOW_SHOWN);
     ADD_CONSTANT(SDL_EVENT_WINDOW_HIDDEN);
+    ADD_CONSTANT(SDL_EVENT_DISPLAY_ADDED);
+    ADD_CONSTANT(SDL_EVENT_DISPLAY_REMOVED);
 
     ADD_CONSTANT(SDL_ORIENTATION_UNKNOWN);
     ADD_CONSTANT(SDL_ORIENTATION_LANDSCAPE);

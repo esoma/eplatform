@@ -12,12 +12,15 @@ from typing import get_args
 from emath import IVector2
 
 from . import _eplatform
+from ._display import connect_display
+from ._display import disconnect_display
 from ._eplatform import get_sdl_event
 from ._keyboard import KeyboardKeyName
 from ._mouse import MouseButtonName
 from ._platform import get_keyboard
 from ._platform import get_mouse
 from ._platform import get_window
+from ._type import SdlDisplayId
 from ._type import SdlEventType
 from ._type import SdlMouseButton
 from ._type import SdlScancode
@@ -108,6 +111,14 @@ class _Selector(SelectSelector):
         window.is_visible = False
         return True
 
+    def _handle_sdl_event_display_added(self, sdl_display: SdlDisplayId) -> bool:
+        connect_display(sdl_display)
+        return True
+
+    def _handle_sdl_event_display_removed(self, sdl_display: SdlDisplayId) -> bool:
+        disconnect_display(sdl_display)
+        return True
+
     _SDL_EVENT_DISPATCH: Final[Mapping[SdlEventType, Callable[..., bool]]] = {
         _eplatform.SDL_EVENT_QUIT: _handle_sdl_event_quit,
         _eplatform.SDL_EVENT_MOUSE_MOTION: _handle_sdl_event_mouse_motion,
@@ -120,6 +131,8 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_WINDOW_RESIZED: _handle_sdl_event_window_resized,
         _eplatform.SDL_EVENT_WINDOW_SHOWN: _handle_sdl_event_window_shown,
         _eplatform.SDL_EVENT_WINDOW_HIDDEN: _handle_sdl_event_window_hidden,
+        _eplatform.SDL_EVENT_DISPLAY_ADDED: _handle_sdl_event_display_added,
+        _eplatform.SDL_EVENT_DISPLAY_REMOVED: _handle_sdl_event_display_removed,
     }
 
 
