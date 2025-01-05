@@ -1,7 +1,11 @@
 __all__ = ["center_sdl_window", "create_sdl_window"]
 
+from typing import Collection
+
 from emath import IVector2
 
+from ._type import SdlDisplayId
+from ._type import SdlDisplayOrientation
 from ._type import SdlEventType
 from ._type import SdlGlContext
 from ._type import SdlMouseButton
@@ -58,6 +62,11 @@ SDL_EVENT_TEXT_INPUT: SdlEventType
 SDL_EVENT_WINDOW_RESIZED: SdlEventType
 SDL_EVENT_WINDOW_SHOWN: SdlEventType
 SDL_EVENT_WINDOW_HIDDEN: SdlEventType
+SDL_EVENT_DISPLAY_ADDED: SdlEventType
+SDL_EVENT_DISPLAY_REMOVED: SdlEventType
+SDL_EVENT_DISPLAY_ORIENTATION: SdlEventType
+SDL_EVENT_DISPLAY_MOVED: SdlEventType
+SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED: SdlEventType
 
 # keyboard
 #    number
@@ -304,3 +313,18 @@ SDL_SCANCODE_LANG6: SdlScancode
 SDL_SCANCODE_LANG7: SdlScancode
 SDL_SCANCODE_LANG8: SdlScancode
 SDL_SCANCODE_LANG9: SdlScancode
+
+# display
+
+def get_sdl_displays() -> Collection[SdlDisplayId]: ...
+def get_sdl_display_details(
+    sdl_display_id: SdlDisplayId, /
+) -> tuple[
+    str, SdlDisplayOrientation, int, int, int, int, float, tuple[tuple[int, int, float]]
+]: ...
+
+SDL_ORIENTATION_UNKNOWN: SdlDisplayOrientation
+SDL_ORIENTATION_LANDSCAPE: SdlDisplayOrientation
+SDL_ORIENTATION_LANDSCAPE_FLIPPED: SdlDisplayOrientation
+SDL_ORIENTATION_PORTRAIT: SdlDisplayOrientation
+SDL_ORIENTATION_PORTRAIT_FLIPPED: SdlDisplayOrientation
