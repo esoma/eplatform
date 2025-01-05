@@ -24,6 +24,7 @@ from ._display import Display
 from ._display import discover_displays
 from ._display import forget_displays
 from ._display import get_displays as _get_displays
+from ._eplatform import clear_sdl_events
 from ._eplatform import create_sdl_gl_context
 from ._eplatform import deinitialize_sdl
 from ._eplatform import delete_sdl_gl_context
@@ -84,6 +85,7 @@ class Platform:
         self._keyboard = self._keyboard_cls()
         discover_displays()
         self._setup_open_gl()
+        clear_sdl_events()
         Platform._singleton = self
 
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
