@@ -5,6 +5,7 @@ __all__ = [
     "get_clipboard",
     "get_color_bits",
     "get_depth_bits",
+    "get_displays",
     "get_keyboard",
     "get_mouse",
     "get_stencil_bits",
@@ -44,6 +45,7 @@ from ._platform import Platform
 from ._platform import get_clipboard
 from ._platform import get_color_bits
 from ._platform import get_depth_bits
+from ._platform import get_displays
 from ._platform import get_keyboard
 from ._platform import get_mouse
 from ._platform import get_stencil_bits
