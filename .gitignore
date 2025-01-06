@@ -10,6 +10,7 @@ build/
 dist/
 
 test.py
+test.sh
 
 *.so
 *.dll
