@@ -9,18 +9,38 @@ from emath import IVector2
 from eplatform import Window
 from eplatform import WindowBufferSynchronization
 from eplatform import WindowDestroyedError
+from eplatform._window import close_window
 from eplatform._window import delete_window
 from eplatform._window import hide_window
 from eplatform._window import input_window_text
+from eplatform._window import move_window
 from eplatform._window import resize_window
 from eplatform._window import show_window
 
 
 @patch("eplatform._window.create_sdl_window")
 def test_init(create_sdl_window):
-    create_sdl_window.return_value = None
+    create_sdl_window.return_value = (None, 0, 0)
     window = Window()
     assert window.screen_space_to_world_space_transform == FMatrix4(1)
+
+
+def test_position(window):
+    assert isinstance(window.position, IVector2)
+
+    new_position = window.position + IVector2(-1, 1)
+
+    with patch.object(window, "moved", new=MagicMock()) as window_moved:
+        move_window(window, new_position)
+
+    assert window.position == new_position
+    window_moved.assert_called_once_with({"position": new_position})
+
+
+def test_close():
+    window = MagicMock()
+    close_window(window)
+    window.closed.assert_called_once_with(None)
 
 
 def test_size(window):

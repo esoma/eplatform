@@ -32,6 +32,7 @@ from ._type import SdlScancode
 from ._window import close_window
 from ._window import hide_window
 from ._window import input_window_text
+from ._window import move_window
 from ._window import resize_window
 from ._window import show_window
 
@@ -117,6 +118,10 @@ class _Selector(SelectSelector):
         hide_window(get_window())
         return True
 
+    def _handle_sdl_event_window_moved(self, position: IVector2) -> bool:
+        move_window(get_window(), position)
+        return True
+
     def _handle_sdl_event_display_added(self, sdl_display: SdlDisplayId) -> bool:
         connect_display(sdl_display)
         return True
@@ -156,6 +161,7 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_WINDOW_RESIZED: _handle_sdl_event_window_resized,
         _eplatform.SDL_EVENT_WINDOW_SHOWN: _handle_sdl_event_window_shown,
         _eplatform.SDL_EVENT_WINDOW_HIDDEN: _handle_sdl_event_window_hidden,
+        _eplatform.SDL_EVENT_WINDOW_MOVED: _handle_sdl_event_window_moved,
         _eplatform.SDL_EVENT_DISPLAY_ADDED: _handle_sdl_event_display_added,
         _eplatform.SDL_EVENT_DISPLAY_REMOVED: _handle_sdl_event_display_removed,
         _eplatform.SDL_EVENT_DISPLAY_ORIENTATION: _handle_sdl_event_display_orientation,

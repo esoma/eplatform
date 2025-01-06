@@ -35,8 +35,9 @@ __all__ = [
     "Window",
     "WindowBufferSynchronization",
     "WindowDestroyedError",
-    "WindowTextInputted",
+    "WindowMoved",
     "WindowResized",
+    "WindowTextInputted",
     "WindowVisibilityChanged",
 ]
 

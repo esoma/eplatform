@@ -82,10 +82,13 @@ create_sdl_window(PyObject *module, PyObject *unused)
     SDL_Window *sdl_window = SDL_CreateWindow("", 200, 200, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
     if (!sdl_window){ RAISE_SDL_ERROR(); }
     if (!SDL_StopTextInput(sdl_window)){ RAISE_SDL_ERROR(); }
+    int x;
+    int y;
+    if (!SDL_GetWindowPosition(sdl_window, &x, &y)){ RAISE_SDL_ERROR(); }
 
     PyObject *py_sdl_window = PyCapsule_New(sdl_window, "_eplatform.SDL_Window", 0);
     if (!py_sdl_window){ goto error; }
-    return py_sdl_window;
+    return Py_BuildValue("(Oii)", py_sdl_window, x, y);
 error:
     if (sdl_window){ SDL_DestroyWindow(sdl_window); }
     return 0;
@@ -448,6 +451,7 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
             break;
         }
         case SDL_EVENT_WINDOW_RESIZED:
+        case SDL_EVENT_WINDOW_MOVED:
         {
             CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
             event.window.data1 = PyLong_AsLong(args[1]);
@@ -583,6 +587,20 @@ get_sdl_event(PyObject *module, PyObject *unused)
             emath_api = 0;
 
             return Py_BuildValue("(iO)", event.type, py_size);
+        }
+        case SDL_EVENT_WINDOW_MOVED:
+        {
+            emath_api = EMathApi_Get();
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+
+            const int position[2] = {(int)event.window.data1, (int)event.window.data2};
+            PyObject *py_position = emath_api->IVector2_Create(position);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+
+            EMathApi_Release();
+            emath_api = 0;
+
+            return Py_BuildValue("(iO)", event.type, py_position);
         }
         case SDL_EVENT_DISPLAY_ADDED:
         {
@@ -848,6 +866,7 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_WINDOW_RESIZED);
     ADD_CONSTANT(SDL_EVENT_WINDOW_SHOWN);
     ADD_CONSTANT(SDL_EVENT_WINDOW_HIDDEN);
+    ADD_CONSTANT(SDL_EVENT_WINDOW_MOVED);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_ADDED);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_REMOVED);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_ORIENTATION);

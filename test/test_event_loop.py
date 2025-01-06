@@ -174,6 +174,17 @@ def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
     handle_sdl_event.assert_called_once_with(event_type, size)
 
 
+@pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_WINDOW_MOVED])
+@pytest.mark.parametrize("position", [IVector2(2, 1), IVector2(99, 75)])
+def test_selector_poll_sdl_events_window_moed(platform, event_type, position):
+    selector = _Selector()
+    clear_sdl_events()
+    push_sdl_event(event_type, position.x, position.y)
+    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
+        assert selector._poll_sdl_events()
+    handle_sdl_event.assert_called_once_with(event_type, position)
+
+
 @pytest.mark.parametrize(
     "event_type", [_eplatform.SDL_EVENT_DISPLAY_ADDED, _eplatform.SDL_EVENT_DISPLAY_REMOVED]
 )
@@ -739,6 +750,16 @@ def test_selector_handle_sdl_event_window_resized(mock_window, x, y):
     with patch("eplatform._event_loop.resize_window") as resize_window:
         assert selector._handle_sdl_event_window_resized(size)
     resize_window.assert_called_once_with(mock_window, size)
+
+
+@pytest.mark.parametrize("w", [25, 45])
+@pytest.mark.parametrize("h", [10, 100])
+def test_selector_handle_sdl_event_window_moved(mock_window, w, h):
+    selector = _Selector()
+    position = IVector2(w, h)
+    with patch("eplatform._event_loop.move_window") as move_window:
+        assert selector._handle_sdl_event_window_moved(position)
+    move_window.assert_called_once_with(mock_window, position)
 
 
 def test_selector_handle_sdl_event_window_shown(mock_window):

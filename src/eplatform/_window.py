@@ -6,13 +6,15 @@ __all__ = [
     "get_sdl_window",
     "hide_window",
     "input_window_text",
+    "move_window",
     "resize_window",
     "show_window",
     "Window",
     "WindowBufferSynchronization",
     "WindowDestroyedError",
-    "WindowTextInputted",
+    "WindowMoved",
     "WindowResized",
+    "WindowTextInputted",
     "WindowVisibilityChanged",
 ]
 
@@ -53,6 +55,10 @@ class WindowResized(TypedDict):
     size: IVector2
 
 
+class WindowMoved(TypedDict):
+    position: IVector2
+
+
 class WindowVisibilityChanged(TypedDict):
     is_visible: bool
 
@@ -62,10 +68,13 @@ class WindowDestroyedError(RuntimeError):
 
 
 class Window:
-    _sdl_window: SdlWindow | None
+    _sdl_window: SdlWindow | None = None
 
     def __init__(self) -> None:
-        self._sdl_window = create_sdl_window()
+        self._sdl_window, x, y = create_sdl_window()
+
+        self._position = IVector2(x, y)
+        self.moved: Event[WindowMoved] = Event()
 
         self.closed: Event[None] = Event()
         self.text_inputted: Event[WindowTextInputted] = Event()
@@ -140,6 +149,10 @@ class Window:
         set_sdl_window_size(self._sdl_window, value)
 
     @property
+    def position(self) -> IVector2:
+        return self._position
+
+    @property
     def size(self) -> IVector2:
         return self._size
 
@@ -190,3 +203,8 @@ def hide_window(window: Window) -> None:
 def resize_window(window: Window, size: IVector2) -> None:
     window._size = size
     window.resized({"size": size})
+
+
+def move_window(window: Window, position: IVector2) -> None:
+    window._position = position
+    window.moved({"position": position})
