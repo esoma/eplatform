@@ -73,6 +73,8 @@ def test_selector_select():
 
 def test_selector_poll_sdl_events_no_platform():
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
         assert not selector._poll_sdl_events()
@@ -81,6 +83,8 @@ def test_selector_poll_sdl_events_no_platform():
 
 def test_selector_poll_sdl_events_none(platform):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
         assert not selector._poll_sdl_events()
@@ -90,6 +94,8 @@ def test_selector_poll_sdl_events_none(platform):
 @pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_QUIT])
 def test_selector_poll_sdl_events_default(platform, event_type):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -102,6 +108,8 @@ def test_selector_poll_sdl_events_default(platform, event_type):
 @pytest.mark.parametrize("delta", [IVector2(1, 2), IVector2(-1, -2)])
 def test_selector_poll_sdl_events_mouse_motion(platform, event_type, position, delta):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, *position, *delta)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -116,6 +124,8 @@ def test_selector_poll_sdl_events_mouse_motion(platform, event_type, position, d
 )
 def test_selector_poll_sdl_events_mouse_wheel(platform, event_type, flipped, delta):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, flipped, *delta)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -130,6 +140,8 @@ def test_selector_poll_sdl_events_mouse_wheel(platform, event_type, flipped, del
 @pytest.mark.parametrize("is_pressed", [False, True])
 def test_selector_poll_sdl_events_mouse_button(platform, event_type, button, is_pressed):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, button, is_pressed)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -145,6 +157,8 @@ def test_selector_poll_sdl_events_mouse_button(platform, event_type, button, is_
 @pytest.mark.parametrize("is_repeat", [False, True])
 def test_selector_poll_sdl_events_key(platform, event_type, scancode, is_pressed, is_repeat):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, scancode, is_pressed, is_repeat)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -156,6 +170,8 @@ def test_selector_poll_sdl_events_key(platform, event_type, scancode, is_pressed
 @pytest.mark.parametrize("text", ["a", "hello world"])
 def test_selector_poll_sdl_events_text_input(platform, event_type, text):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, text)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -167,6 +183,8 @@ def test_selector_poll_sdl_events_text_input(platform, event_type, text):
 @pytest.mark.parametrize("size", [IVector2(2, 1), IVector2(99, 75)])
 def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, size.x, size.y)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -180,6 +198,8 @@ def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
 @pytest.mark.parametrize("sdl_display", [1, 100])
 def test_selector_poll_sdl_events_display_added_removed(platform, event_type, sdl_display):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, sdl_display)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
@@ -194,6 +214,8 @@ def test_selector_poll_sdl_events_display_orientation(
     platform, event_type, sdl_display, orientation
 ):
     selector = _Selector()
+    selector._poll_sdl_events()
+
     clear_sdl_events()
     push_sdl_event(event_type, sdl_display, orientation)
     with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:

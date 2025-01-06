@@ -50,7 +50,6 @@ SDL_BUTTON_X2: SdlMouseButton
 
 # event
 def get_sdl_event() -> tuple | None: ...
-def clear_sdl_events() -> None: ...
 
 SDL_EVENT_QUIT: SdlEventType
 SDL_EVENT_MOUSE_MOTION: SdlEventType
