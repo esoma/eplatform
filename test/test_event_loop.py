@@ -409,8 +409,9 @@ def test_selector_handle_sdl_event_unexpected():
 
 def test_selector_handle_sdl_event_quit(mock_window):
     selector = _Selector()
-    assert selector._handle_sdl_event_quit()
-    mock_window.close.assert_called_once()
+    with patch("eplatform._event_loop.close_window") as close_window:
+        assert selector._handle_sdl_event_quit()
+    close_window.assert_called_once_with(mock_window)
 
 
 @pytest.mark.parametrize("x", [0, -1, 1])
@@ -725,8 +726,9 @@ def test_selector_handle_sdl_event_key_changed_unexpected(mock_keyboard, is_pres
 @pytest.mark.parametrize("text", ["", "hello", "私"])
 def test_selector_handle_sdl_event_text_input(mock_window, text):
     selector = _Selector()
-    assert selector._handle_sdl_event_text_input(text)
-    mock_window.input_text.assert_called_once_with(text)
+    with patch("eplatform._event_loop.input_window_text") as input_window_text:
+        assert selector._handle_sdl_event_text_input(text)
+    input_window_text.assert_called_once_with(mock_window, text)
 
 
 @pytest.mark.parametrize("x", [25, 45])
@@ -734,20 +736,23 @@ def test_selector_handle_sdl_event_text_input(mock_window, text):
 def test_selector_handle_sdl_event_window_resized(mock_window, x, y):
     selector = _Selector()
     size = IVector2(x, y)
-    assert selector._handle_sdl_event_window_resized(size)
-    assert mock_window.size == size
+    with patch("eplatform._event_loop.resize_window") as resize_window:
+        assert selector._handle_sdl_event_window_resized(size)
+    resize_window.assert_called_once_with(mock_window, size)
 
 
 def test_selector_handle_sdl_event_window_shown(mock_window):
     selector = _Selector()
-    assert selector._handle_sdl_event_window_shown()
-    assert mock_window.is_visible
+    with patch("eplatform._event_loop.show_window") as show_window:
+        assert selector._handle_sdl_event_window_shown()
+    show_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_window_hidden(mock_window):
     selector = _Selector()
-    assert selector._handle_sdl_event_window_hidden()
-    assert not mock_window.is_visible
+    with patch("eplatform._event_loop.hide_window") as hide_window:
+        assert selector._handle_sdl_event_window_hidden()
+    hide_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_display_added():

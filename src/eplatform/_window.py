@@ -1,11 +1,19 @@
 from __future__ import annotations
 
 __all__ = [
+    "close_window",
+    "delete_window",
     "get_sdl_window",
+    "hide_window",
+    "input_window_text",
+    "resize_window",
+    "show_window",
     "Window",
     "WindowBufferSynchronization",
-    "WindowTextInputted",
     "WindowDestroyedError",
+    "WindowTextInputted",
+    "WindowResized",
+    "WindowVisibilityChanged",
 ]
 
 from contextlib import contextmanager
@@ -73,16 +81,7 @@ class Window:
         self.hidden: Event[WindowVisibilityChanged] = Event()
 
     def __del__(self) -> None:
-        self._delete_sdl_window()
-
-    def close(self) -> None:
-        self.closed(None)
-
-    def _delete_sdl_window(self) -> None:
-        if self._sdl_window is None:
-            return
-        delete_sdl_window(self._sdl_window)
-        self._sdl_window = None
+        delete_window(self)
 
     def enable_text_input(self, rect: IRectangle, *, cursor_position: int = 0) -> None:
         if self._sdl_window is None:
@@ -109,9 +108,6 @@ class Window:
         yield
         self.disable_text_input()
 
-    def input_text(self, text: str) -> None:
-        self.text_inputted({"text": text})
-
     def show(self) -> None:
         if self._sdl_window is None:
             raise WindowDestroyedError()
@@ -125,16 +121,6 @@ class Window:
     @property
     def is_visible(self) -> bool:
         return self._is_visible
-
-    @is_visible.setter
-    def is_visible(self, value: bool) -> None:
-        self._is_visible = value
-        event_data: WindowVisibilityChanged = {"is_visible": value}
-        self.visibility_changed(event_data)
-        if value:
-            self.shown(event_data)
-        else:
-            self.hidden(event_data)
 
     def center(self) -> None:
         if self._sdl_window is None:
@@ -157,11 +143,6 @@ class Window:
     def size(self) -> IVector2:
         return self._size
 
-    @size.setter
-    def size(self, value: IVector2) -> None:
-        self._size = value
-        self.resized({"size": value})
-
     def convert_screen_coordinate_to_world_coordinate(self, coord: IVector2) -> IVector2:
         clip_space_position = FVector4(
             (coord.x / self.size.x) * 2 - 1, -(coord.y / self.size.y) * 2 + 1, 0, 1
@@ -175,3 +156,37 @@ class Window:
 def get_sdl_window(window: Window) -> SdlWindow:
     assert window._sdl_window is not None
     return window._sdl_window
+
+
+def delete_window(window: Window) -> None:
+    if window._sdl_window is None:
+        return
+    delete_sdl_window(window._sdl_window)
+    window._sdl_window = None
+
+
+def close_window(window: Window) -> None:
+    window.closed(None)
+
+
+def input_window_text(window: Window, text: str) -> None:
+    window.text_inputted({"text": text})
+
+
+def show_window(window: Window) -> None:
+    window._is_visible = True
+    event_data: WindowVisibilityChanged = {"is_visible": True}
+    window.visibility_changed(event_data)
+    window.shown(event_data)
+
+
+def hide_window(window: Window) -> None:
+    window._is_visible = False
+    event_data: WindowVisibilityChanged = {"is_visible": False}
+    window.visibility_changed(event_data)
+    window.hidden(event_data)
+
+
+def resize_window(window: Window, size: IVector2) -> None:
+    window._size = size
+    window.resized({"size": size})

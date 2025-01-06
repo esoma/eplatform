@@ -98,7 +98,9 @@ class Platform:
         self._teardown_open_gl()
         forget_displays()
         assert self._window is not None
-        self._window.close()
+        from ._window import delete_window
+
+        delete_window(self._window)
         self._window = None
 
         deinitialize_sdl()

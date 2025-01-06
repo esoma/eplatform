@@ -29,6 +29,11 @@ from ._type import SdlDisplayOrientation
 from ._type import SdlEventType
 from ._type import SdlMouseButton
 from ._type import SdlScancode
+from ._window import close_window
+from ._window import hide_window
+from ._window import input_window_text
+from ._window import resize_window
+from ._window import show_window
 
 
 class EventLoop(SelectorEventLoop):
@@ -63,7 +68,7 @@ class _Selector(SelectSelector):
         return handler(self, *args)
 
     def _handle_sdl_event_quit(self) -> bool:
-        get_window().close()
+        close_window(get_window())
         return True
 
     def _handle_sdl_event_mouse_motion(self, position: IVector2, delta: IVector2) -> bool:
@@ -97,23 +102,19 @@ class _Selector(SelectSelector):
         return True
 
     def _handle_sdl_event_text_input(self, text: str) -> bool:
-        window = get_window()
-        window.input_text(text)
+        input_window_text(get_window(), text)
         return True
 
     def _handle_sdl_event_window_resized(self, size: IVector2) -> bool:
-        window = get_window()
-        window.size = size
+        resize_window(get_window(), size)
         return True
 
     def _handle_sdl_event_window_shown(self) -> bool:
-        window = get_window()
-        window.is_visible = True
+        show_window(get_window())
         return True
 
     def _handle_sdl_event_window_hidden(self) -> bool:
-        window = get_window()
-        window.is_visible = False
+        hide_window(get_window())
         return True
 
     def _handle_sdl_event_display_added(self, sdl_display: SdlDisplayId) -> bool:
