@@ -5,6 +5,7 @@ __all__ = [
     "get_clipboard",
     "get_color_bits",
     "get_depth_bits",
+    "get_displays",
     "get_keyboard",
     "get_mouse",
     "get_stencil_bits",
@@ -16,8 +17,14 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import ClassVar
+from typing import Generator
 from typing import Self
 
+from ._display import Display
+from ._display import discover_displays
+from ._display import forget_displays
+from ._display import get_displays as _get_displays
+from ._eplatform import clear_sdl_events
 from ._eplatform import create_sdl_gl_context
 from ._eplatform import deinitialize_sdl
 from ._eplatform import delete_sdl_gl_context
@@ -76,7 +83,9 @@ class Platform:
         self._window = self._window_cls()
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()
+        discover_displays()
         self._setup_open_gl()
+        clear_sdl_events()
         Platform._singleton = self
 
     def __exit__(self, *args: Any, **kwargs: Any) -> None:
@@ -87,6 +96,7 @@ class Platform:
             callback()
 
         self._teardown_open_gl()
+        forget_displays()
         assert self._window is not None
         self._window.close()
         self._window = None
@@ -179,3 +189,12 @@ def set_clipboard(text: str) -> None:
     if Platform._singleton is None:
         raise RuntimeError("platform is not active")
     _set_clipboard(text)
+
+
+def get_displays() -> Generator[Display, None, None]:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    for display in _get_displays():
+        if Platform._singleton is None:
+            raise RuntimeError("platform is not active")
+        yield display

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 __all__ = ()
 
-# setuptools
-# python
 import os
 import shutil
 import subprocess

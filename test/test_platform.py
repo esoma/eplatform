@@ -1,8 +1,7 @@
-# eplatform
-# python
+from types import GeneratorType
 from unittest.mock import Mock
+from unittest.mock import patch
 
-# pytest
 import pytest
 
 from eplatform import Keyboard
@@ -12,6 +11,7 @@ from eplatform import Window
 from eplatform import get_clipboard
 from eplatform import get_color_bits
 from eplatform import get_depth_bits
+from eplatform import get_displays
 from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_stencil_bits
@@ -143,3 +143,28 @@ def test_clipboard_no_platform():
     with pytest.raises(RuntimeError) as excinfo:
         get_clipboard()
     assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_displays(platform):
+    displays = [object(), object()]
+    with patch("eplatform._platform._get_displays", return_value=displays) as get_displays_mock:
+        result = get_displays()
+        assert isinstance(result, GeneratorType)
+        assert list(result) == displays
+
+
+def test_get_displays_no_platform():
+    with pytest.raises(RuntimeError) as excinfo:
+        list(get_displays())
+    assert str(excinfo.value) == "platform is not active"
+
+
+def test_get_displays_platform_lost():
+    displays = [object(), object()]
+    with patch("eplatform._platform._get_displays", return_value=displays) as get_displays_mock:
+        with Platform():
+            displays = get_displays()
+            d = next(displays)
+        with pytest.raises(RuntimeError) as excinfo:
+            next(displays)
+        assert str(excinfo.value) == "platform is not active"

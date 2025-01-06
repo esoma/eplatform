@@ -53,6 +53,8 @@ jobs:
 
     - name: Install Poetry
       uses: snok/install-poetry@v1.3.2
+      with:
+        version: 1.8.5
 
     - name: Install
       run: |
@@ -64,7 +66,7 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         poetry run python .github/info.py
-        poetry run pytest --cov=eplatform --cov-report=xml
+        poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
@@ -73,7 +75,7 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
-        poetry run pytest --cov=eplatform --cov-report=xml
+        poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
@@ -82,7 +84,7 @@ jobs:
       run: |
         export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
         xvfb-run -a poetry run python .github/info.py
-        xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml
+        xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
@@ -108,6 +110,7 @@ jobs:
     - name: Install Poetry
       uses: snok/install-poetry@v1.4.1
       with:
+        version: 1.8.5
         virtualenvs-in-project: true
 
     - name: Upgrade pip & setuptools

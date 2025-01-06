@@ -1,5 +1,5 @@
 [report]
 exclude_also =
-    \.\.\.
+    ^\s+\.\.\.\s+$
     if TYPE_CHECKING:
     assert False
