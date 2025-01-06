@@ -43,6 +43,18 @@ def test_close():
     window.closed.assert_called_once_with(None)
 
 
+def test_is_bordered(window):
+    assert window.is_bordered
+    window.show_border()
+    assert window.is_bordered
+    window.hide_border()
+    assert not window.is_bordered
+    window.hide_border()
+    assert not window.is_bordered
+    window.show_border()
+    assert window.is_bordered
+
+
 def test_size(window):
     assert window.size == IVector2(200, 200)
 

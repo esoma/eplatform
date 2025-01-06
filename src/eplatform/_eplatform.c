@@ -250,6 +250,22 @@ error:
 }
 
 static PyObject *
+set_sdl_window_border(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    if (!SDL_SetWindowBordered(sdl_window, args[1] == Py_True)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+
+static PyObject *
 create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
 {
     SDL_GLContext sdl_gl_context = 0;
@@ -800,6 +816,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"swap_sdl_window", (PyCFunction)swap_sdl_window, METH_FASTCALL, 0},
     {"enable_sdl_window_text_input", (PyCFunction)enable_sdl_window_text_input, METH_FASTCALL, 0},
     {"disable_sdl_window_text_input", disable_sdl_window_text_input, METH_O, 0},
+    {"set_sdl_window_border", set_sdl_window_border, METH_FASTCALL, 0},
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},
