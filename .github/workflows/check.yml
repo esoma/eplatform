@@ -26,11 +26,11 @@ jobs:
       run: |
         git submodule update --init --recursive
 
-    - name: Install Mesa Linux
+    - name: Install Linux Dependencies
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev
+        sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev x11-xserver-utils
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
