@@ -83,7 +83,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
-        bash .github/xvfb-test.sh --cov=eplatform --cov-report=xml --disruptive
+        xvfb-run -a bash .github/test-multiple-displays.sh --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
