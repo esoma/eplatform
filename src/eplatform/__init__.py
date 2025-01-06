@@ -36,6 +36,8 @@ __all__ = [
     "WindowBufferSynchronization",
     "WindowDestroyedError",
     "WindowTextInputted",
+    "WindowResized",
+    "WindowVisibilityChanged",
 ]
 
 from ._display import Display
@@ -72,4 +74,6 @@ from ._platform import set_clipboard
 from ._window import Window
 from ._window import WindowBufferSynchronization
 from ._window import WindowDestroyedError
+from ._window import WindowResized
 from ._window import WindowTextInputted
+from ._window import WindowVisibilityChanged
