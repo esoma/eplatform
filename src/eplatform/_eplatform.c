@@ -264,6 +264,21 @@ error:
     return 0;
 }
 
+static PyObject *
+set_sdl_window_always_on_top(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    if (!SDL_SetWindowAlwaysOnTop(sdl_window, args[1] == Py_True)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
 
 static PyObject *
 create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
@@ -817,6 +832,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"enable_sdl_window_text_input", (PyCFunction)enable_sdl_window_text_input, METH_FASTCALL, 0},
     {"disable_sdl_window_text_input", disable_sdl_window_text_input, METH_O, 0},
     {"set_sdl_window_border", set_sdl_window_border, METH_FASTCALL, 0},
+    {"set_sdl_window_always_on_top", set_sdl_window_always_on_top, METH_FASTCALL, 0},
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},

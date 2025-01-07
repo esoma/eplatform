@@ -55,6 +55,18 @@ def test_is_bordered(window):
     assert window.is_bordered
 
 
+def test_is_always_on_top(window):
+    assert not window.is_always_on_top
+    window.allow_not_on_top()
+    assert not window.is_always_on_top
+    window.force_always_on_top()
+    assert window.is_always_on_top
+    window.force_always_on_top()
+    assert window.is_always_on_top
+    window.allow_not_on_top()
+    assert not window.is_always_on_top
+
+
 def test_size(window):
     assert window.size == IVector2(200, 200)
 

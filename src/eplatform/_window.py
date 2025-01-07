@@ -35,6 +35,7 @@ from ._eplatform import delete_sdl_window
 from ._eplatform import disable_sdl_window_text_input
 from ._eplatform import enable_sdl_window_text_input
 from ._eplatform import hide_sdl_window
+from ._eplatform import set_sdl_window_always_on_top
 from ._eplatform import set_sdl_window_border
 from ._eplatform import set_sdl_window_size
 from ._eplatform import show_sdl_window
@@ -91,6 +92,7 @@ class Window:
         self.hidden: Event[WindowVisibilityChanged] = Event()
 
         self._is_bordered = True
+        self._is_always_on_top = False
 
     def __del__(self) -> None:
         delete_window(self)
@@ -174,6 +176,22 @@ class Window:
             raise WindowDestroyedError()
         set_sdl_window_border(self._sdl_window, False)
         self._is_bordered = False
+
+    @property
+    def is_always_on_top(self) -> bool:
+        return self._is_always_on_top
+
+    def force_always_on_top(self) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_always_on_top(self._sdl_window, True)
+        self._is_always_on_top = True
+
+    def allow_not_on_top(self) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_always_on_top(self._sdl_window, False)
+        self._is_always_on_top = False
 
     def convert_screen_coordinate_to_world_coordinate(self, coord: IVector2) -> IVector2:
         clip_space_position = FVector4(
