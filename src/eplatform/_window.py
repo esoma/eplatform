@@ -29,6 +29,9 @@ from emath import FMatrix4
 from emath import FVector4
 from emath import IVector2
 
+from ._display import Display
+from ._display import DisplayMode
+from ._display import get_sdl_display_id
 from ._eplatform import center_sdl_window
 from ._eplatform import create_sdl_window
 from ._eplatform import delete_sdl_window
@@ -37,6 +40,8 @@ from ._eplatform import enable_sdl_window_text_input
 from ._eplatform import hide_sdl_window
 from ._eplatform import set_sdl_window_always_on_top
 from ._eplatform import set_sdl_window_border
+from ._eplatform import set_sdl_window_fullscreen
+from ._eplatform import set_sdl_window_not_fullscreen
 from ._eplatform import set_sdl_window_size
 from ._eplatform import show_sdl_window
 from ._eplatform import swap_sdl_window
@@ -93,6 +98,7 @@ class Window:
 
         self._is_bordered = True
         self._is_always_on_top = False
+        self._is_fullscreen = False
 
     def __del__(self) -> None:
         delete_window(self)
@@ -201,6 +207,25 @@ class Window:
             self.screen_space_to_world_space_transform @ clip_space_position
         )
         return IVector2(int(world_space_mouse_position.x), int(world_space_mouse_position.y))
+
+    @property
+    def is_fullscreen(self) -> bool:
+        return self._is_fullscreen
+
+    def fullscreen(self, display: Display, mode: DisplayMode) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        sdl_display_id = get_sdl_display_id(display)
+        set_sdl_window_fullscreen(
+            self._sdl_window, sdl_display_id, mode.size.x, mode.size.y, mode.refresh_rate
+        )
+        self._is_fullscreen = True
+
+    def window(self) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_not_fullscreen(self._sdl_window)
+        self._is_fullscreen = False
 
 
 def get_sdl_window(window: Window) -> SdlWindow:

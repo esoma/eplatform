@@ -279,6 +279,67 @@ error:
     return 0;
 }
 
+static PyObject *
+set_sdl_window_fullscreen(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(5);
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    SDL_DisplayID sdl_display = PyLong_AsLong(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    int w = PyLong_AsLong(args[2]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    int h = PyLong_AsLong(args[3]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    double refresh_rate = PyFloat_AsDouble(args[4]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    int count;
+    SDL_DisplayMode *display_mode = 0;
+    SDL_DisplayMode **display_modes = SDL_GetFullscreenDisplayModes(sdl_display, &count);
+    if (!display_modes){ RAISE_SDL_ERROR(); }
+    for (int i = 0; i < count; i++)
+    {
+        display_mode = display_modes[i];
+        if (
+            display_mode->w == w &&
+            display_mode->h == h &&
+            (int)display_mode->refresh_rate == (int)refresh_rate
+        )
+        {
+            break;
+        }
+        display_mode = 0;
+    }
+    if (display_mode == 0)
+    {
+        PyErr_Format(PyExc_ValueError, "display does not support the requested mode");
+        goto error;
+    }
+
+    if (!SDL_SetWindowFullscreenMode(sdl_window, display_mode)){ RAISE_SDL_ERROR(); }
+    if (!SDL_SetWindowFullscreen(sdl_window, true)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
+set_sdl_window_not_fullscreen(PyObject *module, PyObject *py_sdl_window)
+{
+    SDL_Window *sdl_window = PyCapsule_GetPointer(py_sdl_window, "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    if (!SDL_SetWindowFullscreen(sdl_window, false)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
 
 static PyObject *
 create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
@@ -831,8 +892,10 @@ static PyMethodDef module_PyMethodDef[] = {
     {"swap_sdl_window", (PyCFunction)swap_sdl_window, METH_FASTCALL, 0},
     {"enable_sdl_window_text_input", (PyCFunction)enable_sdl_window_text_input, METH_FASTCALL, 0},
     {"disable_sdl_window_text_input", disable_sdl_window_text_input, METH_O, 0},
-    {"set_sdl_window_border", set_sdl_window_border, METH_FASTCALL, 0},
-    {"set_sdl_window_always_on_top", set_sdl_window_always_on_top, METH_FASTCALL, 0},
+    {"set_sdl_window_border", (PyCFunction)set_sdl_window_border, METH_FASTCALL, 0},
+    {"set_sdl_window_always_on_top", (PyCFunction)set_sdl_window_always_on_top, METH_FASTCALL, 0},
+    {"set_sdl_window_fullscreen", (PyCFunction)set_sdl_window_fullscreen, METH_FASTCALL, 0},
+    {"set_sdl_window_not_fullscreen", set_sdl_window_not_fullscreen, METH_O, 0},
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},

@@ -17,6 +17,7 @@ __all__ = [
     "DisplayResized",
     "forget_displays",
     "get_displays",
+    "get_sdl_display_id",
 ]
 
 from enum import Enum
@@ -163,6 +164,13 @@ class Display:
         if not self.is_connected:
             raise DisplayDisconnectedError()
         return self._refresh_rate
+
+
+def get_sdl_display_id(display: Display) -> SdlDisplayId:
+    if not display.is_connected:
+        raise DisplayDisconnectedError()
+    assert display._sdl_display is not None
+    return display._sdl_display
 
 
 _displays: dict[SdlDisplayId, Display] = {}

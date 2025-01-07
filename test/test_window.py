@@ -9,6 +9,7 @@ from emath import IVector2
 from eplatform import Window
 from eplatform import WindowBufferSynchronization
 from eplatform import WindowDestroyedError
+from eplatform import get_displays
 from eplatform._window import close_window
 from eplatform._window import delete_window
 from eplatform._window import hide_window
@@ -53,6 +54,24 @@ def test_is_bordered(window):
     assert not window.is_bordered
     window.show_border()
     assert window.is_bordered
+
+
+def test_is_fullscreen(window):
+    displays = tuple(get_displays())
+    if len(displays) < 1:
+        pytest.skip("test requires at least 1 display")
+    display = displays[0]
+    display_mode = display.modes[0]
+
+    assert not window.is_fullscreen
+    window.window()
+    assert not window.is_fullscreen
+    window.fullscreen(display, display_mode)
+    assert window.is_fullscreen
+    window.fullscreen(display, display_mode)
+    assert window.is_fullscreen
+    window.window()
+    assert not window.is_fullscreen
 
 
 def test_is_always_on_top(window):
