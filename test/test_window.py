@@ -40,6 +40,19 @@ def test_position(window):
     window_moved.assert_called_once_with({"position": new_position})
 
 
+def test_move(window, capture_event):
+    original_position = window.position
+    new_position = window.position + IVector2(-1, 1)
+
+    def _():
+        window.move(new_position)
+        assert window.position == original_position
+
+    event = capture_event(_, window.moved)
+    assert event == {"position": new_position}
+    assert window.position == new_position
+
+
 def test_close():
     window = MagicMock()
     close_window(window)

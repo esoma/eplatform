@@ -44,6 +44,7 @@ from ._eplatform import set_sdl_window_always_on_top
 from ._eplatform import set_sdl_window_border
 from ._eplatform import set_sdl_window_fullscreen
 from ._eplatform import set_sdl_window_not_fullscreen
+from ._eplatform import set_sdl_window_position
 from ._eplatform import set_sdl_window_size
 from ._eplatform import show_sdl_window
 from ._eplatform import swap_sdl_window
@@ -164,6 +165,11 @@ class Window:
         if self._sdl_window is None:
             raise WindowDestroyedError()
         set_sdl_window_size(self._sdl_window, value)
+
+    def move(self, value: IVector2) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_position(self._sdl_window, value)
 
     @property
     def position(self) -> IVector2:

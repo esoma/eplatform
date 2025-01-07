@@ -158,6 +158,36 @@ error:
 }
 
 static PyObject *
+set_sdl_window_position(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    PyObject *ex = 0;
+    struct EMathApi *emath_api = 0;
+
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    emath_api = EMathApi_Get();
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    const int *position = emath_api->IVector2_GetValuePointer(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    EMathApi_Release();
+    emath_api = 0;
+
+    if (!SDL_SetWindowPosition(sdl_window, position[0], position[1])){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    ex = PyErr_GetRaisedException();
+    if (emath_api){ EMathApi_Release(); }
+    PyErr_SetRaisedException(ex);
+    return 0;
+}
+
+static PyObject *
 center_sdl_window(PyObject *module, PyObject *py_sdl_window)
 {
     SDL_Window *sdl_window = PyCapsule_GetPointer(py_sdl_window, "_eplatform.SDL_Window");
@@ -888,6 +918,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"show_sdl_window", show_sdl_window, METH_O, 0},
     {"hide_sdl_window", hide_sdl_window, METH_O, 0},
     {"set_sdl_window_size", (PyCFunction)set_sdl_window_size, METH_FASTCALL, 0},
+    {"set_sdl_window_position", (PyCFunction)set_sdl_window_position, METH_FASTCALL, 0},
     {"center_sdl_window", center_sdl_window, METH_O, 0},
     {"swap_sdl_window", (PyCFunction)swap_sdl_window, METH_FASTCALL, 0},
     {"enable_sdl_window_text_input", (PyCFunction)enable_sdl_window_text_input, METH_FASTCALL, 0},
