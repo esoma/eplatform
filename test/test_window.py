@@ -10,8 +10,10 @@ from eplatform import Window
 from eplatform import WindowBufferSynchronization
 from eplatform import WindowDestroyedError
 from eplatform import get_displays
+from eplatform._window import blur_window
 from eplatform._window import close_window
 from eplatform._window import delete_window
+from eplatform._window import focus_window
 from eplatform._window import hide_window
 from eplatform._window import input_window_text
 from eplatform._window import move_window
@@ -42,6 +44,20 @@ def test_close():
     window = MagicMock()
     close_window(window)
     window.closed.assert_called_once_with(None)
+
+
+def test_is_focused(window):
+    assert not window.is_focused
+
+    with patch.object(window, "focused", new=MagicMock()) as window_focused:
+        focus_window(window)
+    assert window.is_focused
+    window_focused.assert_called_once_with(None)
+
+    with patch.object(window, "blurred", new=MagicMock()) as window_blurred:
+        blur_window(window)
+    assert not window.is_focused
+    window_blurred.assert_called_once_with(None)
 
 
 def test_is_bordered(window):

@@ -29,7 +29,9 @@ from ._type import SdlDisplayOrientation
 from ._type import SdlEventType
 from ._type import SdlMouseButton
 from ._type import SdlScancode
+from ._window import blur_window
 from ._window import close_window
+from ._window import focus_window
 from ._window import hide_window
 from ._window import input_window_text
 from ._window import move_window
@@ -149,6 +151,14 @@ class _Selector(SelectSelector):
         change_display_refresh_rate(sdl_display, refresh_rate)
         return True
 
+    def _handle_sdl_event_window_focus_gained(self) -> bool:
+        focus_window(get_window())
+        return True
+
+    def _handle_sdl_event_window_focus_lost(self) -> bool:
+        blur_window(get_window())
+        return True
+
     _SDL_EVENT_DISPATCH: Final[Mapping[SdlEventType, Callable[..., bool]]] = {
         _eplatform.SDL_EVENT_QUIT: _handle_sdl_event_quit,
         _eplatform.SDL_EVENT_MOUSE_MOTION: _handle_sdl_event_mouse_motion,
@@ -162,6 +172,8 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_WINDOW_SHOWN: _handle_sdl_event_window_shown,
         _eplatform.SDL_EVENT_WINDOW_HIDDEN: _handle_sdl_event_window_hidden,
         _eplatform.SDL_EVENT_WINDOW_MOVED: _handle_sdl_event_window_moved,
+        _eplatform.SDL_EVENT_WINDOW_FOCUS_GAINED: _handle_sdl_event_window_focus_gained,
+        _eplatform.SDL_EVENT_WINDOW_FOCUS_LOST: _handle_sdl_event_window_focus_lost,
         _eplatform.SDL_EVENT_DISPLAY_ADDED: _handle_sdl_event_display_added,
         _eplatform.SDL_EVENT_DISPLAY_REMOVED: _handle_sdl_event_display_removed,
         _eplatform.SDL_EVENT_DISPLAY_ORIENTATION: _handle_sdl_event_display_orientation,

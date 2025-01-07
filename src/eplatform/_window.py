@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 __all__ = [
+    "blur_window",
     "close_window",
     "delete_window",
+    "focus_window",
     "get_sdl_window",
     "hide_window",
     "input_window_text",
@@ -95,6 +97,10 @@ class Window:
         self.visibility_changed: Event[WindowVisibilityChanged] = Event()
         self.shown: Event[WindowVisibilityChanged] = Event()
         self.hidden: Event[WindowVisibilityChanged] = Event()
+
+        self._is_focused = False
+        self.focused: Event[None] = Event()
+        self.blurred: Event[None] = Event()
 
         self._is_bordered = True
         self._is_always_on_top = False
@@ -227,6 +233,10 @@ class Window:
         set_sdl_window_not_fullscreen(self._sdl_window)
         self._is_fullscreen = False
 
+    @property
+    def is_focused(self) -> bool:
+        return self._is_focused
+
 
 def get_sdl_window(window: Window) -> SdlWindow:
     assert window._sdl_window is not None
@@ -270,3 +280,13 @@ def resize_window(window: Window, size: IVector2) -> None:
 def move_window(window: Window, position: IVector2) -> None:
     window._position = position
     window.moved({"position": position})
+
+
+def focus_window(window: Window) -> None:
+    window._is_focused = True
+    window.focused(None)
+
+
+def blur_window(window: Window) -> None:
+    window._is_focused = False
+    window.blurred(None)

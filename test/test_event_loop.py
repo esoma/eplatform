@@ -87,7 +87,16 @@ def test_selector_poll_sdl_events_none(platform):
     assert handle_sdl_event.call_count == 0
 
 
-@pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_QUIT])
+@pytest.mark.parametrize(
+    "event_type",
+    [
+        _eplatform.SDL_EVENT_QUIT,
+        _eplatform.SDL_EVENT_WINDOW_HIDDEN,
+        _eplatform.SDL_EVENT_WINDOW_SHOWN,
+        _eplatform.SDL_EVENT_WINDOW_FOCUS_GAINED,
+        _eplatform.SDL_EVENT_WINDOW_FOCUS_LOST,
+    ],
+)
 def test_selector_poll_sdl_events_default(platform, event_type):
     selector = _Selector()
     clear_sdl_events()
@@ -176,7 +185,7 @@ def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
 
 @pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_WINDOW_MOVED])
 @pytest.mark.parametrize("position", [IVector2(2, 1), IVector2(99, 75)])
-def test_selector_poll_sdl_events_window_moed(platform, event_type, position):
+def test_selector_poll_sdl_events_window_moved(platform, event_type, position):
     selector = _Selector()
     clear_sdl_events()
     push_sdl_event(event_type, position.x, position.y)
@@ -391,6 +400,9 @@ def test_selector_poll_sdl_events_mode_changed(platform):
         (_eplatform.SDL_EVENT_WINDOW_RESIZED, "_handle_sdl_event_window_resized"),
         (_eplatform.SDL_EVENT_WINDOW_SHOWN, "_handle_sdl_event_window_shown"),
         (_eplatform.SDL_EVENT_WINDOW_HIDDEN, "_handle_sdl_event_window_hidden"),
+        (_eplatform.SDL_EVENT_WINDOW_MOVED, "_handle_sdl_event_window_moved"),
+        (_eplatform.SDL_EVENT_WINDOW_FOCUS_GAINED, "_handle_sdl_event_window_focus_gained"),
+        (_eplatform.SDL_EVENT_WINDOW_FOCUS_LOST, "_handle_sdl_event_window_focus_lost"),
         (_eplatform.SDL_EVENT_DISPLAY_ADDED, "_handle_sdl_event_display_added"),
         (_eplatform.SDL_EVENT_DISPLAY_REMOVED, "_handle_sdl_event_display_removed"),
         (_eplatform.SDL_EVENT_DISPLAY_ORIENTATION, "_handle_sdl_event_display_orientation"),
@@ -774,6 +786,20 @@ def test_selector_handle_sdl_event_window_hidden(mock_window):
     with patch("eplatform._event_loop.hide_window") as hide_window:
         assert selector._handle_sdl_event_window_hidden()
     hide_window.assert_called_once_with(mock_window)
+
+
+def test_selector_handle_sdl_event_window_focus_gained(mock_window):
+    selector = _Selector()
+    with patch("eplatform._event_loop.focus_window") as focus_window:
+        assert selector._handle_sdl_event_window_focus_gained()
+    focus_window.assert_called_once_with(mock_window)
+
+
+def test_selector_handle_sdl_event_window_focus_lost(mock_window):
+    selector = _Selector()
+    with patch("eplatform._event_loop.blur_window") as blur_window:
+        assert selector._handle_sdl_event_window_focus_lost()
+    blur_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_display_added():
