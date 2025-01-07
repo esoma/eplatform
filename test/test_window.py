@@ -61,6 +61,7 @@ def test_is_fullscreen(window):
     if len(displays) < 1:
         pytest.skip("test requires at least 1 display with fullscreen modes")
     display = displays[0]
+    display_mode = display.modes[0]
 
     assert not window.is_fullscreen
     window.window()
