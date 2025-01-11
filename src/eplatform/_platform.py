@@ -38,10 +38,12 @@ from ._eplatform import get_gl_attrs
 from ._eplatform import initialize_sdl
 from ._eplatform import set_clipboard as _set_clipboard
 from ._keyboard import Keyboard
+from ._window import Window
+from ._window import delete_window
+from ._window import get_sdl_window
 
 if TYPE_CHECKING:
     from ._mouse import Mouse
-    from ._window import Window
 
 
 class Platform:
@@ -63,8 +65,6 @@ class Platform:
         keyboard_cls: type[Keyboard] | None = None,
     ) -> None:
         if window_cls is None:
-            from ._window import Window
-
             self._window_cls = Window
         else:
             self._window_cls = window_cls
@@ -105,8 +105,6 @@ class Platform:
         forget_controllers()
         forget_displays()
         assert self._window is not None
-        from ._window import delete_window
-
         delete_window(self._window)
         self._window = None
 
@@ -115,9 +113,6 @@ class Platform:
 
     def _setup_open_gl(self) -> None:
         assert self._window is not None
-
-        from ._window import get_sdl_window
-
         sdl_window = get_sdl_window(self._window)
         self._gl_context = create_sdl_gl_context(sdl_window)
 
