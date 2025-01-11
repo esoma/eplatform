@@ -736,6 +736,7 @@ get_sdl_event(PyObject *module, PyObject *unused)
             return Py_BuildValue("(iO)", event.type, py_position);
         }
         case SDL_EVENT_DISPLAY_ADDED:
+        case SDL_EVENT_DISPLAY_REMOVED:
         {
             return Py_BuildValue("(ii)", event.type, event.display.displayID);
         }
