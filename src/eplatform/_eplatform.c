@@ -1050,11 +1050,19 @@ error:
 static PyObject *
 connect_virtual_joystick(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
-    CHECK_UNEXPECTED_ARG_COUNT_ERROR(1);
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(5);
 
     SDL_VirtualJoystickDesc desc;
     SDL_INIT_INTERFACE(&desc);
     desc.name = PyUnicode_AsUTF8AndSize(args[0], 0);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    desc.naxes = (Uint16)PyLong_AsUnsignedLong(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    desc.nballs = (Uint16)PyLong_AsUnsignedLong(args[2]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    desc.nbuttons = (Uint16)PyLong_AsUnsignedLong(args[3]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    desc.nhats = (Uint16)PyLong_AsUnsignedLong(args[4]);
     CHECK_UNEXPECTED_PYTHON_ERROR();
 
     SDL_JoystickID joystick = SDL_AttachVirtualJoystick(&desc);
@@ -1197,7 +1205,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"get_sdl_joysticks", get_sdl_joysticks, METH_NOARGS, 0},
     {"open_sdl_joystick", open_sdl_joystick, METH_O, 0},
     {"close_sdl_joystick", close_sdl_joystick, METH_O, 0},
-    {"connect_virtual_joystick", connect_virtual_joystick, METH_FASTCALL, 0},
+    {"connect_virtual_joystick", (PyCFunction)connect_virtual_joystick, METH_FASTCALL, 0},
     {"disconnect_virtual_joystick", disconnect_virtual_joystick, METH_O, 0},
     {"get_sdl_displays", get_sdl_displays, METH_NOARGS, 0},
     {"get_sdl_display_details", get_sdl_display_details, METH_O, 0},

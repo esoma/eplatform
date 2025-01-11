@@ -2,6 +2,10 @@ from __future__ import annotations
 
 __all__ = [
     "Controller",
+    "ControllerAxis",
+    "ControllerButton",
+    "ControllerBall",
+    "ControllerHat",
     "Display",
     "DisplayConnectionChanged",
     "DisplayDisconnectedError",
@@ -44,6 +48,10 @@ __all__ = [
 ]
 
 from ._controller import Controller
+from ._controller import ControllerAxis
+from ._controller import ControllerBall
+from ._controller import ControllerButton
+from ._controller import ControllerHat
 from ._display import Display
 from ._display import DisplayConnectionChanged
 from ._display import DisplayDisconnectedError
