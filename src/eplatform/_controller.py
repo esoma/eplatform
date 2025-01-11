@@ -156,17 +156,17 @@ _SDL_GAMEPAD_BUTTON_NAME: Final[Mapping[SdlGamepadButton, str]] = {
     _eplatform.SDL_GAMEPAD_BUTTON_DPAD_DOWN: "dpad down",
     _eplatform.SDL_GAMEPAD_BUTTON_DPAD_LEFT: "dpad left",
     _eplatform.SDL_GAMEPAD_BUTTON_DPAD_RIGHT: "dpad right",
-    _eplatform.SDL_GAMEPAD_BUTTON_MISC1: "1",
+    _eplatform.SDL_GAMEPAD_BUTTON_MISC1: "button 1",
     _eplatform.SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1: "right paddle",
     _eplatform.SDL_GAMEPAD_BUTTON_LEFT_PADDLE1: "left paddle",
     _eplatform.SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2: "right paddle 2",
     _eplatform.SDL_GAMEPAD_BUTTON_LEFT_PADDLE2: "left paddle 2",
     _eplatform.SDL_GAMEPAD_BUTTON_TOUCHPAD: "touchpad",
-    _eplatform.SDL_GAMEPAD_BUTTON_MISC2: "2",
-    _eplatform.SDL_GAMEPAD_BUTTON_MISC3: "3",
-    _eplatform.SDL_GAMEPAD_BUTTON_MISC4: "4",
-    _eplatform.SDL_GAMEPAD_BUTTON_MISC5: "5",
-    _eplatform.SDL_GAMEPAD_BUTTON_MISC6: "6",
+    _eplatform.SDL_GAMEPAD_BUTTON_MISC2: "button 2",
+    _eplatform.SDL_GAMEPAD_BUTTON_MISC3: "button 3",
+    _eplatform.SDL_GAMEPAD_BUTTON_MISC4: "button 4",
+    _eplatform.SDL_GAMEPAD_BUTTON_MISC5: "button 5",
+    _eplatform.SDL_GAMEPAD_BUTTON_MISC6: "button 6",
 }
 
 _SDL_GAMEPAD_BUTTON_LABEL_NAME: Final[Mapping[SdlGamepadButtonLabel, str]] = {
@@ -189,6 +189,20 @@ _SDL_GAMEPAD_AXIS_NAME: Final[Mapping[SdlGamepadAxis, str]] = {
     _eplatform.SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: "right trigger",
 }
 
+# we shouldn't be generating inputs with the same name
+assert (
+    len(_SDL_GAMEPAD_BUTTON_NAME)
+    + len(_SDL_GAMEPAD_BUTTON_LABEL_NAME)
+    + len(_SDL_GAMEPAD_AXIS_NAME)
+) == len(
+    set(
+        (
+            *_SDL_GAMEPAD_BUTTON_NAME.values(),
+            *_SDL_GAMEPAD_BUTTON_LABEL_NAME.values(),
+            *_SDL_GAMEPAD_AXIS_NAME.values(),
+        )
+    )
+)
 
 _controllers: dict[SdlJoystickId, Controller] = {}
 

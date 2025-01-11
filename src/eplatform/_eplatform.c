@@ -411,6 +411,7 @@ create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
         }
         sdl_gl_context = SDL_GL_CreateContext(sdl_window);
         if (sdl_gl_context){ break; }
+        SDL_ClearError();
     }
     if (!sdl_gl_context){ RAISE_SDL_ERROR(); }
 
@@ -1020,9 +1021,14 @@ close_sdl_joystick(PyObject *module, PyObject *py_joystick)
     CHECK_UNEXPECTED_PYTHON_ERROR();
 
     SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
-    if (!open_joystick){ RAISE_SDL_ERROR(); }
-
-    SDL_CloseJoystick(open_joystick);
+    if (open_joystick)
+    {
+        SDL_CloseJoystick(open_joystick);
+    }
+    else
+    {
+        SDL_ClearError();
+    }
 
     Py_RETURN_NONE;
 error:
