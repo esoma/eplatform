@@ -13,6 +13,7 @@ from emath import IVector2
 
 from . import _eplatform
 from ._controller import connect_controller
+from ._controller import controller_change_axis
 from ._controller import disconnect_controller
 from ._display import change_display_orientation
 from ._display import change_display_position
@@ -170,6 +171,11 @@ class _Selector(SelectSelector):
         disconnect_controller(sdl_joystick)
         return True
 
+    def _handle_sdl_event_joystick_axis_motion(
+        self, sdl_joystick: SdlJoystickId, axis_index: int, value: int
+    ) -> bool:
+        return controller_change_axis(sdl_joystick, axis_index, value)
+
     _SDL_EVENT_DISPATCH: Final[Mapping[SdlEventType, Callable[..., bool]]] = {
         _eplatform.SDL_EVENT_QUIT: _handle_sdl_event_quit,
         _eplatform.SDL_EVENT_MOUSE_MOTION: _handle_sdl_event_mouse_motion,
@@ -192,6 +198,7 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED: _handle_sdl_event_current_mode_changed,
         _eplatform.SDL_EVENT_JOYSTICK_ADDED: _handle_sdl_event_joystick_added,
         _eplatform.SDL_EVENT_JOYSTICK_REMOVED: _handle_sdl_event_joystick_removed,
+        _eplatform.SDL_EVENT_JOYSTICK_AXIS_MOTION: _handle_sdl_event_joystick_axis_motion,
     }
 
 

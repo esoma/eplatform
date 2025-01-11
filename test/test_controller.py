@@ -1,3 +1,5 @@
+from math import isclose
+from unittest.mock import ANY
 from uuid import uuid4
 
 import pytest
@@ -11,6 +13,7 @@ from eplatform import Platform
 from eplatform import get_controllers
 from eplatform._eplatform import connect_virtual_joystick
 from eplatform._eplatform import disconnect_virtual_joystick
+from eplatform._eplatform import set_virtual_joystick_axis_position
 
 
 class VirtualController:
@@ -114,3 +117,45 @@ def test_properties(capture_event, controller_kwargs):
         capture_event(vc.disconnect, Controller.disconnected)
         capture_event(vc.connect, Controller.connected)
         vc.get_controller()
+
+
+@pytest.mark.parametrize("event_object", [ControllerAxis, None])
+def test_axis_position(capture_event, event_object):
+    vc = VirtualController(axis_count=2)
+    with Platform():
+        controller = vc.get_controller()
+        axis0 = controller.get_axis("axis 0")
+        axis1 = controller.get_axis("axis 1")
+        assert isclose(axis0.position, 0, abs_tol=1e-04)
+        assert isclose(axis1.position, 0, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, 0, -32768)
+            assert isclose(axis0.position, 0, abs_tol=1e-04)
+            assert isclose(axis1.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or axis0, "changed"))
+
+        assert event == {"axis": axis0, "position": axis0.position}
+        assert isclose(axis0.position, -1)
+        assert isclose(axis1.position, 0, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 32767)
+            assert isclose(axis0.position, -1)
+            assert isclose(axis1.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or axis1, "changed"))
+        assert event == {"axis": axis1, "position": axis1.position}
+        assert isclose(axis0.position, -1)
+        assert isclose(axis1.position, 1)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 16384)
+            assert isclose(axis0.position, -1)
+            assert isclose(axis1.position, 1)
+
+        event = capture_event(_, getattr(event_object or axis1, "changed"))
+        assert event == {"axis": axis1, "position": axis1.position}
+        assert isclose(axis0.position, -1)
+        assert isclose(axis1.position, 0.5, abs_tol=1e-04)

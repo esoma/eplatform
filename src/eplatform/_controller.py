@@ -1,4 +1,4 @@
-__all__ = ["Controller", "discover_controllers", "forget_controllers"]
+__all__ = ["Controller", "discover_controllers", "forget_controllers", "controller_change_axis"]
 
 from typing import ClassVar
 from typing import Collection
@@ -27,10 +27,33 @@ _AXIS_MIN: Final = -32768
 _AXIS_MAX: Final = 32767
 
 
+class ControllerDisconnectedError(RuntimeError):
+    pass
+
+
+class _ControllerAxisAxisMapping(NamedTuple):
+    from_min: int
+    from_max: int
+    to_name: str
+
+    def calculate_to_value(self, from_value: int) -> float:
+        from_value = min(max(self.from_min, from_value), self.from_max)
+        to_value = (from_value - self.from_min) / (self.from_max - self.from_min)
+        to_value = (to_value * 2) - 1.0
+        to_value = min(max(-1.0, to_value), 1.0)
+        return to_value
+
+    def __call__(self, controller: "Controller", from_value: int) -> bool:
+        to_axis = controller.get_axis(self.to_name)
+        return to_axis._set_position(self.calculate_to_value(from_value))
+
+
+"""
 class _ControllerAxisMapping(NamedTuple):
     axis_index: int
     min: int
     max: int
+    input_name: str
 
 
 class _ControllerButtonMapping(NamedTuple):
@@ -44,36 +67,81 @@ class _ControllerBallMapping(NamedTuple):
 class _ControllerHatMapping(NamedTuple):
     hat_index: int
     mask: int
+"""
 
 
 class _ControllerInput:
+    _controller: "Controller | None"
+
     def __init__(self, name: str):
+        self._controller = None
         self._name = name
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} {self.name!r}>"
+        if self._controller is None:
+            return f"<{self.__class__.__name__}>"
+        return f"<{self.__class__.__name__} {self._name!r}>"
+
+    @property
+    def is_connected(self):
+        return self._controller is not None
+
+    @property
+    def controller(self) -> "Controller":
+        if self._controller is None:
+            raise ControllerDisconnectedError()
+        return self._controller
 
     @property
     def name(self) -> str:
+        if self._controller is None:
+            raise ControllerDisconnectedError()
         return self._name
 
 
+class ControllerAxisChanged(TypedDict):
+    axis: "ControllerAxis"
+    position: float
+
+
 class ControllerAxis(_ControllerInput):
-    _min: int = _AXIS_MIN
-    _max: int = _AXIS_MAX
-    _mapping: _ControllerAxisMapping
+    _position: float
+
+    changed: Event[ControllerAxisChanged] = Event()
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.changed = Event()
+
+    @property
+    def position(self) -> float:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._position
+
+    def _set_position(self, value: float) -> bool:
+        if self._position == value:
+            return False
+
+        self._position = value
+
+        data: ControllerAxisChanged = {"axis": self, "position": value}
+        ControllerAxis.changed(data)
+        self.changed(data)
+
+        return True
 
 
 class ControllerButton(_ControllerInput):
-    _mapping: _ControllerButtonMapping | _ControllerHatMapping
+    pass
 
 
 class ControllerBall(_ControllerInput):
-    _mapping: _ControllerBallMapping
+    pass
 
 
 class ControllerHat(_ControllerInput):
-    _mapping: _ControllerHatMapping
+    pass
 
 
 class ControllerConnectionChanged(TypedDict):
@@ -87,6 +155,8 @@ class Controller:
     _uuid: UUID = UUID(bytes=b"\x00" * 16)
     _serial: str = ""
     _player_index: int | None = None
+
+    _axis_mappings: dict[int, list[_ControllerAxisAxisMapping]] = {}
 
     _axes: dict[str, ControllerAxis] = {}
     _balls: dict[str, ControllerBall] = {}
@@ -114,6 +184,8 @@ class Controller:
     def get_input(
         self, name: str
     ) -> ControllerAxis | ControllerBall | ControllerButton | ControllerHat:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         try:
             return self._buttons[name]
         except KeyError:
@@ -129,31 +201,47 @@ class Controller:
         return self._balls[name]
 
     def get_axis(self, name: str) -> ControllerAxis:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._axes[name]
 
     def get_ball(self, name: str) -> ControllerBall:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._balls[name]
 
     def get_button(self, name: str) -> ControllerButton:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._buttons[name]
 
     def get_hat(self, name: str) -> ControllerHat:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._hats[name]
 
     @property
     def axes(self) -> Collection[ControllerAxis]:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._axes.values()
 
     @property
     def balls(self) -> Collection[ControllerBall]:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._balls.values()
 
     @property
     def buttons(self) -> Collection[ControllerButton]:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._buttons.values()
 
     @property
     def hats(self) -> Collection[ControllerHat]:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._hats.values()
 
     @property
@@ -162,6 +250,8 @@ class Controller:
 
     @property
     def name(self) -> str:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
         return self._name
 
 
@@ -245,10 +335,10 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         guid,
         serial,
         player_index,
-        axis_count,
         ball_count,
         button_count,
         hat_count,
+        axis_details,
         mapping_details,
     ) = open_sdl_joystick(sdl_joystick)
     controller._sdl_joystick = sdl_joystick
@@ -257,32 +347,46 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
     controller._serial = serial or ""
     controller._player_index = player_index if player_index >= 0 else None
 
+    axis_mappings = controller._axis_mappings = {}
+
     axes: list[ControllerAxis] = []
     balls: list[ControllerBall] = []
     buttons: list[ControllerButton] = []
     hats: list[ControllerHat] = []
+
     if mapping_details is None:
-        for i in range(axis_count):
-            axis = ControllerAxis(f"axis {i}")
-            axis._mapping = _ControllerAxisMapping(i, _AXIS_MIN, _AXIS_MAX)
+        for i, (position,) in enumerate(axis_details):
+            axis_name = f"axis {i}"
+            axis = ControllerAxis(axis_name)
+            mapping = _ControllerAxisAxisMapping(_AXIS_MIN, _AXIS_MAX, axis_name)
+            axis._controller = controller
+            axis._position = mapping.calculate_to_value(position)
+
             axes.append(axis)
+            try:
+                mappings = axis_mappings[i]
+            except KeyError:
+                mappings = axis_mappings[i] = []
+            mappings.append(mapping)
 
         for i in range(ball_count):
             ball = ControllerBall(f"ball {i}")
-            ball._mapping = _ControllerBallMapping(i)
+            ball._controller = controller
             balls.append(ball)
 
         for i in range(button_count):
             button = ControllerButton(f"button {i}")
-            button._mapping = _ControllerButtonMapping(i)
+            button._controller = controller
             buttons.append(button)
 
         for i in range(hat_count):
             hat = ControllerHat(f"hat {i}")
-            hat._mapping = _ControllerHatMapping(i, 0)
+            hat._controller = controller
             hats.append(hat)
 
     else:
+        raise RuntimeError("nope")
+        """
         for (input_type, *input_args), (output_type, *output_args) in mapping_details:
             if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                 mapping = _ControllerButtonMapping(*input_args)
@@ -316,6 +420,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                 axes.append(axis)
             else:
                 raise RuntimeError(f"unexpected output type {output_type!r}")
+        """
 
     controller._axes = {i.name: i for i in axes}
     controller._balls = {i.name: i for i in balls}
@@ -341,6 +446,13 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 def disconnect_controller(sdl_joystick: SdlJoystickId) -> None:
     controller = _controllers.pop(sdl_joystick)
     controller._sdl_joystick = None
+    for input in (
+        *controller._axes.values(),
+        *controller._balls.values(),
+        *controller._buttons.values(),
+        *controller._hats.values(),
+    ):
+        input._controller = None
 
     close_sdl_joystick(sdl_joystick)
 
@@ -359,3 +471,15 @@ def discover_controllers() -> None:
 def forget_controllers() -> None:
     for sdl_joystick in list(_controllers.keys()):
         disconnect_controller(sdl_joystick)
+
+
+def controller_change_axis(sdl_joystick: SdlJoystickId, axis_index: int, value: int) -> bool:
+    controller = _controllers[sdl_joystick]
+    try:
+        mappings = controller._axis_mappings[axis_index]
+    except KeyError:
+        return False
+    successes = 0
+    for mapping in mappings:
+        successes += mapping(controller, value)
+    return successes > 0

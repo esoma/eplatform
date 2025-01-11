@@ -90,6 +90,7 @@ SDL_EVENT_DISPLAY_MOVED: SdlEventType
 SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED: SdlEventType
 SDL_EVENT_JOYSTICK_ADDED: SdlEventType
 SDL_EVENT_JOYSTICK_REMOVED: SdlEventType
+SDL_EVENT_JOYSTICK_AXIS_MOTION: SdlEventType
 
 # keyboard
 #    number
@@ -342,7 +343,15 @@ def get_sdl_joysticks() -> Collection[SdlJoystickId]: ...
 def open_sdl_joystick(
     sdl_joystick: SdlJoystickId, /
 ) -> tuple[
-    str, str, str | None, int, int, int, int, int, tuple[tuple[tuple, tuple], ...] | None
+    str,
+    str,
+    str | None,
+    int,
+    int,
+    int,
+    int,
+    tuple[tuple[int], ...],
+    tuple[tuple[tuple, tuple], ...] | None,
 ]: ...
 def close_sdl_joystick(sdl_joystick: SdlJoystickId, /) -> None: ...
 def connect_virtual_joystick(name: str, /) -> SdlJoystickId: ...
