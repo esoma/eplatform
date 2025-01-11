@@ -4,6 +4,7 @@ __all__ = [
     "Platform",
     "get_clipboard",
     "get_color_bits",
+    "get_controllers",
     "get_depth_bits",
     "get_displays",
     "get_keyboard",
@@ -20,6 +21,10 @@ from typing import ClassVar
 from typing import Generator
 from typing import Self
 
+from ._controller import Controller
+from ._controller import discover_controllers
+from ._controller import forget_controllers
+from ._controller import get_controllers as _get_controllers
 from ._display import Display
 from ._display import discover_displays
 from ._display import forget_displays
@@ -84,6 +89,7 @@ class Platform:
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()
         discover_displays()
+        discover_controllers()
         self._setup_open_gl()
         clear_sdl_events()
         Platform._singleton = self
@@ -96,6 +102,7 @@ class Platform:
             callback()
 
         self._teardown_open_gl()
+        forget_controllers()
         forget_displays()
         assert self._window is not None
         from ._window import delete_window
@@ -200,3 +207,12 @@ def get_displays() -> Generator[Display, None, None]:
         if Platform._singleton is None:
             raise RuntimeError("platform is not active")
         yield display
+
+
+def get_controllers() -> Generator[Controller, None, None]:
+    if Platform._singleton is None:
+        raise RuntimeError("platform is not active")
+    for controller in _get_controllers():
+        if Platform._singleton is None:
+            raise RuntimeError("platform is not active")
+        yield controller

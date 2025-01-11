@@ -7,7 +7,12 @@ from emath import IVector2
 from ._type import SdlDisplayId
 from ._type import SdlDisplayOrientation
 from ._type import SdlEventType
+from ._type import SdlGamepadAxis
+from ._type import SdlGamepadBindingType
+from ._type import SdlGamepadButton
+from ._type import SdlGamepadButtonLabel
 from ._type import SdlGlContext
+from ._type import SdlJoystickId
 from ._type import SdlMouseButton
 from ._type import SdlScancode
 from ._type import SdlWindow
@@ -329,6 +334,62 @@ SDL_SCANCODE_LANG6: SdlScancode
 SDL_SCANCODE_LANG7: SdlScancode
 SDL_SCANCODE_LANG8: SdlScancode
 SDL_SCANCODE_LANG9: SdlScancode
+
+# joystick
+def get_sdl_joysticks() -> Collection[SdlJoystickId]: ...
+def open_sdl_joystick(
+    sdl_joystick: SdlJoystickId, /
+) -> tuple[
+    str, str, str | None, int, int, int, int, int, tuple[tuple[tuple, tuple], ...] | None
+]: ...
+def close_sdl_joystick(sdl_joystick: SdlJoystickId, /) -> None: ...
+
+SDL_GAMEPAD_BINDTYPE_BUTTON: SdlGamepadBindingType
+SDL_GAMEPAD_BINDTYPE_AXIS: SdlGamepadBindingType
+SDL_GAMEPAD_BINDTYPE_HAT: SdlGamepadBindingType
+
+SDL_GAMEPAD_BUTTON_LABEL_A: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_B: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_X: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_Y: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_CROSS: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_CIRCLE: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_SQUARE: SdlGamepadButtonLabel
+SDL_GAMEPAD_BUTTON_LABEL_TRIANGLE: SdlGamepadButtonLabel
+
+SDL_GAMEPAD_BUTTON_SOUTH: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_EAST: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_WEST: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_NORTH: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_BACK: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_GUIDE: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_START: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_LEFT_STICK: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_RIGHT_STICK: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_DPAD_UP: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_DPAD_DOWN: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_DPAD_LEFT: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_DPAD_RIGHT: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_MISC1: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_LEFT_PADDLE1: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_LEFT_PADDLE2: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_TOUCHPAD: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_MISC2: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_MISC3: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_MISC4: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_MISC5: SdlGamepadButton
+SDL_GAMEPAD_BUTTON_MISC6: SdlGamepadButton
+
+SDL_GAMEPAD_AXIS_LEFTX: SdlGamepadAxis
+SDL_GAMEPAD_AXIS_LEFTY: SdlGamepadAxis
+SDL_GAMEPAD_AXIS_RIGHTX: SdlGamepadAxis
+SDL_GAMEPAD_AXIS_RIGHTY: SdlGamepadAxis
+SDL_GAMEPAD_AXIS_LEFT_TRIGGER: SdlGamepadAxis
+SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: SdlGamepadAxis
 
 # display
 

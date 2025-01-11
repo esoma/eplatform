@@ -39,7 +39,7 @@
         goto error;\
     }
 
-static const int SUB_SYSTEMS = SDL_INIT_VIDEO;
+static const int SUB_SYSTEMS = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD;
 
 typedef struct ModuleState
 {
@@ -820,6 +820,216 @@ error:
 }
 
 static PyObject *
+get_sdl_joysticks(PyObject *module, PyObject *unused)
+{
+    PyObject *py_joysticks = 0;
+    int count;
+    SDL_JoystickID *joysticks = SDL_GetJoysticks(&count);
+    if (joysticks == 0){ RAISE_SDL_ERROR(); }
+
+    py_joysticks = PyTuple_New(count);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    for (int i = 0; i < count; i++)
+    {
+        SDL_JoystickID joystick = joysticks[i];
+        PyObject *py_joystick = PyLong_FromUnsignedLong(joystick);
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        PyTuple_SET_ITEM(py_joysticks, i, py_joystick);
+    }
+
+    SDL_free(joysticks);
+    joysticks = 0;
+
+    return py_joysticks;
+error:
+    Py_XDECREF(py_joysticks);
+    SDL_free(joysticks);
+    return 0;
+}
+
+static PyObject *
+get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
+{
+    SDL_Gamepad *open_gamepad = 0;
+    PyObject *py_results = 0;
+    PyObject *py_item = 0;
+    SDL_GamepadBinding **bindings = 0;
+    if (!SDL_IsGamepad(joystick))
+    {
+        Py_RETURN_NONE;
+    }
+
+    open_gamepad = SDL_OpenGamepad(joystick);
+    if (!open_gamepad){ RAISE_SDL_ERROR(); }
+
+    int count;
+    bindings = SDL_GetGamepadBindings(open_gamepad, &count);
+    if (!bindings){ RAISE_SDL_ERROR(); }
+
+    py_results = PyTuple_New(count);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    for (int i = 0; i < count; i++)
+    {
+        SDL_GamepadBinding *binding = bindings[i];
+
+        PyObject *py_item = PyTuple_New(2);
+
+        PyObject *py_input;
+        switch(binding->input_type)
+        {
+            case SDL_GAMEPAD_BINDTYPE_BUTTON:
+            {
+                py_input = Py_BuildValue(
+                    "(ii)",
+                    binding->input_type,
+                    binding->input.button
+                );
+                break;
+            }
+            case SDL_GAMEPAD_BINDTYPE_AXIS:
+            {
+                py_input = Py_BuildValue(
+                    "(iiii)",
+                    binding->input_type,
+                    binding->input.axis.axis,
+                    binding->input.axis.axis_min,
+                    binding->input.axis.axis_max
+                );
+                break;
+            }
+            case SDL_GAMEPAD_BINDTYPE_HAT:
+            {
+                py_input = Py_BuildValue(
+                    "(iii)",
+                    binding->input_type,
+                    binding->input.hat.hat,
+                    binding->input.hat.hat_mask
+                );
+                break;
+            }
+            default:
+            {
+                continue;
+            }
+        }
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        PyTuple_SET_ITEM(py_item, 0, py_input);
+
+        PyObject *py_output;
+        switch(binding->output_type)
+        {
+            case SDL_GAMEPAD_BINDTYPE_BUTTON:
+            {
+                py_output = Py_BuildValue(
+                    "(iii)",
+                    binding->output_type,
+                    binding->output.button,
+                    SDL_GetGamepadButtonLabel(open_gamepad, binding->output.button)
+                );
+                break;
+            }
+            case SDL_GAMEPAD_BINDTYPE_AXIS:
+            {
+                py_output = Py_BuildValue(
+                    "(iiii)",
+                    binding->output_type,
+                    binding->output.axis.axis,
+                    binding->output.axis.axis_min,
+                    binding->output.axis.axis_max
+                );
+                break;
+            }
+            default:
+            {
+                continue;
+            }
+        }
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        PyTuple_SET_ITEM(py_item, 1, py_output);
+
+        PyTuple_SET_ITEM(py_results, i, py_item);
+    }
+
+    SDL_free(bindings);
+    SDL_CloseGamepad(open_gamepad);
+
+    return py_results;
+error:
+    SDL_free(bindings);
+    Py_XDECREF(py_item);
+    Py_XDECREF(py_results);
+    if (open_gamepad){ SDL_CloseGamepad(open_gamepad); }
+    return 0;
+}
+
+static PyObject *
+open_sdl_joystick(PyObject *module, PyObject *py_joystick)
+{
+    SDL_Joystick *open_joystick = 0;
+    PyObject *mapping_details = 0;
+
+    SDL_JoystickID joystick = PyLong_AsLong(py_joystick);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    open_joystick = SDL_OpenJoystick(joystick);
+    if (!open_joystick){ RAISE_SDL_ERROR(); }
+    const char *name = SDL_GetJoystickNameForID(joystick);
+    if (!name){ RAISE_SDL_ERROR(); }
+    SDL_GUID sdl_guid = SDL_GetJoystickGUIDForID(joystick);
+    char guid[33];
+    SDL_GUIDToString(sdl_guid, guid, sizeof(guid));
+    const char *serial = SDL_GetJoystickSerial(open_joystick);
+    int player_index = SDL_GetJoystickPlayerIndex(open_joystick);
+    int axis_count = SDL_GetNumJoystickAxes(open_joystick);
+    if (axis_count == -1){ RAISE_SDL_ERROR(); }
+    int ball_count = SDL_GetNumJoystickBalls(open_joystick);
+    if (ball_count == -1){ RAISE_SDL_ERROR(); }
+    int button_count = SDL_GetNumJoystickButtons(open_joystick);
+    if (button_count == -1){ RAISE_SDL_ERROR(); }
+    int hat_count = SDL_GetNumJoystickHats(open_joystick);
+    if (hat_count == -1){ RAISE_SDL_ERROR(); }
+    mapping_details = get_sdl_joystick_mapping_details_(joystick);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    PyObject *py_result = Py_BuildValue(
+        "(sssiiiiiO)",
+        name,
+        guid,
+        serial,
+        player_index,
+        axis_count,
+        ball_count,
+        button_count,
+        hat_count,
+        mapping_details
+    );
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    return py_result;
+error:
+    Py_XDECREF(mapping_details);
+    if (open_joystick){ SDL_CloseJoystick(open_joystick); }
+    return 0;
+}
+
+static PyObject *
+close_sdl_joystick(PyObject *module, PyObject *py_joystick)
+{
+    SDL_JoystickID joystick = PyLong_AsLong(py_joystick);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
+    if (!open_joystick){ RAISE_SDL_ERROR(); }
+
+    SDL_CloseJoystick(open_joystick);
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
 get_sdl_displays(PyObject *module, PyObject *unused)
 {
     PyObject *py_displays = 0;
@@ -937,6 +1147,9 @@ static PyMethodDef module_PyMethodDef[] = {
     {"get_sdl_event", get_sdl_event, METH_NOARGS, 0},
     {"show_cursor", show_cursor, METH_NOARGS, 0},
     {"hide_cursor", hide_cursor, METH_NOARGS, 0},
+    {"get_sdl_joysticks", get_sdl_joysticks, METH_NOARGS, 0},
+    {"open_sdl_joystick", open_sdl_joystick, METH_O, 0},
+    {"close_sdl_joystick", close_sdl_joystick, METH_O, 0},
     {"get_sdl_displays", get_sdl_displays, METH_NOARGS, 0},
     {"get_sdl_display_details", get_sdl_display_details, METH_O, 0},
     {0},
@@ -1013,6 +1226,53 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_BUTTON_RIGHT);
     ADD_CONSTANT(SDL_BUTTON_X1);
     ADD_CONSTANT(SDL_BUTTON_X2);
+
+    ADD_CONSTANT(SDL_GAMEPAD_BINDTYPE_BUTTON);
+    ADD_CONSTANT(SDL_GAMEPAD_BINDTYPE_AXIS);
+    ADD_CONSTANT(SDL_GAMEPAD_BINDTYPE_HAT);
+
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_A);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_B);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_X);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_Y);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_CROSS);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_CIRCLE);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_SQUARE);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LABEL_TRIANGLE);
+
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_SOUTH);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_EAST);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_WEST);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_NORTH);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_BACK);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_GUIDE);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_START);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LEFT_STICK);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_RIGHT_STICK);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_DPAD_UP);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_MISC1);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LEFT_PADDLE1);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_LEFT_PADDLE2);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_TOUCHPAD);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_MISC2);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_MISC3);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_MISC4);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_MISC5);
+    ADD_CONSTANT(SDL_GAMEPAD_BUTTON_MISC6);
+
+    ADD_CONSTANT(SDL_GAMEPAD_AXIS_LEFTX);
+    ADD_CONSTANT(SDL_GAMEPAD_AXIS_LEFTY);
+    ADD_CONSTANT(SDL_GAMEPAD_AXIS_RIGHTX);
+    ADD_CONSTANT(SDL_GAMEPAD_AXIS_RIGHTY);
+    ADD_CONSTANT(SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
+    ADD_CONSTANT(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
 
     // number
     ADD_CONSTANT(SDL_SCANCODE_0);

@@ -122,7 +122,6 @@ class Display:
     def __repr__(self) -> str:
         if self._sdl_display is None:
             return "<Display>"
-        assert self._name is not None
         return f"<Display {self._name!r}>"
 
     @property
