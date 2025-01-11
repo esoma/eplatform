@@ -101,6 +101,16 @@ class Controller:
         self.connection_changed = Event()
         self.disconnected = Event()
 
+    def __repr__(self) -> str:
+        if self._sdl_joystick is None:
+            return "<Controller>"
+        id = self._uuid.hex
+        if self._serial:
+            id = f"{id} {self._serial}"
+        if self._player_index is not None:
+            id = f"(Player {self._player_index}) {id}"
+        return f"<Controller {self._name!r} {id}>"
+
     def get_input(
         self, name: str
     ) -> ControllerAxis | ControllerBall | ControllerButton | ControllerHat:
@@ -146,19 +156,13 @@ class Controller:
     def hats(self) -> Collection[ControllerHat]:
         return self._hats.values()
 
-    def __repr__(self) -> str:
-        if self._sdl_joystick is None:
-            return "<Controller>"
-        id = self._uuid.hex
-        if self._serial:
-            id = f"{id} {self._serial}"
-        if self._player_index is not None:
-            id = f"(Player {self._player_index}) {id}"
-        return f"<Controller {self._name!r} {id}>"
-
     @property
     def is_connected(self) -> bool:
         return self._sdl_joystick is not None
+
+    @property
+    def name(self) -> str:
+        return self._name
 
 
 _SDL_GAMEPAD_BUTTON_NAME: Final[Mapping[SdlGamepadButton, str]] = {

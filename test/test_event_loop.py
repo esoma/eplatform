@@ -265,7 +265,7 @@ if platform.system() == "Windows":
 
 
 @pytest.mark.disruptive
-def test_selector_poll_sdl_events_display_moved(platform, capture_event):
+def test_selector_poll_sdl_events_display_moved(platform):
     # The SDL event does not contain the position of the display, we get it from the actual
     # state of the system instead. This means we can't just send a mock event, we need to actually
     # change the state of the system to test this event.

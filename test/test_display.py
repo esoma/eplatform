@@ -94,9 +94,7 @@ def test_refresh_rate(connected_display, refresh_rate):
         (_eplatform.SDL_ORIENTATION_PORTRAIT_FLIPPED, DisplayOrientation.PORTRAIT_FLIPPED),
     ],
 )
-def test_change_display_orientation(
-    capture_event, connected_display, sdl_display_orientation, orientation
-):
+def test_change_display_orientation(connected_display, sdl_display_orientation, orientation):
     with (
         patch.object(
             Display, "orientation_changed", new=MagicMock()
@@ -113,7 +111,7 @@ def test_change_display_orientation(
 
 
 @pytest.mark.parametrize("position", [IVector2(0), IVector2(-100, 100)])
-def test_change_display_position(capture_event, connected_display, position):
+def test_change_display_position(connected_display, position):
     with (
         patch.object(Display, "moved", new=MagicMock()) as Display_moved,
         patch.object(connected_display, "moved", new=MagicMock()) as display_moved,
@@ -126,7 +124,7 @@ def test_change_display_position(capture_event, connected_display, position):
 
 
 @pytest.mark.parametrize("size", [IVector2(1), IVector2(200, 100)])
-def test_change_display_size(capture_event, connected_display, size):
+def test_change_display_size(connected_display, size):
     with (
         patch.object(Display, "resized", new=MagicMock()) as Display_resized,
         patch.object(connected_display, "resized", new=MagicMock()) as display_resized,
@@ -139,7 +137,7 @@ def test_change_display_size(capture_event, connected_display, size):
 
 
 @pytest.mark.parametrize("refresh_rate", [0.0, 70.123454])
-def test_change_display_refresh_rate(capture_event, connected_display, refresh_rate):
+def test_change_display_refresh_rate(connected_display, refresh_rate):
     with (
         patch.object(
             Display, "refresh_rate_changed", new=MagicMock()
