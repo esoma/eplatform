@@ -1,11 +1,15 @@
 __all__ = ["Controller", "discover_controllers", "forget_controllers"]
 
+from typing import ClassVar
 from typing import Collection
 from typing import Final
 from typing import Generator
 from typing import Mapping
 from typing import NamedTuple
+from typing import TypedDict
 from uuid import UUID
+
+from eevent import Event
 
 from . import _eplatform
 from ._eplatform import SDL_GAMEPAD_BINDTYPE_AXIS
@@ -72,6 +76,11 @@ class ControllerHat(_ControllerInput):
     _mapping: _ControllerHatMapping
 
 
+class ControllerConnectionChanged(TypedDict):
+    controller: "Controller"
+    is_connected: bool
+
+
 class Controller:
     _sdl_joystick: SdlJoystickId | None = None
     _name: str = ""
@@ -83,6 +92,14 @@ class Controller:
     _balls: dict[str, ControllerBall] = {}
     _buttons: dict[str, ControllerButton] = {}
     _hats: dict[str, ControllerHat] = {}
+
+    connection_changed: Event[ControllerConnectionChanged] = Event()
+    connected: ClassVar[Event[ControllerConnectionChanged]] = Event()
+    disconnected: Event[ControllerConnectionChanged] = Event()
+
+    def __init__(self) -> None:
+        self.connection_changed = Event()
+        self.disconnected = Event()
 
     def get_input(
         self, name: str
@@ -138,6 +155,10 @@ class Controller:
         if self._player_index is not None:
             id = f"(Player {self._player_index}) {id}"
         return f"<Controller {self._name!r} {id}>"
+
+    @property
+    def is_connected(self) -> bool:
+        return self._sdl_joystick is not None
 
 
 _SDL_GAMEPAD_BUTTON_NAME: Final[Mapping[SdlGamepadButton, str]] = {
@@ -308,9 +329,22 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         + len(controller._hats)
     ) == (len(axes) + len(balls) + len(buttons) + len(hats))
 
+    data: ControllerConnectionChanged = {"controller": controller, "is_connected": True}
+    Controller.connection_changed(data)
+    Controller.connected(data)
+
 
 def disconnect_controller(sdl_joystick: SdlJoystickId) -> None:
+    controller = _controllers.pop(sdl_joystick)
+    controller._sdl_joystick = None
+
     close_sdl_joystick(sdl_joystick)
+
+    data: ControllerConnectionChanged = {"controller": controller, "is_connected": False}
+    Controller.connection_changed(data)
+    controller.connection_changed(data)
+    Controller.disconnected(data)
+    controller.disconnected(data)
 
 
 def discover_controllers() -> None:

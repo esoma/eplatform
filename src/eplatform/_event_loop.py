@@ -12,6 +12,8 @@ from typing import get_args
 from emath import IVector2
 
 from . import _eplatform
+from ._controller import connect_controller
+from ._controller import disconnect_controller
 from ._display import change_display_orientation
 from ._display import change_display_position
 from ._display import change_display_refresh_rate
@@ -27,6 +29,7 @@ from ._platform import get_window
 from ._type import SdlDisplayId
 from ._type import SdlDisplayOrientation
 from ._type import SdlEventType
+from ._type import SdlJoystickId
 from ._type import SdlMouseButton
 from ._type import SdlScancode
 from ._window import blur_window
@@ -159,6 +162,14 @@ class _Selector(SelectSelector):
         blur_window(get_window())
         return True
 
+    def _handle_sdl_event_joystick_added(self, sdl_joystick: SdlJoystickId) -> bool:
+        connect_controller(sdl_joystick)
+        return True
+
+    def _handle_sdl_event_joystick_removed(self, sdl_joystick: SdlJoystickId) -> bool:
+        disconnect_controller(sdl_joystick)
+        return True
+
     _SDL_EVENT_DISPATCH: Final[Mapping[SdlEventType, Callable[..., bool]]] = {
         _eplatform.SDL_EVENT_QUIT: _handle_sdl_event_quit,
         _eplatform.SDL_EVENT_MOUSE_MOTION: _handle_sdl_event_mouse_motion,
@@ -179,6 +190,8 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_DISPLAY_ORIENTATION: _handle_sdl_event_display_orientation,
         _eplatform.SDL_EVENT_DISPLAY_MOVED: _handle_sdl_event_display_moved,
         _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED: _handle_sdl_event_current_mode_changed,
+        _eplatform.SDL_EVENT_JOYSTICK_ADDED: _handle_sdl_event_joystick_added,
+        _eplatform.SDL_EVENT_JOYSTICK_REMOVED: _handle_sdl_event_joystick_removed,
     }
 
 

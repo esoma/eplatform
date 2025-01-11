@@ -21,6 +21,7 @@ __all__ = [
 ]
 
 from enum import Enum
+from typing import ClassVar
 from typing import Collection
 from typing import Generator
 from typing import TypedDict
@@ -104,7 +105,7 @@ class Display:
     _modes: tuple[DisplayMode, ...] = ()
 
     connection_changed: Event[DisplayConnectionChanged] = Event()
-    connected: Event[DisplayConnectionChanged] = Event()
+    connected: ClassVar[Event[DisplayConnectionChanged]] = Event()
     disconnected: Event[DisplayConnectionChanged] = Event()
     orientation_changed: Event[DisplayOrientationChanged] = Event()
     moved: Event[DisplayMoved] = Event()
@@ -212,6 +213,7 @@ def disconnect_display(sdl_display: SdlDisplayId) -> None:
 
     data: DisplayConnectionChanged = {"display": display, "is_connected": False}
     Display.connection_changed(data)
+    display.connection_changed(data)
     Display.disconnected(data)
     display.disconnected(data)
 

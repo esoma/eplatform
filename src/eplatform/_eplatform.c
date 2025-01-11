@@ -600,6 +600,16 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
             CHECK_UNEXPECTED_PYTHON_ERROR();
             break;
         }
+        case SDL_EVENT_JOYSTICK_ADDED:
+        case SDL_EVENT_JOYSTICK_REMOVED:
+        {
+            PyErr_Format(
+                PyExc_RuntimeError,
+                "unable to meaningfully push this kind of event, "
+                "connect or disconnect a virtual joystick"
+            );
+            goto error;
+        }
         case SDL_EVENT_DISPLAY_MOVED:
         case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
         {
@@ -729,10 +739,6 @@ get_sdl_event(PyObject *module, PyObject *unused)
         {
             return Py_BuildValue("(ii)", event.type, event.display.displayID);
         }
-        case SDL_EVENT_DISPLAY_REMOVED:
-        {
-            return Py_BuildValue("(ii)", event.type, event.display.displayID);
-        }
         case SDL_EVENT_DISPLAY_ORIENTATION:
         {
             return Py_BuildValue(
@@ -791,6 +797,11 @@ get_sdl_event(PyObject *module, PyObject *unused)
                 py_size,
                 display_mode->refresh_rate
             );
+        }
+        case SDL_EVENT_JOYSTICK_ADDED:
+        case SDL_EVENT_JOYSTICK_REMOVED:
+        {
+            return Py_BuildValue("(ii)", event.type, event.jdevice.which);
         }
     }
 
@@ -1220,6 +1231,8 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_DISPLAY_ORIENTATION);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_MOVED);
     ADD_CONSTANT(SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED);
+    ADD_CONSTANT(SDL_EVENT_JOYSTICK_ADDED);
+    ADD_CONSTANT(SDL_EVENT_JOYSTICK_REMOVED);
 
     ADD_CONSTANT(SDL_ORIENTATION_UNKNOWN);
     ADD_CONSTANT(SDL_ORIENTATION_LANDSCAPE);
