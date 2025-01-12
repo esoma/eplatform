@@ -618,6 +618,9 @@ push_sdl_event(PyObject *module, PyObject **args, Py_ssize_t nargs)
         case SDL_EVENT_JOYSTICK_ADDED:
         case SDL_EVENT_JOYSTICK_REMOVED:
         case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+        case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+        case SDL_EVENT_JOYSTICK_BUTTON_UP:
+        case SDL_EVENT_JOYSTICK_HAT_MOTION:
         {
             PyErr_Format(
                 PyExc_RuntimeError,
@@ -835,6 +838,16 @@ get_sdl_event(PyObject *module, PyObject *unused)
         {
             return Py_BuildValue("(iii)", event.type, event.jbutton.which, event.jbutton.button);
         }
+        case SDL_EVENT_JOYSTICK_HAT_MOTION:
+        {
+            return Py_BuildValue(
+                "(iiii)",
+                event.type,
+                event.jhat.which,
+                event.jhat.hat,
+                (int)event.jhat.value
+            );
+        }
     }
 
     return Py_BuildValue("(i)", event.type);
@@ -940,6 +953,32 @@ error:
     Py_XDECREF(py_result);
     return 0;
 }
+
+static PyObject *
+get_sdl_joystick_hat_details_(SDL_JoystickID joystick)
+{
+    PyObject *py_result = 0;
+
+    SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
+    if (!open_joystick){ RAISE_SDL_ERROR(); }
+
+    int count = SDL_GetNumJoystickHats(open_joystick);
+    if (count == -1){ RAISE_SDL_ERROR(); }
+
+    py_result = PyTuple_New(count);
+    for (int i = 0; i < count; i++)
+    {
+        Uint8 value = SDL_GetJoystickHat(open_joystick, i);
+        PyObject *py_item = Py_BuildValue("(B)", (unsigned char)value);
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        PyTuple_SET_ITEM(py_result, i, py_item);
+    }
+    return py_result;
+error:
+    Py_XDECREF(py_result);
+    return 0;
+}
+
 
 static PyObject *
 get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
@@ -1062,6 +1101,7 @@ open_sdl_joystick(PyObject *module, PyObject *py_joystick)
     PyObject *mapping_details = 0;
     PyObject *axis_details = 0;
     PyObject *button_details = 0;
+    PyObject *hat_details = 0;
 
     SDL_JoystickID joystick = PyLong_AsLong(py_joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -1075,27 +1115,24 @@ open_sdl_joystick(PyObject *module, PyObject *py_joystick)
     SDL_GUIDToString(sdl_guid, guid, sizeof(guid));
     const char *serial = SDL_GetJoystickSerial(open_joystick);
     int player_index = SDL_GetJoystickPlayerIndex(open_joystick);
-    int ball_count = SDL_GetNumJoystickBalls(open_joystick);
-    if (ball_count == -1){ RAISE_SDL_ERROR(); }
-    int hat_count = SDL_GetNumJoystickHats(open_joystick);
-    if (hat_count == -1){ RAISE_SDL_ERROR(); }
     axis_details = get_sdl_joystick_axis_details_(joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
     button_details = get_sdl_joystick_button_details_(joystick);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    hat_details = get_sdl_joystick_hat_details_(joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
     mapping_details = get_sdl_joystick_mapping_details_(joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
 
     PyObject *py_result = Py_BuildValue(
-        "(sssiiiOOO)",
+        "(sssiOOOO)",
         name,
         guid,
         serial,
         player_index,
-        ball_count,
-        hat_count,
         axis_details,
         button_details,
+        hat_details,
         mapping_details
     );
     CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -1104,6 +1141,7 @@ open_sdl_joystick(PyObject *module, PyObject *py_joystick)
 error:
     Py_XDECREF(axis_details);
     Py_XDECREF(button_details);
+    Py_XDECREF(hat_details);
     Py_XDECREF(mapping_details);
     if (open_joystick){ SDL_CloseJoystick(open_joystick); }
     return 0;
@@ -1205,6 +1243,28 @@ set_virtual_joystick_button_press(PyObject *module, PyObject **args, Py_ssize_t 
     if (!open_joystick){ RAISE_SDL_ERROR(); }
 
     if (!SDL_SetJoystickVirtualButton(open_joystick, button, is_pressed)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
+set_virtual_joystick_hat_value(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
+
+    SDL_JoystickID joystick = PyLong_AsLong(args[0]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    long hat = PyLong_AsLong(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    long value = PyLong_AsLong(args[2]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
+    if (!open_joystick){ RAISE_SDL_ERROR(); }
+
+    if (!SDL_SetJoystickVirtualHat(open_joystick, hat, (Uint8)value)){ RAISE_SDL_ERROR(); }
 
     Py_RETURN_NONE;
 error:
@@ -1336,6 +1396,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"disconnect_virtual_joystick", disconnect_virtual_joystick, METH_O, 0},
     {"set_virtual_joystick_axis_position", (PyCFunction)set_virtual_joystick_axis_position, METH_FASTCALL, 0},
     {"set_virtual_joystick_button_press", (PyCFunction)set_virtual_joystick_button_press, METH_FASTCALL, 0},
+    {"set_virtual_joystick_hat_value", (PyCFunction)set_virtual_joystick_hat_value, METH_FASTCALL, 0},
     {"get_sdl_displays", get_sdl_displays, METH_NOARGS, 0},
     {"get_sdl_display_details", get_sdl_display_details, METH_O, 0},
     {0},
@@ -1405,6 +1466,7 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_AXIS_MOTION);
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_BUTTON_DOWN);
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_BUTTON_UP);
+    ADD_CONSTANT(SDL_EVENT_JOYSTICK_HAT_MOTION);
 
     ADD_CONSTANT(SDL_ORIENTATION_UNKNOWN);
     ADD_CONSTANT(SDL_ORIENTATION_LANDSCAPE);
@@ -1464,6 +1526,11 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_GAMEPAD_AXIS_RIGHTY);
     ADD_CONSTANT(SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
     ADD_CONSTANT(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
+
+    ADD_CONSTANT(SDL_HAT_UP);
+    ADD_CONSTANT(SDL_HAT_RIGHT);
+    ADD_CONSTANT(SDL_HAT_DOWN);
+    ADD_CONSTANT(SDL_HAT_LEFT);
 
     // number
     ADD_CONSTANT(SDL_SCANCODE_0);

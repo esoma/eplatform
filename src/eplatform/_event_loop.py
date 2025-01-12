@@ -15,6 +15,7 @@ from . import _eplatform
 from ._controller import connect_controller
 from ._controller import controller_change_axis
 from ._controller import controller_change_button
+from ._controller import controller_change_hat
 from ._controller import disconnect_controller
 from ._display import change_display_orientation
 from ._display import change_display_position
@@ -31,6 +32,7 @@ from ._platform import get_window
 from ._type import SdlDisplayId
 from ._type import SdlDisplayOrientation
 from ._type import SdlEventType
+from ._type import SdlHat
 from ._type import SdlJoystickId
 from ._type import SdlMouseButton
 from ._type import SdlScancode
@@ -187,6 +189,11 @@ class _Selector(SelectSelector):
     ) -> bool:
         return controller_change_button(sdl_joystick, button_index, False)
 
+    def _handle_sdl_event_joystick_hat_motion(
+        self, sdl_joystick: SdlJoystickId, hat_index: int, value: SdlHat
+    ) -> bool:
+        return controller_change_hat(sdl_joystick, hat_index, value)
+
     _SDL_EVENT_DISPATCH: Final[Mapping[SdlEventType, Callable[..., bool]]] = {
         _eplatform.SDL_EVENT_QUIT: _handle_sdl_event_quit,
         _eplatform.SDL_EVENT_MOUSE_MOTION: _handle_sdl_event_mouse_motion,
@@ -212,6 +219,7 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_JOYSTICK_AXIS_MOTION: _handle_sdl_event_joystick_axis_motion,
         _eplatform.SDL_EVENT_JOYSTICK_BUTTON_DOWN: _handle_sdl_event_joystick_button_down,
         _eplatform.SDL_EVENT_JOYSTICK_BUTTON_UP: _handle_sdl_event_joystick_button_up,
+        _eplatform.SDL_EVENT_JOYSTICK_HAT_MOTION: _handle_sdl_event_joystick_hat_motion,
     }
 
 

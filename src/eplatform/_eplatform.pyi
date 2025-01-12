@@ -1,4 +1,4 @@
-__all__ = ["center_sdl_window", "create_sdl_window"]
+__all__ = []
 
 from typing import Collection
 
@@ -12,6 +12,7 @@ from ._type import SdlGamepadBindingType
 from ._type import SdlGamepadButton
 from ._type import SdlGamepadButtonLabel
 from ._type import SdlGlContext
+from ._type import SdlHat
 from ._type import SdlJoystickId
 from ._type import SdlMouseButton
 from ._type import SdlScancode
@@ -93,6 +94,7 @@ SDL_EVENT_JOYSTICK_REMOVED: SdlEventType
 SDL_EVENT_JOYSTICK_AXIS_MOTION: SdlEventType
 SDL_EVENT_JOYSTICK_BUTTON_DOWN: SdlEventType
 SDL_EVENT_JOYSTICK_BUTTON_UP: SdlEventType
+SDL_EVENT_JOYSTICK_HAT_MOTION: SdlEventType
 
 # keyboard
 #    number
@@ -349,10 +351,9 @@ def open_sdl_joystick(
     str,
     str | None,
     int,
-    int,
-    int,
     tuple[tuple[float], ...],
     tuple[tuple[bool], ...],
+    tuple[tuple[int], ...],
     tuple[tuple[tuple, tuple], ...] | None,
 ]: ...
 def close_sdl_joystick(sdl_joystick: SdlJoystickId, /) -> None: ...
@@ -405,6 +406,11 @@ SDL_GAMEPAD_AXIS_RIGHTX: SdlGamepadAxis
 SDL_GAMEPAD_AXIS_RIGHTY: SdlGamepadAxis
 SDL_GAMEPAD_AXIS_LEFT_TRIGGER: SdlGamepadAxis
 SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: SdlGamepadAxis
+
+SDL_HAT_UP: SdlHat
+SDL_HAT_RIGHT: SdlHat
+SDL_HAT_DOWN: SdlHat
+SDL_HAT_LEFT: SdlHat
 
 # display
 

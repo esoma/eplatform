@@ -1,5 +1,6 @@
 __all__ = ["Controller", "discover_controllers", "forget_controllers", "controller_change_axis"]
 
+from enum import IntFlag
 from typing import ClassVar
 from typing import Collection
 from typing import Final
@@ -21,6 +22,7 @@ from ._eplatform import open_sdl_joystick
 from ._type import SdlGamepadAxis
 from ._type import SdlGamepadButton
 from ._type import SdlGamepadButtonLabel
+from ._type import SdlHat
 from ._type import SdlJoystickId
 
 
@@ -162,8 +164,57 @@ class ControllerBinaryInput(_ControllerInput):
         return True
 
 
+class ControllerDirectionalInputValue(IntFlag):
+    NEUTRAL = 0
+    UP = _eplatform.SDL_HAT_UP
+    RIGHT = _eplatform.SDL_HAT_RIGHT
+    DOWN = _eplatform.SDL_HAT_DOWN
+    LEFT = _eplatform.SDL_HAT_LEFT
+    UP_RIGHT = _eplatform.SDL_HAT_UP | _eplatform.SDL_HAT_RIGHT
+    UP_LEFT = _eplatform.SDL_HAT_UP | _eplatform.SDL_HAT_LEFT
+    DOWN_RIGHT = _eplatform.SDL_HAT_DOWN | _eplatform.SDL_HAT_RIGHT
+    DOWN_LEFT = _eplatform.SDL_HAT_DOWN | _eplatform.SDL_HAT_LEFT
+    LEFT_RIGHT = _eplatform.SDL_HAT_LEFT | _eplatform.SDL_HAT_RIGHT
+    UP_DOWN = _eplatform.SDL_HAT_UP | _eplatform.SDL_HAT_DOWN
+    ALL = (
+        _eplatform.SDL_HAT_UP
+        | _eplatform.SDL_HAT_DOWN
+        | _eplatform.SDL_HAT_LEFT
+        | _eplatform.SDL_HAT_RIGHT
+    )
+
+
+class ControllerDirectionalInputChanged(TypedDict):
+    directional_input: "ControllerDirectionalInput"
+    value: ControllerDirectionalInputValue
+
+
 class ControllerDirectionalInput(_ControllerInput):
-    pass
+    _value: ControllerDirectionalInputValue
+
+    changed: Event[ControllerDirectionalInputChanged] = Event()
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.changed = Event()
+
+    @property
+    def value(self) -> ControllerDirectionalInputValue:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._value
+
+    def _set_value(self, value: ControllerDirectionalInputValue) -> bool:
+        if self._value == value:
+            return False
+
+        self._value = value
+
+        data: ControllerDirectionalInputChanged = {"directional_input": self, "value": self._value}
+        ControllerDirectionalInput.changed(data)
+        self.changed(data)
+
+        return True
 
 
 class ControllerConnectionChanged(TypedDict):
@@ -337,10 +388,9 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         guid,
         serial,
         player_index,
-        ball_count,
-        hat_count,
         axis_details,
         button_details,
+        hat_details,
         mapping_details,
     ) = open_sdl_joystick(sdl_joystick)
     controller._sdl_joystick = sdl_joystick
@@ -368,11 +418,11 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
             input._value = value
             binary_inputs.append(input)
 
-        for i in range(hat_count):
+        for i, (value,) in enumerate(hat_details):
             name = f"directional {i}"
             input = ControllerDirectionalInput(name)
             input._controller = controller
-            # input._value = 0
+            input._value = ControllerDirectionalInputValue(value)
             directional_inputs.append(input)
 
     else:
@@ -464,3 +514,9 @@ def controller_change_button(
     controller = _controllers[sdl_joystick]
     input = controller._binary_inputs[button_index]
     return input._set_value(is_pressed)
+
+
+def controller_change_hat(sdl_joystick, hat_index, value: SdlHat) -> bool:
+    controller = _controllers[sdl_joystick]
+    input = controller._directional_inputs[hat_index]
+    return input._set_value(ControllerDirectionalInputValue(value))

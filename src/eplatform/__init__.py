@@ -7,6 +7,7 @@ __all__ = [
     "ControllerBinaryInput",
     "ControllerBinaryInputChanged",
     "ControllerDirectionalInput",
+    "ControllerDirectionalInputValue",
     "Display",
     "DisplayConnectionChanged",
     "DisplayDisconnectedError",
@@ -54,6 +55,7 @@ from ._controller import ControllerAnalogInputChanged
 from ._controller import ControllerBinaryInput
 from ._controller import ControllerBinaryInputChanged
 from ._controller import ControllerDirectionalInput
+from ._controller import ControllerDirectionalInputValue
 from ._display import Display
 from ._display import DisplayConnectionChanged
 from ._display import DisplayDisconnectedError

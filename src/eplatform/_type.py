@@ -7,6 +7,7 @@ __all__ = [
     "SdlGamepadButton",
     "SdlGamepadButtonLabel",
     "SdlGlContext",
+    "SdlHat",
     "SdlJoystickId",
     "SdlMouseButton",
     "SdlScancode",
@@ -27,3 +28,4 @@ SdlGamepadButton = NewType("SdlGamepadButton", int)
 SdlGamepadButtonLabel = NewType("SdlGamepadButtonLabel", int)
 SdlGamepadAxis = NewType("SdlGamepadAxis", int)
 SdlGamepadBindingType = NewType("SdlGamepadBindingType", int)
+SdlHat = NewType("SdlHat", int)

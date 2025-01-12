@@ -8,12 +8,18 @@ from eplatform import Controller
 from eplatform import ControllerAnalogInput
 from eplatform import ControllerBinaryInput
 from eplatform import ControllerDirectionalInput
+from eplatform import ControllerDirectionalInputValue
 from eplatform import Platform
 from eplatform import get_controllers
+from eplatform._eplatform import SDL_HAT_DOWN
+from eplatform._eplatform import SDL_HAT_LEFT
+from eplatform._eplatform import SDL_HAT_RIGHT
+from eplatform._eplatform import SDL_HAT_UP
 from eplatform._eplatform import connect_virtual_joystick
 from eplatform._eplatform import disconnect_virtual_joystick
 from eplatform._eplatform import set_virtual_joystick_axis_position
 from eplatform._eplatform import set_virtual_joystick_button_press
+from eplatform._eplatform import set_virtual_joystick_hat_value
 
 
 class VirtualController:
@@ -192,3 +198,51 @@ def test_binary_value(capture_event, event_object):
         assert event == {"binary_input": binary1, "value": False}
         assert binary0.value
         assert not binary1.value
+
+
+@pytest.mark.parametrize("event_object", [ControllerDirectionalInput, None])
+def test_directional_value(capture_event, event_object):
+    vc = VirtualController(hat_count=2)
+    with Platform():
+        controller = vc.get_controller()
+        directional0 = controller.get_directional_input("directional 0")
+        directional1 = controller.get_directional_input("directional 1")
+        assert directional0.value == ControllerDirectionalInputValue.NEUTRAL
+        assert directional1.value == ControllerDirectionalInputValue.NEUTRAL
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, 0, ControllerDirectionalInputValue.LEFT
+            )
+            assert directional0.value == ControllerDirectionalInputValue.NEUTRAL
+            assert directional1.value == ControllerDirectionalInputValue.NEUTRAL
+
+        event = capture_event(_, getattr(event_object or directional0, "changed"))
+
+        assert event == {"directional_input": directional0, "value": directional0.value}
+        assert directional0.value == ControllerDirectionalInputValue.LEFT
+        assert directional1.value == ControllerDirectionalInputValue.NEUTRAL
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, 1, ControllerDirectionalInputValue.UP_RIGHT
+            )
+            assert directional0.value == ControllerDirectionalInputValue.LEFT
+            assert directional1.value == ControllerDirectionalInputValue.NEUTRAL
+
+        event = capture_event(_, getattr(event_object or directional1, "changed"))
+
+        assert event == {"directional_input": directional1, "value": directional1.value}
+        assert directional0.value == ControllerDirectionalInputValue.LEFT
+        assert directional1.value == ControllerDirectionalInputValue.UP_RIGHT
+
+        def _():
+            set_virtual_joystick_hat_value(vc.sdl_joystick, 1, ControllerDirectionalInputValue.ALL)
+            assert directional0.value == ControllerDirectionalInputValue.LEFT
+            assert directional1.value == ControllerDirectionalInputValue.UP_RIGHT
+
+        event = capture_event(_, getattr(event_object or directional1, "changed"))
+
+        assert event == {"directional_input": directional1, "value": directional1.value}
+        assert directional0.value == ControllerDirectionalInputValue.LEFT
+        assert directional1.value == ControllerDirectionalInputValue.ALL
