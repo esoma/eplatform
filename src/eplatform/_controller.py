@@ -27,11 +27,16 @@ _AXIS_MIN: Final = -32768
 _AXIS_MAX: Final = 32767
 
 
+def _normalize_sdl_axis_value(value: int) -> float:
+    return min(max(-1.0, ((value - _AXIS_MIN) / (_AXIS_MAX - _AXIS_MIN) * 2) - 1), 1.0)
+
+
 class ControllerDisconnectedError(RuntimeError):
     pass
 
 
-class _ControllerAxisAxisMapping(NamedTuple):
+"""
+class _ControllerAnalogInputAxisMapping(NamedTuple):
     from_min: int
     from_max: int
     to_name: str
@@ -56,7 +61,7 @@ class _ControllerButtonButtonMapping(NamedTuple):
         return to_button._set_is_pressed(value)
 
 
-"""
+
 
 
 class _ControllerBallMapping(NamedTuple):
@@ -98,77 +103,73 @@ class _ControllerInput:
         return self._name
 
 
-class ControllerAxisChanged(TypedDict):
-    axis: "ControllerAxis"
-    position: float
+class ControllerAnalogInputChanged(TypedDict):
+    analog_input: "ControllerAnalogInput"
+    value: float
 
 
-class ControllerAxis(_ControllerInput):
-    _position: float
+class ControllerAnalogInput(_ControllerInput):
+    _value: float
 
-    changed: Event[ControllerAxisChanged] = Event()
-
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        self.changed = Event()
-
-    @property
-    def position(self) -> float:
-        if not self.is_connected:
-            raise ControllerDisconnectedError()
-        return self._position
-
-    def _set_position(self, value: float) -> bool:
-        if self._position == value:
-            return False
-
-        self._position = value
-
-        data: ControllerAxisChanged = {"axis": self, "position": value}
-        ControllerAxis.changed(data)
-        self.changed(data)
-
-        return True
-
-
-class ControllerButtonChanged(TypedDict):
-    button: "ControllerButton"
-    is_pressed: bool
-
-
-class ControllerButton(_ControllerInput):
-    _is_pressed: bool
-
-    changed: Event[ControllerButtonChanged] = Event()
+    changed: Event[ControllerAnalogInputChanged] = Event()
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.changed = Event()
 
     @property
-    def is_pressed(self) -> bool:
+    def value(self) -> float:
         if not self.is_connected:
             raise ControllerDisconnectedError()
-        return self._is_pressed
+        return self._value
 
-    def _set_is_pressed(self, value: bool) -> bool:
-        if self._is_pressed == value:
+    def _set_value(self, value: float) -> bool:
+        if self._value == value:
             return False
 
-        self._is_pressed = value
+        self._value = value
 
-        data: ControllerButtonChanged = {"button": self, "is_pressed": value}
-        ControllerButton.changed(data)
+        data: ControllerAnalogInputChanged = {"analog_input": self, "value": value}
+        ControllerAnalogInput.changed(data)
         self.changed(data)
 
         return True
 
 
-class ControllerBall(_ControllerInput):
-    pass
+class ControllerBinaryInputChanged(TypedDict):
+    binary_input: "ControllerBinaryInput"
+    value: bool
 
 
-class ControllerHat(_ControllerInput):
+class ControllerBinaryInput(_ControllerInput):
+    _value: bool
+
+    changed: Event[ControllerBinaryInputChanged] = Event()
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.changed = Event()
+
+    @property
+    def value(self) -> bool:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._value
+
+    def _set_value(self, value: bool) -> bool:
+        if self._value == value:
+            return False
+
+        self._value = value
+
+        data: ControllerBinaryInputChanged = {"binary_input": self, "value": value}
+        ControllerBinaryInput.changed(data)
+        self.changed(data)
+
+        return True
+
+
+class ControllerDirectionalInput(_ControllerInput):
     pass
 
 
@@ -184,13 +185,12 @@ class Controller:
     _serial: str = ""
     _player_index: int | None = None
 
-    _axis_mappings: dict[int, list[_ControllerAxisAxisMapping]] = {}
-    _button_mappings: dict[int, list[_ControllerButtonButtonMapping]] = {}
-
-    _axes: dict[str, ControllerAxis] = {}
-    _balls: dict[str, ControllerBall] = {}
-    _buttons: dict[str, ControllerButton] = {}
-    _hats: dict[str, ControllerHat] = {}
+    _inputs: dict[
+        str, ControllerAnalogInput | ControllerBinaryInput | ControllerDirectionalInput
+    ] = {}
+    _analog_inputs: tuple[ControllerAnalogInput, ...] = ()
+    _binary_inputs: tuple[ControllerBinaryInput, ...] = ()
+    _directional_inputs: tuple[ControllerDirectionalInput, ...] = ()
 
     connection_changed: Event[ControllerConnectionChanged] = Event()
     connected: ClassVar[Event[ControllerConnectionChanged]] = Event()
@@ -212,66 +212,46 @@ class Controller:
 
     def get_input(
         self, name: str
-    ) -> ControllerAxis | ControllerBall | ControllerButton | ControllerHat:
+    ) -> ControllerAnalogInput | ControllerBinaryInput | ControllerDirectionalInput:
         if not self.is_connected:
             raise ControllerDisconnectedError()
-        try:
-            return self._buttons[name]
-        except KeyError:
-            pass
-        try:
-            return self._axes[name]
-        except KeyError:
-            pass
-        try:
-            return self._hats[name]
-        except KeyError:
-            pass
-        return self._balls[name]
+        return self._inputs[name]
 
-    def get_axis(self, name: str) -> ControllerAxis:
-        if not self.is_connected:
-            raise ControllerDisconnectedError()
-        return self._axes[name]
+    def get_analog_input(self, name: str) -> ControllerAnalogInput:
+        input = self.get_input(name)
+        if not isinstance(input, ControllerAnalogInput):
+            raise KeyError(name)
+        return input
 
-    def get_ball(self, name: str) -> ControllerBall:
-        if not self.is_connected:
-            raise ControllerDisconnectedError()
-        return self._balls[name]
+    def get_binary_input(self, name: str) -> ControllerBinaryInput:
+        input = self.get_input(name)
+        if not isinstance(input, ControllerBinaryInput):
+            raise KeyError(name)
+        return input
 
-    def get_button(self, name: str) -> ControllerButton:
-        if not self.is_connected:
-            raise ControllerDisconnectedError()
-        return self._buttons[name]
-
-    def get_hat(self, name: str) -> ControllerHat:
-        if not self.is_connected:
-            raise ControllerDisconnectedError()
-        return self._hats[name]
+    def get_directional_input(self, name: str) -> ControllerDirectionalInput:
+        input = self.get_input(name)
+        if not isinstance(input, ControllerDirectionalInput):
+            raise KeyError(name)
+        return input
 
     @property
-    def axes(self) -> Collection[ControllerAxis]:
+    def analog_inputs(self) -> Collection[ControllerAnalogInput]:
         if not self.is_connected:
             raise ControllerDisconnectedError()
-        return self._axes.values()
+        return self._analog_inputs
 
     @property
-    def balls(self) -> Collection[ControllerBall]:
+    def binary_inputs(self) -> Collection[ControllerBinaryInput]:
         if not self.is_connected:
             raise ControllerDisconnectedError()
-        return self._balls.values()
+        return self._binary_inputs
 
     @property
-    def buttons(self) -> Collection[ControllerButton]:
+    def directional_inputs(self) -> Collection[ControllerDirectionalInput]:
         if not self.is_connected:
             raise ControllerDisconnectedError()
-        return self._buttons.values()
-
-    @property
-    def hats(self) -> Collection[ControllerHat]:
-        if not self.is_connected:
-            raise ControllerDisconnectedError()
-        return self._hats.values()
+        return self._directional_inputs
 
     @property
     def is_connected(self) -> bool:
@@ -376,52 +356,31 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
     controller._serial = serial or ""
     controller._player_index = player_index if player_index >= 0 else None
 
-    axis_mappings = controller._axis_mappings = {}
-    button_mappings = controller._button_mappings = {}
-
-    axes: list[ControllerAxis] = []
-    balls: list[ControllerBall] = []
-    buttons: list[ControllerButton] = []
-    hats: list[ControllerHat] = []
+    analog_inputs: list[ControllerAnalogInput] = []
+    binary_inputs: list[ControllerBinaryInput] = []
+    directional_inputs: list[ControllerDirectionalInput] = []
 
     if mapping_details is None:
-        for i, (position,) in enumerate(axis_details):
-            axis_name = f"axis {i}"
-            axis = ControllerAxis(axis_name)
-            mapping = _ControllerAxisAxisMapping(_AXIS_MIN, _AXIS_MAX, axis_name)
-            axis._controller = controller
-            axis._position = mapping.calculate_to_value(position)
+        for i, (value,) in enumerate(axis_details):
+            name = f"analog {i}"
+            input = ControllerAnalogInput(name)
+            input._controller = controller
+            input._value = _normalize_sdl_axis_value(value)
+            analog_inputs.append(input)
 
-            axes.append(axis)
-            try:
-                mappings = axis_mappings[i]
-            except KeyError:
-                mappings = axis_mappings[i] = []
-            mappings.append(mapping)
-
-        for i in range(ball_count):
-            ball = ControllerBall(f"ball {i}")
-            ball._controller = controller
-            balls.append(ball)
-
-        for i, (is_pressed,) in enumerate(button_details):
-            button_name = f"button {i}"
-            button = ControllerButton(button_name)
-            mapping = _ControllerButtonButtonMapping(button_name)
-            button._controller = controller
-            button._is_pressed = is_pressed
-
-            buttons.append(button)
-            try:
-                mappings = button_mappings[i]
-            except KeyError:
-                mappings = button_mappings[i] = []
-            mappings.append(mapping)
+        for i, (value,) in enumerate(button_details):
+            name = f"binary {i}"
+            input = ControllerBinaryInput(name)
+            input._controller = controller
+            input._value = value
+            binary_inputs.append(input)
 
         for i in range(hat_count):
-            hat = ControllerHat(f"hat {i}")
-            hat._controller = controller
-            hats.append(hat)
+            name = f"directional {i}"
+            input = ControllerDirectionalInput(name)
+            input._controller = controller
+            # input._value = 0
+            directional_inputs.append(input)
 
     else:
         raise RuntimeError("nope")
@@ -430,7 +389,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
             if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                 mapping = _ControllerButtonMapping(*input_args)
             elif input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
-                mapping = _ControllerAxisMapping(*input_args)
+                mapping = _ControllerAnalogInputMapping(*input_args)
             elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
                 mapping = _ControllerHatMapping(*input_args)
             else:
@@ -450,10 +409,10 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
             elif output_type == SDL_GAMEPAD_BINDTYPE_AXIS:
                 axis, axis_min, axis_max = output_args
                 name = _SDL_GAMEPAD_AXIS_NAME[axis]
-                axis = ControllerAxis(name)
+                axis = ControllerAnalogInput(name)
                 axis._min = axis_min
                 axis._max = axis_max
-                if not isinstance(mapping, _ControllerAxisMapping):
+                if not isinstance(mapping, _ControllerAnalogInputMapping):
                     raise RuntimeError(f"unexpected mapping for axis output: {mapping!r}")
                 axis._mapping = mapping
                 axes.append(axis)
@@ -461,21 +420,14 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                 raise RuntimeError(f"unexpected output type {output_type!r}")
         """
 
-    controller._axes = {i.name: i for i in axes}
-    controller._balls = {i.name: i for i in balls}
-    controller._buttons = {i.name: i for i in buttons}
-    controller._hats = {i.name: i for i in hats}
-    # we shouldn't be generating inputs with the same name
-    assert len(controller._axes) == len(axes)
-    assert len(controller._balls) == len(balls)
-    assert len(controller._buttons) == len(buttons)
-    assert len(controller._hats) == len(hats)
-    assert (
-        len(controller._axes)
-        + len(controller._balls)
-        + len(controller._buttons)
-        + len(controller._hats)
-    ) == (len(axes) + len(balls) + len(buttons) + len(hats))
+    controller._inputs = {i.name: i for i in (*analog_inputs, *binary_inputs, *directional_inputs)}
+    if len(controller._inputs) != (
+        len(analog_inputs) + len(binary_inputs) + len(directional_inputs)
+    ):
+        raise RuntimeError("controller inputs have the same name")
+    controller._analog_inputs = tuple(analog_inputs)
+    controller._binary_inputs = tuple(binary_inputs)
+    controller._directional_inputs = tuple(directional_inputs)
 
     data: ControllerConnectionChanged = {"controller": controller, "is_connected": True}
     Controller.connection_changed(data)
@@ -485,12 +437,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 def disconnect_controller(sdl_joystick: SdlJoystickId) -> None:
     controller = _controllers.pop(sdl_joystick)
     controller._sdl_joystick = None
-    for input in (
-        *controller._axes.values(),
-        *controller._balls.values(),
-        *controller._buttons.values(),
-        *controller._hats.values(),
-    ):
+    for input in controller._inputs.values():
         input._controller = None
 
     close_sdl_joystick(sdl_joystick)
@@ -514,25 +461,13 @@ def forget_controllers() -> None:
 
 def controller_change_axis(sdl_joystick: SdlJoystickId, axis_index: int, value: int) -> bool:
     controller = _controllers[sdl_joystick]
-    try:
-        mappings = controller._axis_mappings[axis_index]
-    except KeyError:
-        return False
-    successes = 0
-    for mapping in mappings:
-        successes += mapping(controller, value)
-    return successes > 0
+    input = controller._analog_inputs[axis_index]
+    return input._set_value(_normalize_sdl_axis_value(value))
 
 
 def controller_change_button(
     sdl_joystick: SdlJoystickId, button_index: int, is_pressed: bool
 ) -> bool:
     controller = _controllers[sdl_joystick]
-    try:
-        mappings = controller._button_mappings[button_index]
-    except KeyError:
-        return False
-    successes = 0
-    for mapping in mappings:
-        successes += mapping(controller, is_pressed)
-    return successes > 0
+    input = controller._binary_inputs[button_index]
+    return input._set_value(is_pressed)

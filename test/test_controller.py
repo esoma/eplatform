@@ -5,10 +5,9 @@ from uuid import uuid4
 import pytest
 
 from eplatform import Controller
-from eplatform import ControllerAxis
-from eplatform import ControllerBall
-from eplatform import ControllerButton
-from eplatform import ControllerHat
+from eplatform import ControllerAnalogInput
+from eplatform import ControllerBinaryInput
+from eplatform import ControllerDirectionalInput
 from eplatform import Platform
 from eplatform import get_controllers
 from eplatform._eplatform import connect_virtual_joystick
@@ -18,18 +17,17 @@ from eplatform._eplatform import set_virtual_joystick_button_press
 
 
 class VirtualController:
-    def __init__(self, *, name=None, axis_count=0, ball_count=0, button_count=0, hat_count=0):
+    def __init__(self, *, name=None, axis_count=0, button_count=0, hat_count=0):
         self.sdl_joystick = None
         self.name = name or uuid4().hex
         self.axis_count = axis_count
-        self.ball_count = ball_count
         self.button_count = button_count
         self.hat_count = hat_count
         self.connect()
 
     def connect(self):
         self.sdl_joystick = connect_virtual_joystick(
-            self.name, self.axis_count, self.ball_count, self.button_count, self.hat_count
+            self.name, self.axis_count, 0, self.button_count, self.hat_count
         )
 
     def disconnect(self):
@@ -48,17 +46,14 @@ class VirtualController:
             if controller._sdl_joystick == self.sdl_joystick:
                 assert controller.is_connected
                 assert controller.name == self.name
-                assert {(i.__class__, i.name) for i in controller.axes} == {
-                    (ControllerAxis, f"axis {i}") for i in range(self.axis_count)
+                assert {(i.__class__, i.name) for i in controller.analog_inputs} == {
+                    (ControllerAnalogInput, f"analog {i}") for i in range(self.axis_count)
                 }
-                assert {(i.__class__, i.name) for i in controller.balls} == {
-                    (ControllerBall, f"ball {i}") for i in range(self.ball_count)
+                assert {(i.__class__, i.name) for i in controller.binary_inputs} == {
+                    (ControllerBinaryInput, f"binary {i}") for i in range(self.button_count)
                 }
-                assert {(i.__class__, i.name) for i in controller.buttons} == {
-                    (ControllerButton, f"button {i}") for i in range(self.button_count)
-                }
-                assert {(i.__class__, i.name) for i in controller.hats} == {
-                    (ControllerHat, f"hat {i}") for i in range(self.hat_count)
+                assert {(i.__class__, i.name) for i in controller.directional_inputs} == {
+                    (ControllerDirectionalInput, f"directional {i}") for i in range(self.hat_count)
                 }
                 return controller
         return None
@@ -102,14 +97,7 @@ def test_connect_disconnect(
 
 @pytest.mark.parametrize(
     "controller_kwargs",
-    [
-        {},
-        {"name": "Virtual Controller"},
-        {"axis_count": 4},
-        {"ball_count": 5},
-        {"button_count": 6},
-        {"hat_count": 7},
-    ],
+    [{}, {"name": "Virtual Controller"}, {"axis_count": 4}, {"button_count": 6}, {"hat_count": 7}],
 )
 def test_properties(capture_event, controller_kwargs):
     vc = VirtualController(**controller_kwargs)
@@ -120,87 +108,87 @@ def test_properties(capture_event, controller_kwargs):
         vc.get_controller()
 
 
-@pytest.mark.parametrize("event_object", [ControllerAxis, None])
-def test_axis_position(capture_event, event_object):
+@pytest.mark.parametrize("event_object", [ControllerAnalogInput, None])
+def test_analog_value(capture_event, event_object):
     vc = VirtualController(axis_count=2)
     with Platform():
         controller = vc.get_controller()
-        axis0 = controller.get_axis("axis 0")
-        axis1 = controller.get_axis("axis 1")
-        assert isclose(axis0.position, 0, abs_tol=1e-04)
-        assert isclose(axis1.position, 0, abs_tol=1e-04)
+        analog0 = controller.get_analog_input("analog 0")
+        analog1 = controller.get_analog_input("analog 1")
+        assert isclose(analog0.value, 0, abs_tol=1e-04)
+        assert isclose(analog1.value, 0, abs_tol=1e-04)
 
         def _():
             set_virtual_joystick_axis_position(vc.sdl_joystick, 0, -32768)
-            assert isclose(axis0.position, 0, abs_tol=1e-04)
-            assert isclose(axis1.position, 0, abs_tol=1e-04)
+            assert isclose(analog0.value, 0, abs_tol=1e-04)
+            assert isclose(analog1.value, 0, abs_tol=1e-04)
 
-        event = capture_event(_, getattr(event_object or axis0, "changed"))
+        event = capture_event(_, getattr(event_object or analog0, "changed"))
 
-        assert event == {"axis": axis0, "position": axis0.position}
-        assert isclose(axis0.position, -1)
-        assert isclose(axis1.position, 0, abs_tol=1e-04)
+        assert event == {"analog_input": analog0, "value": analog0.value}
+        assert isclose(analog0.value, -1)
+        assert isclose(analog1.value, 0, abs_tol=1e-04)
 
         def _():
             set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 32767)
-            assert isclose(axis0.position, -1)
-            assert isclose(axis1.position, 0, abs_tol=1e-04)
+            assert isclose(analog0.value, -1)
+            assert isclose(analog1.value, 0, abs_tol=1e-04)
 
-        event = capture_event(_, getattr(event_object or axis1, "changed"))
-        assert event == {"axis": axis1, "position": axis1.position}
-        assert isclose(axis0.position, -1)
-        assert isclose(axis1.position, 1)
+        event = capture_event(_, getattr(event_object or analog1, "changed"))
+        assert event == {"analog_input": analog1, "value": analog1.value}
+        assert isclose(analog0.value, -1)
+        assert isclose(analog1.value, 1)
 
         def _():
             set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 16384)
-            assert isclose(axis0.position, -1)
-            assert isclose(axis1.position, 1)
+            assert isclose(analog0.value, -1)
+            assert isclose(analog1.value, 1)
 
-        event = capture_event(_, getattr(event_object or axis1, "changed"))
-        assert event == {"axis": axis1, "position": axis1.position}
-        assert isclose(axis0.position, -1)
-        assert isclose(axis1.position, 0.5, abs_tol=1e-04)
+        event = capture_event(_, getattr(event_object or analog1, "changed"))
+        assert event == {"analog_input": analog1, "value": analog1.value}
+        assert isclose(analog0.value, -1)
+        assert isclose(analog1.value, 0.5, abs_tol=1e-04)
 
 
-@pytest.mark.parametrize("event_object", [ControllerButton, None])
-def test_button_press(capture_event, event_object):
+@pytest.mark.parametrize("event_object", [ControllerBinaryInput, None])
+def test_binary_value(capture_event, event_object):
     vc = VirtualController(button_count=2)
     with Platform():
         controller = vc.get_controller()
-        button0 = controller.get_button("button 0")
-        button1 = controller.get_button("button 1")
-        assert not button0.is_pressed
-        assert not button1.is_pressed
+        binary0 = controller.get_binary_input("binary 0")
+        binary1 = controller.get_binary_input("binary 1")
+        assert not binary0.value
+        assert not binary1.value
 
         def _():
             set_virtual_joystick_button_press(vc.sdl_joystick, 0, True)
-            assert not button0.is_pressed
-            assert not button1.is_pressed
+            assert not binary0.value
+            assert not binary1.value
 
-        event = capture_event(_, getattr(event_object or button0, "changed"))
+        event = capture_event(_, getattr(event_object or binary0, "changed"))
 
-        assert event == {"button": button0, "is_pressed": True}
-        assert button0.is_pressed
-        assert not button1.is_pressed
+        assert event == {"binary_input": binary0, "value": True}
+        assert binary0.value
+        assert not binary1.value
 
         def _():
             set_virtual_joystick_button_press(vc.sdl_joystick, 1, True)
-            assert button0.is_pressed
-            assert not button1.is_pressed
+            assert binary0.value
+            assert not binary1.value
 
-        event = capture_event(_, getattr(event_object or button1, "changed"))
+        event = capture_event(_, getattr(event_object or binary1, "changed"))
 
-        assert event == {"button": button1, "is_pressed": True}
-        assert button0.is_pressed
-        assert button1.is_pressed
+        assert event == {"binary_input": binary1, "value": True}
+        assert binary0.value
+        assert binary1.value
 
         def _():
             set_virtual_joystick_button_press(vc.sdl_joystick, 1, False)
-            assert button0.is_pressed
-            assert button1.is_pressed
+            assert binary0.value
+            assert binary1.value
 
-        event = capture_event(_, getattr(event_object or button1, "changed"))
+        event = capture_event(_, getattr(event_object or binary1, "changed"))
 
-        assert event == {"button": button1, "is_pressed": False}
-        assert button0.is_pressed
-        assert not button1.is_pressed
+        assert event == {"binary_input": binary1, "value": False}
+        assert binary0.value
+        assert not binary1.value
