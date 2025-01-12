@@ -351,7 +351,7 @@ def open_sdl_joystick(
     int,
     int,
     int,
-    tuple[tuple[int], ...],
+    tuple[tuple[float], ...],
     tuple[tuple[bool], ...],
     tuple[tuple[tuple, tuple], ...] | None,
 ]: ...

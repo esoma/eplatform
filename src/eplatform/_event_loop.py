@@ -173,7 +173,7 @@ class _Selector(SelectSelector):
         return True
 
     def _handle_sdl_event_joystick_axis_motion(
-        self, sdl_joystick: SdlJoystickId, axis_index: int, value: int
+        self, sdl_joystick: SdlJoystickId, axis_index: int, value: float
     ) -> bool:
         return controller_change_axis(sdl_joystick, axis_index, value)
 

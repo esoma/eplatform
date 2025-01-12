@@ -41,6 +41,19 @@
 
 static const int SUB_SYSTEMS = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD;
 
+static double
+normalize_sdl_joystick_axis_value_(Sint16 value)
+{
+    double f_value = (
+        ((double)value - SDL_JOYSTICK_AXIS_MIN) /
+        ((double)SDL_JOYSTICK_AXIS_MAX - SDL_JOYSTICK_AXIS_MIN)
+    );
+    f_value = (f_value * 2) - 1;
+    if (f_value < -1.0){ f_value = -1.0; }
+    else if (f_value > 1.0){ f_value = 1.0; }
+    return f_value;
+}
+
 typedef struct ModuleState
 {
     int dummy;
@@ -810,11 +823,11 @@ get_sdl_event(PyObject *module, PyObject *unused)
         case SDL_EVENT_JOYSTICK_AXIS_MOTION:
         {
             return Py_BuildValue(
-                "(iiii)",
+                "(iiid)",
                 event.type,
                 event.jaxis.which,
                 event.jaxis.axis,
-                event.jaxis.value
+                normalize_sdl_joystick_axis_value_(event.jaxis.value)
             );
         }
         case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
@@ -893,7 +906,7 @@ get_sdl_joystick_axis_details_(SDL_JoystickID joystick)
     for (int i = 0; i < count; i++)
     {
         Sint16 position = SDL_GetJoystickAxis(open_joystick, i);
-        PyObject *py_item = Py_BuildValue("(i)", (int)position);
+        PyObject *py_item = Py_BuildValue("(d)", normalize_sdl_joystick_axis_value_(position));
         CHECK_UNEXPECTED_PYTHON_ERROR();
         PyTuple_SET_ITEM(py_result, i, py_item);
     }

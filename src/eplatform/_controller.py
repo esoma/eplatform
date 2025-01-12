@@ -23,13 +23,6 @@ from ._type import SdlGamepadButton
 from ._type import SdlGamepadButtonLabel
 from ._type import SdlJoystickId
 
-_AXIS_MIN: Final = -32768
-_AXIS_MAX: Final = 32767
-
-
-def _normalize_sdl_axis_value(value: int) -> float:
-    return min(max(-1.0, ((value - _AXIS_MIN) / (_AXIS_MAX - _AXIS_MIN) * 2) - 1), 1.0)
-
 
 class ControllerDisconnectedError(RuntimeError):
     pass
@@ -365,7 +358,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
             name = f"analog {i}"
             input = ControllerAnalogInput(name)
             input._controller = controller
-            input._value = _normalize_sdl_axis_value(value)
+            input._value = value
             analog_inputs.append(input)
 
         for i, (value,) in enumerate(button_details):
@@ -459,10 +452,10 @@ def forget_controllers() -> None:
         disconnect_controller(sdl_joystick)
 
 
-def controller_change_axis(sdl_joystick: SdlJoystickId, axis_index: int, value: int) -> bool:
+def controller_change_axis(sdl_joystick: SdlJoystickId, axis_index: int, value: float) -> bool:
     controller = _controllers[sdl_joystick]
     input = controller._analog_inputs[axis_index]
-    return input._set_value(_normalize_sdl_axis_value(value))
+    return input._set_value(value)
 
 
 def controller_change_button(
