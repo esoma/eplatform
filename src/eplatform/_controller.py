@@ -48,16 +48,15 @@ class _ControllerAxisAxisMapping(NamedTuple):
         return to_axis._set_position(self.calculate_to_value(from_value))
 
 
+class _ControllerButtonButtonMapping(NamedTuple):
+    to_name: str
+
+    def __call__(self, controller: "Controller", value: bool) -> bool:
+        to_button = controller.get_button(self.to_name)
+        return to_button._set_is_pressed(value)
+
+
 """
-class _ControllerAxisMapping(NamedTuple):
-    axis_index: int
-    min: int
-    max: int
-    input_name: str
-
-
-class _ControllerButtonMapping(NamedTuple):
-    button_index: int
 
 
 class _ControllerBallMapping(NamedTuple):
@@ -132,8 +131,37 @@ class ControllerAxis(_ControllerInput):
         return True
 
 
+class ControllerButtonChanged(TypedDict):
+    button: "ControllerButton"
+    is_pressed: bool
+
+
 class ControllerButton(_ControllerInput):
-    pass
+    _is_pressed: bool
+
+    changed: Event[ControllerButtonChanged] = Event()
+
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.changed = Event()
+
+    @property
+    def is_pressed(self) -> bool:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._is_pressed
+
+    def _set_is_pressed(self, value: bool) -> bool:
+        if self._is_pressed == value:
+            return False
+
+        self._is_pressed = value
+
+        data: ControllerButtonChanged = {"button": self, "is_pressed": value}
+        ControllerButton.changed(data)
+        self.changed(data)
+
+        return True
 
 
 class ControllerBall(_ControllerInput):
@@ -157,6 +185,7 @@ class Controller:
     _player_index: int | None = None
 
     _axis_mappings: dict[int, list[_ControllerAxisAxisMapping]] = {}
+    _button_mappings: dict[int, list[_ControllerButtonButtonMapping]] = {}
 
     _axes: dict[str, ControllerAxis] = {}
     _balls: dict[str, ControllerBall] = {}
@@ -336,9 +365,9 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         serial,
         player_index,
         ball_count,
-        button_count,
         hat_count,
         axis_details,
+        button_details,
         mapping_details,
     ) = open_sdl_joystick(sdl_joystick)
     controller._sdl_joystick = sdl_joystick
@@ -348,6 +377,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
     controller._player_index = player_index if player_index >= 0 else None
 
     axis_mappings = controller._axis_mappings = {}
+    button_mappings = controller._button_mappings = {}
 
     axes: list[ControllerAxis] = []
     balls: list[ControllerBall] = []
@@ -374,10 +404,19 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
             ball._controller = controller
             balls.append(ball)
 
-        for i in range(button_count):
-            button = ControllerButton(f"button {i}")
+        for i, (is_pressed,) in enumerate(button_details):
+            button_name = f"button {i}"
+            button = ControllerButton(button_name)
+            mapping = _ControllerButtonButtonMapping(button_name)
             button._controller = controller
+            button._is_pressed = is_pressed
+
             buttons.append(button)
+            try:
+                mappings = button_mappings[i]
+            except KeyError:
+                mappings = button_mappings[i] = []
+            mappings.append(mapping)
 
         for i in range(hat_count):
             hat = ControllerHat(f"hat {i}")
@@ -482,4 +521,18 @@ def controller_change_axis(sdl_joystick: SdlJoystickId, axis_index: int, value: 
     successes = 0
     for mapping in mappings:
         successes += mapping(controller, value)
+    return successes > 0
+
+
+def controller_change_button(
+    sdl_joystick: SdlJoystickId, button_index: int, is_pressed: bool
+) -> bool:
+    controller = _controllers[sdl_joystick]
+    try:
+        mappings = controller._button_mappings[button_index]
+    except KeyError:
+        return False
+    successes = 0
+    for mapping in mappings:
+        successes += mapping(controller, is_pressed)
     return successes > 0

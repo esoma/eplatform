@@ -14,6 +14,7 @@ from eplatform import get_controllers
 from eplatform._eplatform import connect_virtual_joystick
 from eplatform._eplatform import disconnect_virtual_joystick
 from eplatform._eplatform import set_virtual_joystick_axis_position
+from eplatform._eplatform import set_virtual_joystick_button_press
 
 
 class VirtualController:
@@ -159,3 +160,47 @@ def test_axis_position(capture_event, event_object):
         assert event == {"axis": axis1, "position": axis1.position}
         assert isclose(axis0.position, -1)
         assert isclose(axis1.position, 0.5, abs_tol=1e-04)
+
+
+@pytest.mark.parametrize("event_object", [ControllerButton, None])
+def test_button_press(capture_event, event_object):
+    vc = VirtualController(button_count=2)
+    with Platform():
+        controller = vc.get_controller()
+        button0 = controller.get_button("button 0")
+        button1 = controller.get_button("button 1")
+        assert not button0.is_pressed
+        assert not button1.is_pressed
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, 0, True)
+            assert not button0.is_pressed
+            assert not button1.is_pressed
+
+        event = capture_event(_, getattr(event_object or button0, "changed"))
+
+        assert event == {"button": button0, "is_pressed": True}
+        assert button0.is_pressed
+        assert not button1.is_pressed
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, 1, True)
+            assert button0.is_pressed
+            assert not button1.is_pressed
+
+        event = capture_event(_, getattr(event_object or button1, "changed"))
+
+        assert event == {"button": button1, "is_pressed": True}
+        assert button0.is_pressed
+        assert button1.is_pressed
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, 1, False)
+            assert button0.is_pressed
+            assert button1.is_pressed
+
+        event = capture_event(_, getattr(event_object or button1, "changed"))
+
+        assert event == {"button": button1, "is_pressed": False}
+        assert button0.is_pressed
+        assert not button1.is_pressed

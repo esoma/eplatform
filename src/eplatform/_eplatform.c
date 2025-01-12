@@ -817,6 +817,11 @@ get_sdl_event(PyObject *module, PyObject *unused)
                 event.jaxis.value
             );
         }
+        case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+        case SDL_EVENT_JOYSTICK_BUTTON_UP:
+        {
+            return Py_BuildValue("(iii)", event.type, event.jbutton.which, event.jbutton.button);
+        }
     }
 
     return Py_BuildValue("(i)", event.type);
@@ -889,6 +894,31 @@ get_sdl_joystick_axis_details_(SDL_JoystickID joystick)
     {
         Sint16 position = SDL_GetJoystickAxis(open_joystick, i);
         PyObject *py_item = Py_BuildValue("(i)", (int)position);
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        PyTuple_SET_ITEM(py_result, i, py_item);
+    }
+    return py_result;
+error:
+    Py_XDECREF(py_result);
+    return 0;
+}
+
+static PyObject *
+get_sdl_joystick_button_details_(SDL_JoystickID joystick)
+{
+    PyObject *py_result = 0;
+
+    SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
+    if (!open_joystick){ RAISE_SDL_ERROR(); }
+
+    int count = SDL_GetNumJoystickButtons(open_joystick);
+    if (count == -1){ RAISE_SDL_ERROR(); }
+
+    py_result = PyTuple_New(count);
+    for (int i = 0; i < count; i++)
+    {
+        bool is_pressed = SDL_GetJoystickButton(open_joystick, i);
+        PyObject *py_item = Py_BuildValue("(O)", is_pressed ? Py_True : Py_False);
         CHECK_UNEXPECTED_PYTHON_ERROR();
         PyTuple_SET_ITEM(py_result, i, py_item);
     }
@@ -1018,6 +1048,7 @@ open_sdl_joystick(PyObject *module, PyObject *py_joystick)
     SDL_Joystick *open_joystick = 0;
     PyObject *mapping_details = 0;
     PyObject *axis_details = 0;
+    PyObject *button_details = 0;
 
     SDL_JoystickID joystick = PyLong_AsLong(py_joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -1033,25 +1064,25 @@ open_sdl_joystick(PyObject *module, PyObject *py_joystick)
     int player_index = SDL_GetJoystickPlayerIndex(open_joystick);
     int ball_count = SDL_GetNumJoystickBalls(open_joystick);
     if (ball_count == -1){ RAISE_SDL_ERROR(); }
-    int button_count = SDL_GetNumJoystickButtons(open_joystick);
-    if (button_count == -1){ RAISE_SDL_ERROR(); }
     int hat_count = SDL_GetNumJoystickHats(open_joystick);
     if (hat_count == -1){ RAISE_SDL_ERROR(); }
     axis_details = get_sdl_joystick_axis_details_(joystick);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    button_details = get_sdl_joystick_button_details_(joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
     mapping_details = get_sdl_joystick_mapping_details_(joystick);
     CHECK_UNEXPECTED_PYTHON_ERROR();
 
     PyObject *py_result = Py_BuildValue(
-        "(sssiiiiOO)",
+        "(sssiiiOOO)",
         name,
         guid,
         serial,
         player_index,
         ball_count,
-        button_count,
         hat_count,
         axis_details,
+        button_details,
         mapping_details
     );
     CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -1059,6 +1090,7 @@ open_sdl_joystick(PyObject *module, PyObject *py_joystick)
     return py_result;
 error:
     Py_XDECREF(axis_details);
+    Py_XDECREF(button_details);
     Py_XDECREF(mapping_details);
     if (open_joystick){ SDL_CloseJoystick(open_joystick); }
     return 0;
@@ -1139,6 +1171,27 @@ set_virtual_joystick_axis_position(PyObject *module, PyObject **args, Py_ssize_t
     if (!open_joystick){ RAISE_SDL_ERROR(); }
 
     if (!SDL_SetJoystickVirtualAxis(open_joystick, axis, (Sint16)value)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
+set_virtual_joystick_button_press(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
+
+    SDL_JoystickID joystick = PyLong_AsLong(args[0]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    long button = PyLong_AsLong(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    bool is_pressed = args[2] == Py_True;
+
+    SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
+    if (!open_joystick){ RAISE_SDL_ERROR(); }
+
+    if (!SDL_SetJoystickVirtualButton(open_joystick, button, is_pressed)){ RAISE_SDL_ERROR(); }
 
     Py_RETURN_NONE;
 error:
@@ -1269,6 +1322,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"connect_virtual_joystick", (PyCFunction)connect_virtual_joystick, METH_FASTCALL, 0},
     {"disconnect_virtual_joystick", disconnect_virtual_joystick, METH_O, 0},
     {"set_virtual_joystick_axis_position", (PyCFunction)set_virtual_joystick_axis_position, METH_FASTCALL, 0},
+    {"set_virtual_joystick_button_press", (PyCFunction)set_virtual_joystick_button_press, METH_FASTCALL, 0},
     {"get_sdl_displays", get_sdl_displays, METH_NOARGS, 0},
     {"get_sdl_display_details", get_sdl_display_details, METH_O, 0},
     {0},
@@ -1336,6 +1390,8 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_ADDED);
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_REMOVED);
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_AXIS_MOTION);
+    ADD_CONSTANT(SDL_EVENT_JOYSTICK_BUTTON_DOWN);
+    ADD_CONSTANT(SDL_EVENT_JOYSTICK_BUTTON_UP);
 
     ADD_CONSTANT(SDL_ORIENTATION_UNKNOWN);
     ADD_CONSTANT(SDL_ORIENTATION_LANDSCAPE);
