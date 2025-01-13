@@ -6,6 +6,9 @@ __all__ = [
     "ControllerAnalogInputChanged",
     "ControllerBinaryInput",
     "ControllerBinaryInputChanged",
+    "ControllerButton",
+    "ControllerButtonChanged",
+    "ControllerButtonName",
     "ControllerDirectionalInput",
     "ControllerDirectionalInputValue",
     "Display",
@@ -54,6 +57,9 @@ from ._controller import ControllerAnalogInput
 from ._controller import ControllerAnalogInputChanged
 from ._controller import ControllerBinaryInput
 from ._controller import ControllerBinaryInputChanged
+from ._controller import ControllerButton
+from ._controller import ControllerButtonChanged
+from ._controller import ControllerButtonName
 from ._controller import ControllerDirectionalInput
 from ._controller import ControllerDirectionalInputValue
 from ._display import Display

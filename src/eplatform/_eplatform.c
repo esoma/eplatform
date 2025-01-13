@@ -987,7 +987,7 @@ get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
     PyObject *py_results = 0;
     PyObject *py_item = 0;
     SDL_GamepadBinding **bindings = 0;
-    if (!SDL_IsGamepad(joystick) || true)
+    if (!SDL_IsGamepad(joystick))
     {
         Py_RETURN_NONE;
     }
@@ -1023,11 +1023,9 @@ get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
             case SDL_GAMEPAD_BINDTYPE_AXIS:
             {
                 py_input = Py_BuildValue(
-                    "(iiii)",
+                    "(ii)",
                     binding->input_type,
-                    binding->input.axis.axis,
-                    binding->input.axis.axis_min,
-                    binding->input.axis.axis_max
+                    binding->input.axis.axis
                 );
                 break;
             }
@@ -1271,6 +1269,19 @@ error:
     return 0;
 }
 
+
+static PyObject *
+add_sdl_gamepad_mapping(PyObject *module, PyObject *py_mapping)
+{
+    const char *mapping = PyUnicode_AsUTF8AndSize(py_mapping, 0);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (SDL_AddGamepadMapping(mapping) == -1){ RAISE_SDL_ERROR(); }
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+
 static PyObject *
 get_sdl_displays(PyObject *module, PyObject *unused)
 {
@@ -1397,6 +1408,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"set_virtual_joystick_axis_position", (PyCFunction)set_virtual_joystick_axis_position, METH_FASTCALL, 0},
     {"set_virtual_joystick_button_press", (PyCFunction)set_virtual_joystick_button_press, METH_FASTCALL, 0},
     {"set_virtual_joystick_hat_value", (PyCFunction)set_virtual_joystick_hat_value, METH_FASTCALL, 0},
+    {"add_sdl_gamepad_mapping", add_sdl_gamepad_mapping, METH_O, 0},
     {"get_sdl_displays", get_sdl_displays, METH_NOARGS, 0},
     {"get_sdl_display_details", get_sdl_display_details, METH_O, 0},
     {0},

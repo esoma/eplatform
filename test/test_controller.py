@@ -7,6 +7,8 @@ import pytest
 from eplatform import Controller
 from eplatform import ControllerAnalogInput
 from eplatform import ControllerBinaryInput
+from eplatform import ControllerButton
+from eplatform import ControllerButtonName
 from eplatform import ControllerDirectionalInput
 from eplatform import ControllerDirectionalInputValue
 from eplatform import Platform
@@ -15,17 +17,57 @@ from eplatform._eplatform import SDL_HAT_DOWN
 from eplatform._eplatform import SDL_HAT_LEFT
 from eplatform._eplatform import SDL_HAT_RIGHT
 from eplatform._eplatform import SDL_HAT_UP
+from eplatform._eplatform import add_sdl_gamepad_mapping
 from eplatform._eplatform import connect_virtual_joystick
 from eplatform._eplatform import disconnect_virtual_joystick
 from eplatform._eplatform import set_virtual_joystick_axis_position
 from eplatform._eplatform import set_virtual_joystick_button_press
 from eplatform._eplatform import set_virtual_joystick_hat_value
 
+GAMEPAD_MAP_TO_INPUT = {
+    "a": ControllerButtonName.A,
+    "b": ControllerButtonName.B,
+    "x": ControllerButtonName.X,
+    "y": ControllerButtonName.Y,
+    "back": ControllerButtonName.BACK,
+    "guide": ControllerButtonName.GUIDE,
+    "start": ControllerButtonName.START,
+    "leftstick": ControllerButtonName.LEFT_STICK,
+    "rightstick": ControllerButtonName.RIGHT_STICK,
+    "leftshoulder": ControllerButtonName.LEFT_SHOULDER,
+    "rightshoulder": ControllerButtonName.RIGHT_SHOULDER,
+    "dpup": ControllerButtonName.UP,
+    "dpdown": ControllerButtonName.DOWN,
+    "dpleft": ControllerButtonName.LEFT,
+    "dpright": ControllerButtonName.RIGHT,
+    "paddle1": ControllerButtonName.RIGHT_PADDLE_1,
+    "paddle2": ControllerButtonName.LEFT_PADDLE_1,
+    "paddle3": ControllerButtonName.RIGHT_PADDLE_2,
+    "paddle4": ControllerButtonName.LEFT_PADDLE_2,
+    "touchpad": ControllerButtonName.TOUCHPAD,
+}
+
 
 class VirtualController:
-    def __init__(self, *, name=None, axis_count=0, button_count=0, hat_count=0):
+    def __init__(
+        self,
+        *,
+        name="Test",
+        expected_uuid_hex="ff002538546573740000000000007600",
+        axis_count=0,
+        button_count=0,
+        hat_count=0,
+        gamepad_name=None,
+        gamepad_map={},
+    ):
+        self.expected_uuid_hex = expected_uuid_hex
+        if gamepad_name is None:
+            gamepad_name = name
+        self.gamepad_map = gamepad_map
+        gamepad_map_inputs = ",".join(f"{k}:{v}" for k, v in gamepad_map.items())
+        add_sdl_gamepad_mapping(f"{expected_uuid_hex},{gamepad_name},{gamepad_map_inputs}")
         self.sdl_joystick = None
-        self.name = name or uuid4().hex
+        self.name = name
         self.axis_count = axis_count
         self.button_count = button_count
         self.hat_count = hat_count
@@ -52,6 +94,7 @@ class VirtualController:
             if controller._sdl_joystick == self.sdl_joystick:
                 assert controller.is_connected
                 assert controller.name == self.name
+                assert controller.uuid.hex == self.expected_uuid_hex
                 assert {(i.__class__, i.name) for i in controller.analog_inputs} == {
                     (ControllerAnalogInput, f"analog {i}") for i in range(self.axis_count)
                 }
@@ -60,6 +103,9 @@ class VirtualController:
                 }
                 assert {(i.__class__, i.name) for i in controller.directional_inputs} == {
                     (ControllerDirectionalInput, f"directional {i}") for i in range(self.hat_count)
+                }
+                assert {(i.__class__, i.name) for i in controller.buttons} == {
+                    (ControllerButton, GAMEPAD_MAP_TO_INPUT[b]) for b in self.gamepad_map.keys()
                 }
                 return controller
         return None
@@ -103,7 +149,13 @@ def test_connect_disconnect(
 
 @pytest.mark.parametrize(
     "controller_kwargs",
-    [{}, {"name": "Virtual Controller"}, {"axis_count": 4}, {"button_count": 6}, {"hat_count": 7}],
+    [
+        {},
+        {"name": "Virtual Controller", "expected_uuid_hex": "ff0013db5669727475616c2043007600"},
+        {"axis_count": 4},
+        {"button_count": 6, "gamepad_map": {"a": "b0"}},
+        {"hat_count": 7},
+    ],
 )
 def test_properties(capture_event, controller_kwargs):
     vc = VirtualController(**controller_kwargs)
@@ -246,3 +298,36 @@ def test_directional_value(capture_event, event_object):
         assert event == {"directional_input": directional1, "value": directional1.value}
         assert directional0.value == ControllerDirectionalInputValue.LEFT
         assert directional1.value == ControllerDirectionalInputValue.ALL
+
+
+@pytest.mark.parametrize("event_object", [ControllerButton, None])
+@pytest.mark.parametrize("mapped_binary_index", [0, 1])
+@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_INPUT.items())
+@pytest.mark.parametrize("event_name", ["changed", None])
+def test_button_binary_mapped(
+    capture_event, event_object, mapped_binary_index, mapped_button, button_name, event_name
+):
+    vc = VirtualController(button_count=2, gamepad_map={mapped_button: f"b{mapped_binary_index}"})
+    with Platform():
+        controller = vc.get_controller()
+        binary0 = controller.get_binary_input("binary 0")
+        binary1 = controller.get_binary_input("binary 1")
+        button = controller.get_button(button_name)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, mapped_binary_index, True)
+            assert not button.is_pressed
+
+        event = capture_event(_, getattr(event_object or button, event_name or "pressed"))
+
+        assert event == {"button": button, "is_pressed": True}
+        assert button.is_pressed
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, mapped_binary_index, False)
+            assert button.is_pressed
+
+        event = capture_event(_, getattr(event_object or button, event_name or "released"))
+
+        assert event == {"button": button, "is_pressed": False}
+        assert not button.is_pressed
