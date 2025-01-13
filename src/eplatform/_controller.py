@@ -228,6 +228,9 @@ class ControllerButton(_ControllerInput[ControllerButtonName]):
     _is_pressed: bool
 
     _binary_input_affectors: tuple[ControllerBinaryInput, ...] = ()
+    _directional_input_affectors: tuple[
+        tuple[ControllerDirectionalInput, ControllerDirectionalInputValue], ...
+    ] = ()
 
     changed: Event[ControllerButtonChanged] = Event()
     pressed: Event[ControllerButtonChanged] = Event()
@@ -243,6 +246,8 @@ class ControllerButton(_ControllerInput[ControllerButtonName]):
         value = 0
         for binary_input in self._binary_input_affectors:
             value += binary_input.value
+        for directional_input, directional_input_mask in self._directional_input_affectors:
+            value += (directional_input.value & directional_input_mask) != 0
         return value != 0
 
     def _initialize(self) -> None:
@@ -539,6 +544,8 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 
         buttons: dict[ControllerButtonName, ControllerButton] = {}
         for (input_type, *input_args), (output_type, *output_args) in mapping_details:
+            input_directional_mask = 0
+
             if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                 input_button_index = input_args[0]
                 input = binary_inputs[input_button_index]
@@ -569,6 +576,11 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 
                 if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                     output._binary_input_affectors += (input,)
+                elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
+                    assert input_directional_mask != 0
+                    output._directional_input_affectors += (
+                        (input, ControllerDirectionalInputValue(input_directional_mask)),
+                    )
                 else:
                     log.warning(f"unexpected input type {input_type!r}, skipping mapping")
                     continue

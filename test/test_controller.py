@@ -331,3 +331,69 @@ def test_button_binary_mapped(
 
         assert event == {"button": button, "is_pressed": False}
         assert not button.is_pressed
+
+
+@pytest.mark.parametrize("event_object", [ControllerButton, None])
+@pytest.mark.parametrize("mapped_directional_index", [0, 1])
+@pytest.mark.parametrize(
+    "mapped_mask, directional_value",
+    [
+        (8, ControllerDirectionalInputValue.LEFT),
+        (4, ControllerDirectionalInputValue.DOWN),
+        (2, ControllerDirectionalInputValue.RIGHT),
+        (1, ControllerDirectionalInputValue.UP),
+    ],
+)
+@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_INPUT.items())
+@pytest.mark.parametrize("event_name", ["changed", None])
+def test_button_directional_mapped(
+    capture_event,
+    event_object,
+    mapped_directional_index,
+    mapped_mask,
+    directional_value,
+    mapped_button,
+    button_name,
+    event_name,
+):
+    vc = VirtualController(
+        hat_count=2, gamepad_map={mapped_button: f"h{mapped_directional_index}.{mapped_mask}"}
+    )
+    with Platform():
+        controller = vc.get_controller()
+        directional0 = controller.get_directional_input("directional 0")
+        directional1 = controller.get_directional_input("directional 1")
+        button = controller.get_button(button_name)
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, mapped_directional_index, directional_value
+            )
+            assert not button.is_pressed
+
+        event = capture_event(_, getattr(event_object or button, event_name or "pressed"))
+
+        assert event == {"button": button, "is_pressed": True}
+        assert button.is_pressed
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, mapped_directional_index, ControllerDirectionalInputValue.NEUTRAL
+            )
+            assert button.is_pressed
+
+        event = capture_event(_, getattr(event_object or button, event_name or "released"))
+
+        assert event == {"button": button, "is_pressed": False}
+        assert not button.is_pressed
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, mapped_directional_index, ControllerDirectionalInputValue.ALL
+            )
+            assert not button.is_pressed
+
+        event = capture_event(_, getattr(event_object or button, event_name or "pressed"))
+
+        assert event == {"button": button, "is_pressed": True}
+        assert button.is_pressed
