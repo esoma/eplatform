@@ -109,6 +109,7 @@ class VirtualController:
     def get_controller(self):
         for controller in get_controllers():
             if controller._sdl_joystick == self.sdl_joystick:
+                print(controller)
                 assert controller.is_connected
                 assert controller.name == self.name
                 assert controller.uuid.hex == self.expected_uuid_hex
@@ -181,7 +182,7 @@ def test_connect_disconnect(
     [
         {},
         {"name": "Virtual Controller", "expected_uuid_hex": "ff0013db5669727475616c2043007600"},
-        {"axis_count": 4, "gamepad_map": {"leftx": "a0", "lefty": "a1"}},
+        {"axis_count": 4, "gamepad_map": {"leftx": "a0", "lefty": "a1", "lefttrigger": "a2"}},
         {"button_count": 6, "gamepad_map": {"a": "b0"}},
         {"hat_count": 7},
     ],
@@ -339,8 +340,6 @@ def test_button_binary_mapped(
     vc = VirtualController(button_count=2, gamepad_map={mapped_button: f"b{mapped_binary_index}"})
     with Platform():
         controller = vc.get_controller()
-        binary0 = controller.get_binary_input("binary 0")
-        binary1 = controller.get_binary_input("binary 1")
         button = controller.get_button(button_name)
 
         def _():
@@ -390,8 +389,6 @@ def test_button_directional_mapped(
     )
     with Platform():
         controller = vc.get_controller()
-        directional0 = controller.get_directional_input("directional 0")
-        directional1 = controller.get_directional_input("directional 1")
         button = controller.get_button(button_name)
 
         def _():
@@ -450,9 +447,6 @@ def test_stick_analog_mapped(
     )
     with Platform():
         controller = vc.get_controller()
-        analog0 = controller.get_analog_input("analog 0")
-        analog1 = controller.get_analog_input("analog 1")
-        analog2 = controller.get_analog_input("analog 2")
         stick = controller.get_stick(stick_name)
 
         def _():
@@ -485,3 +479,44 @@ def test_stick_analog_mapped(
         assert event == {"stick": stick, "vector": stick.vector}
         assert isclose(stick.vector.x, -1, abs_tol=1e-04)
         assert isclose(stick.vector.y, 0.5, abs_tol=1e-04)
+
+
+@pytest.mark.parametrize("mapped_trigger, trigger_name", GAMEPAD_MAP_TO_TRIGGER_NAME.items())
+@pytest.mark.parametrize("mapped_analog_index", [0, 1])
+@pytest.mark.parametrize("event_object", [ControllerTrigger, None])
+def test_trigger_analog_mapped(
+    capture_event, event_object, mapped_analog_index, mapped_trigger, trigger_name
+):
+    vc = VirtualController(
+        axis_count=2, gamepad_map={f"{mapped_trigger}": f"a{mapped_analog_index}"}
+    )
+    with Platform():
+        controller = vc.get_controller()
+        trigger = controller.get_trigger(trigger_name)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, 32767)
+            assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, -32768)
+            assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, 0)
+            assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 0.5, abs_tol=1e-04)

@@ -227,7 +227,7 @@ class ControllerButtonName(StrEnum):
 
 
 class ControllerButton(_ControllerInput[ControllerButtonName]):
-    _is_pressed: bool
+    _is_pressed: bool = False
 
     _binary_input_affectors: tuple[ControllerBinaryInput, ...] = ()
     _directional_input_affectors: tuple[
@@ -251,9 +251,6 @@ class ControllerButton(_ControllerInput[ControllerButtonName]):
         for directional_input, directional_input_mask in self._directional_input_affectors:
             value += (directional_input.value & directional_input_mask) != 0
         return value != 0
-
-    def _initialize(self) -> None:
-        self._is_pressed = self._get_mapped_is_pressed()
 
     def _map(self) -> None:
         is_pressed = self._get_mapped_is_pressed()
@@ -291,7 +288,7 @@ class ControllerStickChanged(TypedDict):
 
 
 class ControllerStick(_ControllerInput[ControllerStickName]):
-    _vector: DVector2
+    _vector: DVector2 = DVector2(0)
 
     _analog_input_affectors: tuple[tuple[ControllerAnalogInput, int], ...] = ()
 
@@ -304,11 +301,8 @@ class ControllerStick(_ControllerInput[ControllerStickName]):
     def _get_mapped_vector(self) -> DVector2:
         value = [0.0, 0.0]
         for analog_input, component in self._analog_input_affectors:
-            value[component] = analog_input.value
+            value[component] += analog_input.value
         return DVector2(max(-1.0, min(value[0], 1.0)), max(-1.0, min(value[1], 1.0)))
-
-    def _initialize(self) -> None:
-        self._vector = self._get_mapped_vector()
 
     def _map(self) -> None:
         vector = self._get_mapped_vector()
@@ -340,7 +334,9 @@ class ControllerTriggerChanged(TypedDict):
 
 
 class ControllerTrigger(_ControllerInput[ControllerTriggerName]):
-    _position: float
+    _position: float = 0.0
+
+    _analog_input_affectors: tuple[ControllerAnalogInput, ...] = ()
 
     changed: Event[ControllerTriggerChanged] = Event()
 
@@ -349,10 +345,10 @@ class ControllerTrigger(_ControllerInput[ControllerTriggerName]):
         self.changed = Event()
 
     def _get_mapped_position(self) -> float:
-        return 0.0
-
-    def _initialize(self) -> None:
-        self._position = self._get_mapped_position()
+        value = 0.0
+        for analog_input in self._analog_input_affectors:
+            value += (analog_input.value + 1) * 0.5
+        return max(0.0, min(value, 1.0))
 
     def _map(self) -> None:
         position = self._get_mapped_position()
@@ -619,6 +615,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
     analog_inputs: list[ControllerAnalogInput] = []
     binary_inputs: list[ControllerBinaryInput] = []
     directional_inputs: list[ControllerDirectionalInput] = []
+
     for i, (value,) in enumerate(axis_details):
         name = f"analog {i}"
         input = ControllerAnalogInput(name)
@@ -743,8 +740,12 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                         output = ControllerTrigger(trigger_name)
                     output._controller = controller
 
-                    log.warning(f"unexpected input type {input_type!r}, skipping mapping")
-                    continue
+                    if input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
+                        assert isinstance(input, ControllerAnalogInput)
+                        output._analog_input_affectors += (input,)
+                    else:
+                        log.warning(f"unexpected input type {input_type!r}, skipping mapping")
+                        continue
 
                     triggers[trigger_name] = output
             else:
@@ -764,9 +765,6 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         controller._buttons = tuple(set(buttons.values()))
         controller._sticks = tuple(set(sticks.values()))
         controller._triggers = tuple(set(triggers.values()))
-
-        for input in input_affected_by.keys():
-            input._initialize()
 
     data: ControllerConnectionChanged = {"controller": controller, "is_connected": True}
     Controller.connection_changed(data)
