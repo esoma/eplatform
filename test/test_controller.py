@@ -14,6 +14,8 @@ from eplatform import ControllerDirectionalInput
 from eplatform import ControllerDirectionalInputValue
 from eplatform import ControllerStick
 from eplatform import ControllerStickName
+from eplatform import ControllerTrigger
+from eplatform import ControllerTriggerName
 from eplatform import Platform
 from eplatform import get_controllers
 from eplatform._eplatform import SDL_HAT_DOWN
@@ -55,6 +57,11 @@ GAMEPAD_MAP_TO_STICK_NAME = {
     "lefty": ControllerStickName.LEFT,
     "rightx": ControllerStickName.RIGHT,
     "righty": ControllerStickName.RIGHT,
+}
+
+GAMEPAD_MAP_TO_TRIGGER_NAME = {
+    "lefttrigger": ControllerTriggerName.LEFT,
+    "righttrigger": ControllerTriggerName.RIGHT,
 }
 
 
@@ -123,6 +130,11 @@ class VirtualController:
                     (ControllerStick, GAMEPAD_MAP_TO_STICK_NAME[n])
                     for n in self.gamepad_map.keys()
                     if n in GAMEPAD_MAP_TO_STICK_NAME
+                }
+                assert {(i.__class__, i.name) for i in controller.triggers} == {
+                    (ControllerTrigger, GAMEPAD_MAP_TO_TRIGGER_NAME[n])
+                    for n in self.gamepad_map.keys()
+                    if n in GAMEPAD_MAP_TO_TRIGGER_NAME
                 }
                 return controller
         return None
