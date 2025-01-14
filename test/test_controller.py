@@ -3,6 +3,7 @@ from unittest.mock import ANY
 from uuid import uuid4
 
 import pytest
+from emath import DVector2
 
 from eplatform import Controller
 from eplatform import ControllerAnalogInput
@@ -11,6 +12,8 @@ from eplatform import ControllerButton
 from eplatform import ControllerButtonName
 from eplatform import ControllerDirectionalInput
 from eplatform import ControllerDirectionalInputValue
+from eplatform import ControllerStick
+from eplatform import ControllerStickName
 from eplatform import Platform
 from eplatform import get_controllers
 from eplatform._eplatform import SDL_HAT_DOWN
@@ -24,7 +27,7 @@ from eplatform._eplatform import set_virtual_joystick_axis_position
 from eplatform._eplatform import set_virtual_joystick_button_press
 from eplatform._eplatform import set_virtual_joystick_hat_value
 
-GAMEPAD_MAP_TO_INPUT = {
+GAMEPAD_MAP_TO_BUTTON_NAME = {
     "a": ControllerButtonName.A,
     "b": ControllerButtonName.B,
     "x": ControllerButtonName.X,
@@ -45,6 +48,13 @@ GAMEPAD_MAP_TO_INPUT = {
     "paddle3": ControllerButtonName.RIGHT_PADDLE_2,
     "paddle4": ControllerButtonName.LEFT_PADDLE_2,
     "touchpad": ControllerButtonName.TOUCHPAD,
+}
+
+GAMEPAD_MAP_TO_STICK_NAME = {
+    "leftx": ControllerStickName.LEFT,
+    "lefty": ControllerStickName.LEFT,
+    "rightx": ControllerStickName.RIGHT,
+    "righty": ControllerStickName.RIGHT,
 }
 
 
@@ -105,7 +115,14 @@ class VirtualController:
                     (ControllerDirectionalInput, f"directional {i}") for i in range(self.hat_count)
                 }
                 assert {(i.__class__, i.name) for i in controller.buttons} == {
-                    (ControllerButton, GAMEPAD_MAP_TO_INPUT[b]) for b in self.gamepad_map.keys()
+                    (ControllerButton, GAMEPAD_MAP_TO_BUTTON_NAME[n])
+                    for n in self.gamepad_map.keys()
+                    if n in GAMEPAD_MAP_TO_BUTTON_NAME
+                }
+                assert {(i.__class__, i.name) for i in controller.sticks} == {
+                    (ControllerStick, GAMEPAD_MAP_TO_STICK_NAME[n])
+                    for n in self.gamepad_map.keys()
+                    if n in GAMEPAD_MAP_TO_STICK_NAME
                 }
                 return controller
         return None
@@ -152,7 +169,7 @@ def test_connect_disconnect(
     [
         {},
         {"name": "Virtual Controller", "expected_uuid_hex": "ff0013db5669727475616c2043007600"},
-        {"axis_count": 4},
+        {"axis_count": 4, "gamepad_map": {"leftx": "a0", "lefty": "a1"}},
         {"button_count": 6, "gamepad_map": {"a": "b0"}},
         {"hat_count": 7},
     ],
@@ -302,7 +319,7 @@ def test_directional_value(capture_event, event_object):
 
 @pytest.mark.parametrize("event_object", [ControllerButton, None])
 @pytest.mark.parametrize("mapped_binary_index", [0, 1])
-@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_INPUT.items())
+@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_BUTTON_NAME.items())
 @pytest.mark.parametrize("event_name", ["changed", None])
 def test_button_binary_mapped(
     capture_event, event_object, mapped_binary_index, mapped_button, button_name, event_name
@@ -344,7 +361,7 @@ def test_button_binary_mapped(
         (1, ControllerDirectionalInputValue.UP),
     ],
 )
-@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_INPUT.items())
+@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_BUTTON_NAME.items())
 @pytest.mark.parametrize("event_name", ["changed", None])
 def test_button_directional_mapped(
     capture_event,
@@ -397,3 +414,62 @@ def test_button_directional_mapped(
 
         assert event == {"button": button, "is_pressed": True}
         assert button.is_pressed
+
+
+@pytest.mark.parametrize(
+    "mapped_stick, stick_name", [("left", "left stick"), ("right", "right stick")]
+)
+@pytest.mark.parametrize("x_mapped_analog_index, y_mapped_analog_index", [(0, 1), (1, 2)])
+@pytest.mark.parametrize("event_object", [ControllerStick, None])
+def test_stick_analog_mapped(
+    capture_event,
+    event_object,
+    x_mapped_analog_index,
+    y_mapped_analog_index,
+    mapped_stick,
+    stick_name,
+):
+    vc = VirtualController(
+        axis_count=3,
+        gamepad_map={
+            f"{mapped_stick}x": f"a{x_mapped_analog_index}",
+            f"{mapped_stick}y": f"a{y_mapped_analog_index}",
+        },
+    )
+    with Platform():
+        controller = vc.get_controller()
+        analog0 = controller.get_analog_input("analog 0")
+        analog1 = controller.get_analog_input("analog 1")
+        analog2 = controller.get_analog_input("analog 2")
+        stick = controller.get_stick(stick_name)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, x_mapped_analog_index, -32768)
+            assert isclose(stick.vector.x, 0, abs_tol=1e-04)
+            assert isclose(stick.vector.y, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+        assert isclose(stick.vector.y, 0, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, y_mapped_analog_index, 32767)
+            assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+            assert isclose(stick.vector.y, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+        assert isclose(stick.vector.y, 1, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_axis_position(vc.sdl_joystick, y_mapped_analog_index, 16384)
+            assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+            assert isclose(stick.vector.y, 1, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+        assert isclose(stick.vector.y, 0.5, abs_tol=1e-04)

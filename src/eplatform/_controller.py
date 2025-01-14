@@ -8,6 +8,7 @@ from typing import Collection
 from typing import Final
 from typing import Generator
 from typing import Generic
+from typing import Literal
 from typing import Mapping
 from typing import NamedTuple
 from typing import TypeAlias
@@ -16,6 +17,7 @@ from typing import TypeVar
 from uuid import UUID
 
 from eevent import Event
+from emath import DVector2
 
 from . import _eplatform
 from ._eplatform import SDL_GAMEPAD_BINDTYPE_AXIS
@@ -278,6 +280,55 @@ class ControllerButton(_ControllerInput[ControllerButtonName]):
         return self._is_pressed
 
 
+class ControllerStickName(StrEnum):
+    LEFT = "left stick"
+    RIGHT = "right stick"
+
+
+class ControllerStickChanged(TypedDict):
+    stick: "ControllerStick"
+    vector: DVector2
+
+
+class ControllerStick(_ControllerInput[ControllerStickName]):
+    _vector: DVector2
+
+    _analog_input_affectors: tuple[tuple[ControllerAnalogInput, int], ...] = ()
+
+    changed: Event[ControllerStickChanged] = Event()
+
+    def __init__(self, name: ControllerStickName) -> None:
+        super().__init__(name)
+        self.changed = Event()
+
+    def _get_mapped_vector(self) -> DVector2:
+        value = [0.0, 0.0]
+        for analog_input, component in self._analog_input_affectors:
+            value[component] = analog_input.value
+        return DVector2(max(-1.0, min(value[0], 1.0)), max(-1.0, min(value[1], 1.0)))
+
+    def _initialize(self) -> None:
+        self._vector = self._get_mapped_vector()
+
+    def _map(self) -> None:
+        vector = self._get_mapped_vector()
+
+        if vector == self._vector:
+            return
+
+        self._vector = vector
+
+        data: ControllerStickChanged = {"stick": self, "vector": vector}
+        ControllerStick.changed(data)
+        self.changed(data)
+
+    @property
+    def vector(self) -> DVector2:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._vector
+
+
 class ControllerConnectionChanged(TypedDict):
     controller: "Controller"
     is_connected: bool
@@ -286,7 +337,7 @@ class ControllerConnectionChanged(TypedDict):
 _AffectorInput: TypeAlias = (
     ControllerAnalogInput | ControllerBinaryInput | ControllerDirectionalInput
 )
-_AffecteeInput: TypeAlias = ControllerButton
+_AffecteeInput: TypeAlias = ControllerButton | ControllerStick
 
 
 class Controller:
@@ -304,12 +355,14 @@ class Controller:
         ControllerAnalogInput
         | ControllerBinaryInput
         | ControllerDirectionalInput
-        | ControllerButton,
+        | ControllerButton
+        | ControllerStick,
     ] = {}
     _analog_inputs: tuple[ControllerAnalogInput, ...] = ()
     _binary_inputs: tuple[ControllerBinaryInput, ...] = ()
     _directional_inputs: tuple[ControllerDirectionalInput, ...] = ()
     _buttons: tuple[ControllerButton, ...] = ()
+    _sticks: tuple[ControllerStick, ...] = ()
 
     connection_changed: Event[ControllerConnectionChanged] = Event()
     connected: ClassVar[Event[ControllerConnectionChanged]] = Event()
@@ -344,6 +397,7 @@ class Controller:
         | ControllerBinaryInput
         | ControllerDirectionalInput
         | ControllerButton
+        | ControllerStick
     ):
         if not self.is_connected:
             raise ControllerDisconnectedError()
@@ -373,6 +427,12 @@ class Controller:
             raise KeyError(name)
         return input
 
+    def get_stick(self, name: ControllerStickName) -> ControllerStick:
+        input = self.get_input(name)
+        if not isinstance(input, ControllerStick):
+            raise KeyError(name)
+        return input
+
     @property
     def analog_inputs(self) -> Collection[ControllerAnalogInput]:
         if not self.is_connected:
@@ -396,6 +456,12 @@ class Controller:
         if not self.is_connected:
             raise ControllerDisconnectedError()
         return self._buttons
+
+    @property
+    def sticks(self) -> Collection[ControllerStick]:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._sticks
 
     @property
     def is_connected(self) -> bool:
@@ -437,7 +503,7 @@ _SDL_GAMEPAD_BUTTON_NAME: Final[Mapping[SdlGamepadButton, ControllerButtonName]]
     _eplatform.SDL_GAMEPAD_BUTTON_TOUCHPAD: ControllerButtonName.TOUCHPAD,
 }
 
-_SDL_GAMEPAD_BUTTON_LABEL_NAME: Final[Mapping[SdlGamepadButtonLabel, str]] = {
+_SDL_GAMEPAD_BUTTON_LABEL_NAME: Final[Mapping[SdlGamepadButtonLabel, ControllerButtonName]] = {
     _eplatform.SDL_GAMEPAD_BUTTON_LABEL_A: ControllerButtonName.A,
     _eplatform.SDL_GAMEPAD_BUTTON_LABEL_B: ControllerButtonName.B,
     _eplatform.SDL_GAMEPAD_BUTTON_LABEL_X: ControllerButtonName.X,
@@ -448,29 +514,17 @@ _SDL_GAMEPAD_BUTTON_LABEL_NAME: Final[Mapping[SdlGamepadButtonLabel, str]] = {
     _eplatform.SDL_GAMEPAD_BUTTON_LABEL_TRIANGLE: ControllerButtonName.TRIANGLE,
 }
 
-_SDL_GAMEPAD_AXIS_NAME: Final[Mapping[SdlGamepadAxis, str]] = {
-    _eplatform.SDL_GAMEPAD_AXIS_LEFTX: "left x",
-    _eplatform.SDL_GAMEPAD_AXIS_LEFTY: "left y",
-    _eplatform.SDL_GAMEPAD_AXIS_RIGHTX: "right x",
-    _eplatform.SDL_GAMEPAD_AXIS_RIGHTY: "right y",
-    _eplatform.SDL_GAMEPAD_AXIS_LEFT_TRIGGER: "left trigger",
-    _eplatform.SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: "right trigger",
+_SDL_GAMEPAD_AXIS_NAME: Final[
+    Mapping[SdlGamepadAxis, tuple[ControllerStickName, Literal[0, 1]]]
+] = {
+    _eplatform.SDL_GAMEPAD_AXIS_LEFTX: (ControllerStickName.LEFT, 0),
+    _eplatform.SDL_GAMEPAD_AXIS_LEFTY: (ControllerStickName.LEFT, 1),
+    _eplatform.SDL_GAMEPAD_AXIS_RIGHTX: (ControllerStickName.RIGHT, 0),
+    _eplatform.SDL_GAMEPAD_AXIS_RIGHTY: (ControllerStickName.RIGHT, 1),
+    # _eplatform.SDL_GAMEPAD_AXIS_LEFT_TRIGGER: "left trigger",
+    # _eplatform.SDL_GAMEPAD_AXIS_RIGHT_TRIGGER: "right trigger",
 }
 
-# we shouldn't be generating inputs with the same name
-assert (
-    len(_SDL_GAMEPAD_BUTTON_NAME)
-    + len(_SDL_GAMEPAD_BUTTON_LABEL_NAME)
-    + len(_SDL_GAMEPAD_AXIS_NAME)
-) == len(
-    set(
-        (
-            *_SDL_GAMEPAD_BUTTON_NAME.values(),
-            *_SDL_GAMEPAD_BUTTON_LABEL_NAME.values(),
-            *_SDL_GAMEPAD_AXIS_NAME.values(),
-        )
-    )
-)
 
 _controllers: dict[SdlJoystickId, Controller] = {}
 
@@ -543,6 +597,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         input_affected_by: dict[_AffecteeInput, list[_AffectorInput]] = {}
 
         buttons: dict[ControllerButtonName, ControllerButton] = {}
+        sticks: dict[ControllerStickName, ControllerStick] = {}
         for (input_type, *input_args), (output_type, *output_args) in mapping_details:
             input_directional_mask = 0
 
@@ -564,6 +619,10 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                 button_name = _SDL_GAMEPAD_BUTTON_NAME.get(sdl_button)
                 button_label_name = _SDL_GAMEPAD_BUTTON_LABEL_NAME.get(sdl_button_label)
                 if button_name is None and button_label_name is None:
+                    log.warning(
+                        f"unexpected button {sdl_button} and label {sdl_button_label}, "
+                        f"skipping mapping"
+                    )
                     continue
 
                 true_button_name = button_label_name or button_name
@@ -589,7 +648,27 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                     buttons[button_label_name] = output
                 if button_name is not None:
                     buttons[button_name] = output
+            elif output_type == SDL_GAMEPAD_BINDTYPE_AXIS:
+                sdl_axis = output_args[0]
+                try:
+                    stick_name, stick_component = _SDL_GAMEPAD_AXIS_NAME[sdl_axis]
+                except KeyError:
+                    log.warning(f"unexpected axis {sdl_axis}, skipping mapping")
+                    continue
+                try:
+                    output = sticks[stick_name]
+                except KeyError:
+                    output = ControllerStick(stick_name)
+                output._controller = controller
 
+                if input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
+                    assert isinstance(input, ControllerAnalogInput)
+                    output._analog_input_affectors += ((input, stick_component),)
+                else:
+                    log.warning(f"unexpected input type {input_type!r}, skipping mapping")
+                    continue
+
+                sticks[stick_name] = output
             else:
                 log.warning(f"unexpected output type {output_type!r}, skipping mapping")
                 continue
@@ -597,7 +676,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
             input_affects.setdefault(input, []).append(output)
             input_affected_by.setdefault(output, []).append(input)
 
-        for name, input in buttons.items():
+        for name, input in (*buttons.items(), *sticks.items()):
             if name in controller._inputs:
                 raise RuntimeError(f"{name} already in inputs")
             controller._inputs[str(name)] = input
@@ -605,6 +684,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         controller._input_affects = {k: tuple(v) for k, v in input_affects.items()}
         controller._input_affected_by = {k: tuple(v) for k, v in input_affected_by.items()}
         controller._buttons = tuple(set(buttons.values()))
+        controller._sticks = tuple(set(sticks.values()))
 
         for input in input_affected_by.keys():
             input._initialize()

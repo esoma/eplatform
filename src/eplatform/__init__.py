@@ -11,6 +11,8 @@ __all__ = [
     "ControllerButtonName",
     "ControllerDirectionalInput",
     "ControllerDirectionalInputValue",
+    "ControllerStick",
+    "ControllerStickName",
     "Display",
     "DisplayConnectionChanged",
     "DisplayDisconnectedError",
@@ -62,6 +64,8 @@ from ._controller import ControllerButtonChanged
 from ._controller import ControllerButtonName
 from ._controller import ControllerDirectionalInput
 from ._controller import ControllerDirectionalInputValue
+from ._controller import ControllerStick
+from ._controller import ControllerStickName
 from ._display import Display
 from ._display import DisplayConnectionChanged
 from ._display import DisplayDisconnectedError
