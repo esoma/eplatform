@@ -103,6 +103,18 @@ class ControllerAnalogInput(_ControllerInput[str]):
 
         return True
 
+    def _calculate_mapping_value(
+        self, input_min: float, input_max: float, output_min: float, output_max: float
+    ) -> float | None:
+        cmp_min = input_min
+        cmp_max = input_max
+        if cmp_max < cmp_min:
+            cmp_min, cmp_max = cmp_max, cmp_min
+        if self._value >= cmp_min and self._value <= cmp_max:
+            v = (self._value - input_min) / (input_max - input_min)
+            return output_min + v * (output_max - output_min)
+        return None
+
 
 class ControllerBinaryInputChanged(TypedDict):
     binary_input: "ControllerBinaryInput"
@@ -290,7 +302,9 @@ class ControllerStickChanged(TypedDict):
 class ControllerStick(_ControllerInput[ControllerStickName]):
     _vector: DVector2 = DVector2(0)
 
-    _analog_input_affectors: tuple[tuple[ControllerAnalogInput, int], ...] = ()
+    _analog_input_affectors: tuple[
+        tuple[ControllerAnalogInput, float, float, float, float, int], ...
+    ] = ()
 
     changed: Event[ControllerStickChanged] = Event()
 
@@ -300,8 +314,10 @@ class ControllerStick(_ControllerInput[ControllerStickName]):
 
     def _get_mapped_vector(self) -> DVector2:
         value = [0.0, 0.0]
-        for analog_input, component in self._analog_input_affectors:
-            value[component] += analog_input.value
+        for analog_input, *calc_args, component in self._analog_input_affectors:
+            v = analog_input._calculate_mapping_value(*calc_args)
+            if v is not None:
+                value[component] += v
         return DVector2(max(-1.0, min(value[0], 1.0)), max(-1.0, min(value[1], 1.0)))
 
     def _map(self) -> None:
@@ -336,7 +352,9 @@ class ControllerTriggerChanged(TypedDict):
 class ControllerTrigger(_ControllerInput[ControllerTriggerName]):
     _position: float = 0.0
 
-    _analog_input_affectors: tuple[ControllerAnalogInput, ...] = ()
+    _analog_input_affectors: tuple[
+        tuple[ControllerAnalogInput, float, float, float, float], ...
+    ] = ()
 
     changed: Event[ControllerTriggerChanged] = Event()
 
@@ -346,8 +364,10 @@ class ControllerTrigger(_ControllerInput[ControllerTriggerName]):
 
     def _get_mapped_position(self) -> float:
         value = 0.0
-        for analog_input in self._analog_input_affectors:
-            value += (analog_input.value + 1) * 0.5
+        for analog_input, *calc_args in self._analog_input_affectors:
+            v = analog_input._calculate_mapping_value(*calc_args)
+            if v is not None:
+                value += v
         return max(0.0, min(value, 1.0))
 
     def _map(self) -> None:
@@ -659,12 +679,14 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         triggers: dict[ControllerTriggerName, ControllerTrigger] = {}
         for (input_type, *input_args), (output_type, *output_args) in mapping_details:
             input_directional_mask = 0
+            input_axis_min: float | None = None
+            input_axis_max: float | None = None
 
             if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                 input_button_index = input_args[0]
                 input = binary_inputs[input_button_index]
             elif input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
-                input_analog_index = input_args[0]
+                input_analog_index, input_axis_min, input_axis_max = input_args
                 input = analog_inputs[input_analog_index]
             elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
                 input_directional_index, input_directional_mask = input_args
@@ -674,6 +696,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                 continue
 
             if output_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
+                # map button
                 sdl_button, sdl_button_label = output_args
                 button_name = _SDL_GAMEPAD_BUTTON_NAME.get(sdl_button)
                 button_label_name = _SDL_GAMEPAD_BUTTON_LABEL_NAME.get(sdl_button_label)
@@ -708,12 +731,13 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                 if button_name is not None:
                     buttons[button_name] = output
             elif output_type == SDL_GAMEPAD_BINDTYPE_AXIS:
-                sdl_axis = output_args[0]
+                sdl_axis, output_axis_min, output_axis_max = output_args
                 try:
                     trigger_name = _SDL_GAMEPAD_AXIS_TRIGGER_NAME[sdl_axis]
                 except KeyError:
                     trigger_name = None
                 if trigger_name is None:
+                    # map stick
                     try:
                         stick_name, stick_component = _SDL_GAMEPAD_AXIS_STICK_NAME[sdl_axis]
                     except KeyError:
@@ -727,13 +751,25 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 
                     if input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
                         assert isinstance(input, ControllerAnalogInput)
-                        output._analog_input_affectors += ((input, stick_component),)
+                        assert input_axis_min is not None
+                        assert input_axis_max is not None
+                        output._analog_input_affectors += (
+                            (
+                                input,
+                                input_axis_min,
+                                input_axis_max,
+                                output_axis_min,
+                                output_axis_max,
+                                stick_component,
+                            ),
+                        )
                     else:
                         log.warning(f"unexpected input type {input_type!r}, skipping mapping")
                         continue
 
                     sticks[stick_name] = output
                 else:
+                    # map trigger
                     try:
                         output = triggers[trigger_name]
                     except KeyError:
@@ -742,7 +778,17 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 
                     if input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
                         assert isinstance(input, ControllerAnalogInput)
-                        output._analog_input_affectors += (input,)
+                        assert input_axis_min is not None
+                        assert input_axis_max is not None
+                        output._analog_input_affectors += (
+                            (
+                                input,
+                                input_axis_min,
+                                input_axis_max,
+                                output_axis_min,
+                                output_axis_max,
+                            ),
+                        )
                     else:
                         log.warning(f"unexpected input type {input_type!r}, skipping mapping")
                         continue

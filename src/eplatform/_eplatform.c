@@ -1023,9 +1023,11 @@ get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
             case SDL_GAMEPAD_BINDTYPE_AXIS:
             {
                 py_input = Py_BuildValue(
-                    "(ii)",
+                    "(iidd)",
                     binding->input_type,
-                    binding->input.axis.axis
+                    binding->input.axis.axis,
+                    normalize_sdl_joystick_axis_value_(binding->input.axis.axis_min),
+                    normalize_sdl_joystick_axis_value_(binding->input.axis.axis_max)
                 );
                 break;
             }
@@ -1063,9 +1065,11 @@ get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
             case SDL_GAMEPAD_BINDTYPE_AXIS:
             {
                 py_output = Py_BuildValue(
-                    "(ii)",
+                    "(iidd)",
                     binding->output_type,
-                    binding->output.axis.axis
+                    binding->output.axis.axis,
+                    normalize_sdl_joystick_axis_value_(binding->output.axis.axis_min),
+                    normalize_sdl_joystick_axis_value_(binding->output.axis.axis_max)
                 );
                 break;
             }
@@ -1213,8 +1217,12 @@ set_virtual_joystick_axis_position(PyObject *module, PyObject **args, Py_ssize_t
     CHECK_UNEXPECTED_PYTHON_ERROR();
     long axis = PyLong_AsLong(args[1]);
     CHECK_UNEXPECTED_PYTHON_ERROR();
-    long value = PyLong_AsLong(args[2]);
+    double value = PyFloat_AsDouble(args[2]);
     CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    value = -SDL_JOYSTICK_AXIS_MIN * value;
+    if (value < SDL_JOYSTICK_AXIS_MIN){ value = SDL_JOYSTICK_AXIS_MIN; }
+    if (value > SDL_JOYSTICK_AXIS_MAX){ value = SDL_JOYSTICK_AXIS_MAX; }
 
     SDL_Joystick *open_joystick = SDL_GetJoystickFromID(joystick);
     if (!open_joystick){ RAISE_SDL_ERROR(); }

@@ -109,7 +109,6 @@ class VirtualController:
     def get_controller(self):
         for controller in get_controllers():
             if controller._sdl_joystick == self.sdl_joystick:
-                print(controller)
                 assert controller.is_connected
                 assert controller.name == self.name
                 assert controller.uuid.hex == self.expected_uuid_hex
@@ -123,19 +122,19 @@ class VirtualController:
                     (ControllerDirectionalInput, f"directional {i}") for i in range(self.hat_count)
                 }
                 assert {(i.__class__, i.name) for i in controller.buttons} == {
-                    (ControllerButton, GAMEPAD_MAP_TO_BUTTON_NAME[n])
+                    (ControllerButton, GAMEPAD_MAP_TO_BUTTON_NAME[n.lstrip("-+")])
                     for n in self.gamepad_map.keys()
-                    if n in GAMEPAD_MAP_TO_BUTTON_NAME
+                    if n.lstrip("-+") in GAMEPAD_MAP_TO_BUTTON_NAME
                 }
                 assert {(i.__class__, i.name) for i in controller.sticks} == {
-                    (ControllerStick, GAMEPAD_MAP_TO_STICK_NAME[n])
+                    (ControllerStick, GAMEPAD_MAP_TO_STICK_NAME[n.lstrip("-+")])
                     for n in self.gamepad_map.keys()
-                    if n in GAMEPAD_MAP_TO_STICK_NAME
+                    if n.lstrip("-+") in GAMEPAD_MAP_TO_STICK_NAME
                 }
                 assert {(i.__class__, i.name) for i in controller.triggers} == {
-                    (ControllerTrigger, GAMEPAD_MAP_TO_TRIGGER_NAME[n])
+                    (ControllerTrigger, GAMEPAD_MAP_TO_TRIGGER_NAME[n.lstrip("-+")])
                     for n in self.gamepad_map.keys()
-                    if n in GAMEPAD_MAP_TO_TRIGGER_NAME
+                    if n.lstrip("-+") in GAMEPAD_MAP_TO_TRIGGER_NAME
                 }
                 return controller
         return None
@@ -207,7 +206,7 @@ def test_analog_value(capture_event, event_object):
         assert isclose(analog1.value, 0, abs_tol=1e-04)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, 0, -32768)
+            set_virtual_joystick_axis_position(vc.sdl_joystick, 0, -1.0)
             assert isclose(analog0.value, 0, abs_tol=1e-04)
             assert isclose(analog1.value, 0, abs_tol=1e-04)
 
@@ -218,7 +217,7 @@ def test_analog_value(capture_event, event_object):
         assert isclose(analog1.value, 0, abs_tol=1e-04)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 32767)
+            set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 1.0)
             assert isclose(analog0.value, -1)
             assert isclose(analog1.value, 0, abs_tol=1e-04)
 
@@ -228,7 +227,7 @@ def test_analog_value(capture_event, event_object):
         assert isclose(analog1.value, 1)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 16384)
+            set_virtual_joystick_axis_position(vc.sdl_joystick, 1, 0.5)
             assert isclose(analog0.value, -1)
             assert isclose(analog1.value, 1)
 
@@ -425,6 +424,7 @@ def test_button_directional_mapped(
         assert button.is_pressed
 
 
+@pytest.mark.parametrize("input_inverted, input_c", [("", 1.0), ("~", -1.0)])
 @pytest.mark.parametrize(
     "mapped_stick, stick_name", [("left", "left stick"), ("right", "right stick")]
 )
@@ -437,12 +437,14 @@ def test_stick_analog_mapped(
     y_mapped_analog_index,
     mapped_stick,
     stick_name,
+    input_inverted,
+    input_c,
 ):
     vc = VirtualController(
         axis_count=3,
         gamepad_map={
-            f"{mapped_stick}x": f"a{x_mapped_analog_index}",
-            f"{mapped_stick}y": f"a{y_mapped_analog_index}",
+            f"{mapped_stick}x": f"a{x_mapped_analog_index}{input_inverted}",
+            f"{mapped_stick}y": f"a{y_mapped_analog_index}{input_inverted}",
         },
     )
     with Platform():
@@ -450,52 +452,65 @@ def test_stick_analog_mapped(
         stick = controller.get_stick(stick_name)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, x_mapped_analog_index, -32768)
+            set_virtual_joystick_axis_position(
+                vc.sdl_joystick, x_mapped_analog_index, 1.0 * input_c
+            )
             assert isclose(stick.vector.x, 0, abs_tol=1e-04)
             assert isclose(stick.vector.y, 0, abs_tol=1e-04)
 
         event = capture_event(_, getattr(event_object or stick, "changed"))
 
         assert event == {"stick": stick, "vector": stick.vector}
-        assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+        assert isclose(stick.vector.x, 1.0, abs_tol=1e-04)
         assert isclose(stick.vector.y, 0, abs_tol=1e-04)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, y_mapped_analog_index, 32767)
-            assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+            set_virtual_joystick_axis_position(
+                vc.sdl_joystick, y_mapped_analog_index, -1.0 * input_c
+            )
+            assert isclose(stick.vector.x, 1.0, abs_tol=1e-04)
             assert isclose(stick.vector.y, 0, abs_tol=1e-04)
 
         event = capture_event(_, getattr(event_object or stick, "changed"))
         assert event == {"stick": stick, "vector": stick.vector}
-        assert isclose(stick.vector.x, -1, abs_tol=1e-04)
-        assert isclose(stick.vector.y, 1, abs_tol=1e-04)
+        assert isclose(stick.vector.x, 1.0, abs_tol=1e-04)
+        assert isclose(stick.vector.y, -1.0, abs_tol=1e-04)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, y_mapped_analog_index, 16384)
-            assert isclose(stick.vector.x, -1, abs_tol=1e-04)
-            assert isclose(stick.vector.y, 1, abs_tol=1e-04)
+            set_virtual_joystick_axis_position(
+                vc.sdl_joystick, y_mapped_analog_index, 0.5 * input_c
+            )
+            assert isclose(stick.vector.x, 1.0, abs_tol=1e-04)
+            assert isclose(stick.vector.y, -1.0, abs_tol=1e-04)
 
         event = capture_event(_, getattr(event_object or stick, "changed"))
         assert event == {"stick": stick, "vector": stick.vector}
-        assert isclose(stick.vector.x, -1, abs_tol=1e-04)
+        assert isclose(stick.vector.x, 1.0, abs_tol=1e-04)
         assert isclose(stick.vector.y, 0.5, abs_tol=1e-04)
 
 
+@pytest.mark.parametrize("input_inverted, input_c", [("", 1.0), ("~", -1.0)])
 @pytest.mark.parametrize("mapped_trigger, trigger_name", GAMEPAD_MAP_TO_TRIGGER_NAME.items())
 @pytest.mark.parametrize("mapped_analog_index", [0, 1])
 @pytest.mark.parametrize("event_object", [ControllerTrigger, None])
 def test_trigger_analog_mapped(
-    capture_event, event_object, mapped_analog_index, mapped_trigger, trigger_name
+    capture_event,
+    event_object,
+    mapped_analog_index,
+    mapped_trigger,
+    trigger_name,
+    input_inverted,
+    input_c,
 ):
     vc = VirtualController(
-        axis_count=2, gamepad_map={f"{mapped_trigger}": f"a{mapped_analog_index}"}
+        axis_count=2, gamepad_map={f"{mapped_trigger}": f"a{mapped_analog_index}{input_inverted}"}
     )
     with Platform():
         controller = vc.get_controller()
         trigger = controller.get_trigger(trigger_name)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, 32767)
+            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, 1 * input_c)
             assert isclose(trigger.position, 0, abs_tol=1e-04)
 
         event = capture_event(_, getattr(event_object or trigger, "changed"))
@@ -504,7 +519,7 @@ def test_trigger_analog_mapped(
         assert isclose(trigger.position, 1, abs_tol=1e-04)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, -32768)
+            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, -1 * input_c)
             assert isclose(trigger.position, 1, abs_tol=1e-04)
 
         event = capture_event(_, getattr(event_object or trigger, "changed"))
@@ -513,7 +528,7 @@ def test_trigger_analog_mapped(
         assert isclose(trigger.position, 0, abs_tol=1e-04)
 
         def _():
-            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, 0)
+            set_virtual_joystick_axis_position(vc.sdl_joystick, mapped_analog_index, 0 * input_c)
             assert isclose(trigger.position, 0, abs_tol=1e-04)
 
         event = capture_event(_, getattr(event_object or trigger, "changed"))
