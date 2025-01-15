@@ -181,9 +181,12 @@ def test_connect_disconnect(
     [
         {},
         {"name": "Virtual Controller", "expected_uuid_hex": "ff0013db5669727475616c2043007600"},
-        {"axis_count": 4, "gamepad_map": {"leftx": "a0", "lefty": "a1", "lefttrigger": "a2"}},
+        {
+            "axis_count": 4,
+            "gamepad_map": {"leftx": "a0", "lefty": "a1", "lefttrigger": "a2", "a": "a3"},
+        },
         {"button_count": 6, "gamepad_map": {"a": "b0"}},
-        {"hat_count": 7},
+        {"hat_count": 7, "gamepad_map": {"a": "h0.2"}},
     ],
 )
 def test_properties(capture_event, controller_kwargs):
@@ -422,6 +425,52 @@ def test_button_directional_mapped(
 
         assert event == {"button": button, "is_pressed": True}
         assert button.is_pressed
+
+
+@pytest.mark.parametrize("input_inverted, input_c", [("", 1.0), ("~", -1.0)])
+@pytest.mark.parametrize("event_object", [ControllerButton, None])
+@pytest.mark.parametrize("mapped_analog_index", [0, 1])
+@pytest.mark.parametrize("mapped_button, button_name", GAMEPAD_MAP_TO_BUTTON_NAME.items())
+@pytest.mark.parametrize("event_name", ["changed", None])
+def test_button_analog_mapped(
+    capture_event,
+    event_object,
+    mapped_analog_index,
+    mapped_button,
+    button_name,
+    event_name,
+    input_inverted,
+    input_c,
+):
+    vc = VirtualController(
+        axis_count=2, gamepad_map={mapped_button: f"a{mapped_analog_index}{input_inverted}"}
+    )
+    with Platform():
+        controller = vc.get_controller()
+        button = controller.get_button(button_name)
+        for loop_c in [1.0, -1.0]:
+
+            def _():
+                set_virtual_joystick_axis_position(
+                    vc.sdl_joystick, mapped_analog_index, 0.75 * loop_c * input_c
+                )
+                assert not button.is_pressed
+
+            event = capture_event(_, getattr(event_object or button, event_name or "pressed"))
+
+            assert event == {"button": button, "is_pressed": True}
+            assert button.is_pressed
+
+            def _():
+                set_virtual_joystick_axis_position(
+                    vc.sdl_joystick, mapped_analog_index, 0.25 * loop_c * input_c
+                )
+                assert button.is_pressed
+
+            event = capture_event(_, getattr(event_object or button, event_name or "released"))
+
+            assert event == {"button": button, "is_pressed": False}
+            assert not button.is_pressed
 
 
 @pytest.mark.parametrize("input_inverted, input_c", [("", 1.0), ("~", -1.0)])

@@ -241,6 +241,7 @@ class ControllerButtonName(StrEnum):
 class ControllerButton(_ControllerInput[ControllerButtonName]):
     _is_pressed: bool = False
 
+    _analog_input_affectors: tuple[tuple[ControllerAnalogInput, float, float], ...] = ()
     _binary_input_affectors: tuple[ControllerBinaryInput, ...] = ()
     _directional_input_affectors: tuple[
         tuple[ControllerDirectionalInput, ControllerDirectionalInputValue], ...
@@ -250,6 +251,8 @@ class ControllerButton(_ControllerInput[ControllerButtonName]):
     pressed: Event[ControllerButtonChanged] = Event()
     released: Event[ControllerButtonChanged] = Event()
 
+    analog_mapping_threshold: float = 0.3
+
     def __init__(self, name: ControllerButtonName) -> None:
         super().__init__(name)
         self.changed = Event()
@@ -257,12 +260,21 @@ class ControllerButton(_ControllerInput[ControllerButtonName]):
         self.released = Event()
 
     def _get_mapped_is_pressed(self) -> bool:
-        value = 0
+        for analog_input, input_min, input_max in self._analog_input_affectors:
+            v = analog_input._calculate_mapping_value(input_min, input_max, -1.0, 1.0)
+            if v is not None:
+                v = abs(v)
+                if v > (1.0 - self.analog_mapping_threshold):
+                    return True
+                elif v < self.analog_mapping_threshold:
+                    return False
         for binary_input in self._binary_input_affectors:
-            value += binary_input.value
+            if binary_input.value:
+                return True
         for directional_input, directional_input_mask in self._directional_input_affectors:
-            value += (directional_input.value & directional_input_mask) != 0
-        return value != 0
+            if (directional_input.value & directional_input_mask) != 0:
+                return True
+        return False
 
     def _map(self) -> None:
         is_pressed = self._get_mapped_is_pressed()
@@ -722,6 +734,11 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                     output._directional_input_affectors += (
                         (input, ControllerDirectionalInputValue(input_directional_mask)),
                     )
+                elif input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
+                    assert isinstance(input, ControllerAnalogInput)
+                    assert input_axis_min is not None
+                    assert input_axis_max is not None
+                    output._analog_input_affectors += ((input, input_axis_min, input_axis_max),)
                 else:
                     log.warning(f"unexpected input type {input_type!r}, skipping mapping")
                     continue
