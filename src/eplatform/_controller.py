@@ -317,6 +317,9 @@ class ControllerStick(_ControllerInput[ControllerStickName]):
     _analog_input_affectors: tuple[
         tuple[ControllerAnalogInput, float, float, float, float, int], ...
     ] = ()
+    _directional_input_affectors: tuple[
+        tuple[ControllerDirectionalInput, ControllerDirectionalInputValue, float, float, int], ...
+    ] = ()
 
     changed: Event[ControllerStickChanged] = Event()
 
@@ -330,6 +333,17 @@ class ControllerStick(_ControllerInput[ControllerStickName]):
             v = analog_input._calculate_mapping_value(*calc_args)
             if v is not None:
                 value[component] += v
+        for (
+            directional_input,
+            directional_input_mask,
+            output_min,
+            output_max,
+            component,
+        ) in self._directional_input_affectors:
+            if (directional_input.value & directional_input_mask) != 0:
+                value[component] += output_max
+            else:
+                value[component] += output_min
         return DVector2(max(-1.0, min(value[0], 1.0)), max(-1.0, min(value[1], 1.0)))
 
     def _map(self) -> None:
@@ -690,7 +704,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
         sticks: dict[ControllerStickName, ControllerStick] = {}
         triggers: dict[ControllerTriggerName, ControllerTrigger] = {}
         for (input_type, *input_args), (output_type, *output_args) in mapping_details:
-            input_directional_mask = 0
+            input_directional_mask: float | None = None
             input_axis_min: float | None = None
             input_axis_max: float | None = None
 
@@ -730,7 +744,7 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                 if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                     output._binary_input_affectors += (input,)
                 elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
-                    assert input_directional_mask != 0
+                    assert input_directional_mask is not None
                     output._directional_input_affectors += (
                         (input, ControllerDirectionalInputValue(input_directional_mask)),
                     )
@@ -775,6 +789,17 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                                 input,
                                 input_axis_min,
                                 input_axis_max,
+                                output_axis_min,
+                                output_axis_max,
+                                stick_component,
+                            ),
+                        )
+                    elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
+                        assert input_directional_mask is not None
+                        output._directional_input_affectors += (
+                            (
+                                input,
+                                ControllerDirectionalInputValue(input_directional_mask),
                                 output_axis_min,
                                 output_axis_max,
                                 stick_component,
