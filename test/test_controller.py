@@ -16,6 +16,7 @@ from eplatform import ControllerStick
 from eplatform import ControllerStickName
 from eplatform import ControllerTrigger
 from eplatform import ControllerTriggerName
+from eplatform import ControllerType
 from eplatform import Platform
 from eplatform import get_controllers
 from eplatform._eplatform import SDL_HAT_DOWN
@@ -112,6 +113,7 @@ class VirtualController:
                 assert controller.is_connected
                 assert controller.name == self.name
                 assert controller.uuid.hex == self.expected_uuid_hex
+                assert controller.type == ControllerType.GAMEPAD
                 assert {(i.__class__, i.name) for i in controller.analog_inputs} == {
                     (ControllerAnalogInput, f"analog {i}") for i in range(self.axis_count)
                 }
@@ -180,9 +182,9 @@ def test_connect_disconnect(
 @pytest.mark.parametrize(
     "controller_kwargs",
     [
-        {"gamepad_map": {"a": "b0", "leftx": "b1", "lefttrigger": "b2"}},
-        {"gamepad_map": {"a": "h0.2", "leftx": "h0.4", "lefttrigger": "h0.8"}},
-        {"gamepad_map": {"a": "a0", "leftx": "a1", "lefttrigger": "a2"}},
+        {"button_count": 5, "gamepad_map": {"a": "b0", "leftx": "b1", "lefttrigger": "b2"}},
+        {"hat_count": 5, "gamepad_map": {"a": "h0.2", "leftx": "h0.4", "lefttrigger": "h0.8"}},
+        {"axis_count": 5, "gamepad_map": {"a": "a0", "leftx": "a1", "lefttrigger": "a2"}},
     ],
 )
 def test_properties(capture_event, controller_kwargs):

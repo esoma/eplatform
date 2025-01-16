@@ -11,6 +11,7 @@ from ._type import SdlGamepadAxis
 from ._type import SdlGamepadBindingType
 from ._type import SdlGamepadButton
 from ._type import SdlGamepadButtonLabel
+from ._type import SdlGamepadType
 from ._type import SdlGlContext
 from ._type import SdlHat
 from ._type import SdlJoystickId
@@ -354,7 +355,7 @@ def open_sdl_joystick(
     tuple[tuple[float], ...],
     tuple[tuple[bool], ...],
     tuple[tuple[int], ...],
-    tuple[tuple[tuple, tuple], ...] | None,
+    tuple[tuple[tuple[tuple, tuple], ...], SdlGamepadType] | None,
 ]: ...
 def close_sdl_joystick(sdl_joystick: SdlJoystickId, /) -> None: ...
 def connect_virtual_joystick(name: str, /) -> SdlJoystickId: ...
@@ -411,6 +412,18 @@ SDL_HAT_UP: SdlHat
 SDL_HAT_RIGHT: SdlHat
 SDL_HAT_DOWN: SdlHat
 SDL_HAT_LEFT: SdlHat
+
+SDL_GAMEPAD_TYPE_UNKNOWN: SdlGamepadType
+SDL_GAMEPAD_TYPE_STANDARD: SdlGamepadType
+SDL_GAMEPAD_TYPE_XBOX360: SdlGamepadType
+SDL_GAMEPAD_TYPE_XBOXONE: SdlGamepadType
+SDL_GAMEPAD_TYPE_PS3: SdlGamepadType
+SDL_GAMEPAD_TYPE_PS4: SdlGamepadType
+SDL_GAMEPAD_TYPE_PS5: SdlGamepadType
+SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO: SdlGamepadType
+SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT: SdlGamepadType
+SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT: SdlGamepadType
+SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR: SdlGamepadType
 
 # display
 

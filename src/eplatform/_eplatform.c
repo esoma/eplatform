@@ -984,7 +984,7 @@ static PyObject *
 get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
 {
     SDL_Gamepad *open_gamepad = 0;
-    PyObject *py_results = 0;
+    PyObject *py_bindings = 0;
     PyObject *py_item = 0;
     SDL_GamepadBinding **bindings = 0;
     if (!SDL_IsGamepad(joystick))
@@ -999,7 +999,7 @@ get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
     bindings = SDL_GetGamepadBindings(open_gamepad, &count);
     if (!bindings){ RAISE_SDL_ERROR(); }
 
-    py_results = PyTuple_New(count);
+    py_bindings = PyTuple_New(count);
     CHECK_UNEXPECTED_PYTHON_ERROR();
 
     for (int i = 0; i < count; i++)
@@ -1081,17 +1081,19 @@ get_sdl_joystick_mapping_details_(SDL_JoystickID joystick)
         CHECK_UNEXPECTED_PYTHON_ERROR();
         PyTuple_SET_ITEM(py_item, 1, py_output);
 
-        PyTuple_SET_ITEM(py_results, i, py_item);
+        PyTuple_SET_ITEM(py_bindings, i, py_item);
     }
+
+    SDL_GamepadType type = SDL_GetGamepadType(open_gamepad);
 
     SDL_free(bindings);
     SDL_CloseGamepad(open_gamepad);
 
-    return py_results;
+    return Py_BuildValue("(Oi)", py_bindings, type);
 error:
     SDL_free(bindings);
     Py_XDECREF(py_item);
-    Py_XDECREF(py_results);
+    Py_XDECREF(py_bindings);
     if (open_gamepad){ SDL_CloseGamepad(open_gamepad); }
     return 0;
 }
@@ -1551,6 +1553,18 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_HAT_RIGHT);
     ADD_CONSTANT(SDL_HAT_DOWN);
     ADD_CONSTANT(SDL_HAT_LEFT);
+
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_UNKNOWN);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_STANDARD);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_XBOX360);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_XBOXONE);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_PS3);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_PS4);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_PS5);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT);
+    ADD_CONSTANT(SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR);
 
     // number
     ADD_CONSTANT(SDL_SCANCODE_0);

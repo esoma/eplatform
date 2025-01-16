@@ -29,6 +29,7 @@ from ._eplatform import open_sdl_joystick
 from ._type import SdlGamepadAxis
 from ._type import SdlGamepadButton
 from ._type import SdlGamepadButtonLabel
+from ._type import SdlGamepadType
 from ._type import SdlHat
 from ._type import SdlJoystickId
 
@@ -450,12 +451,27 @@ _AffectorInput: TypeAlias = (
 _AffecteeInput: TypeAlias = ControllerButton | ControllerStick | ControllerTrigger
 
 
+class ControllerType(StrEnum):
+    UNKNOWN = "unknown"
+    GAMEPAD = "gamepad"
+    XBOX_360 = "xbox 360"
+    XBOX_ONE = "xbox one"
+    PLAYSTATION_3 = "playstation 3"
+    PLAYSTATION_4 = "playstation 4"
+    PLAYSTATION_5 = "playstation 5"
+    NINTENDO_SWITCH_PRO = "nintendo switch pro"
+    NINTENDO_SWITCH_JOYCON_LEFT = "nintendo switch joycon left"
+    NINTENDO_SWITCH_JOYCON_RIGHT = "nintendo switch joycon left"
+    NINTENDO_SWITCH_JOYCONS = "nintendo switch joycons"
+
+
 class Controller:
     _sdl_joystick: SdlJoystickId | None = None
     _name: str = ""
     _uuid: UUID = UUID(bytes=b"\x00" * 16)
     _serial: str = ""
     _player_index: int | None = None
+    _type: ControllerType = ControllerType.UNKNOWN
 
     _input_affects: dict[_AffectorInput, tuple[_AffecteeInput, ...]] = {}
     _input_affected_by: dict[_AffecteeInput, tuple[_AffectorInput, ...]] = {}
@@ -599,11 +615,31 @@ class Controller:
         return self._name
 
     @property
+    def type(self) -> ControllerType:
+        if not self.is_connected:
+            raise ControllerDisconnectedError()
+        return self._type
+
+    @property
     def uuid(self) -> UUID:
         if not self.is_connected:
             raise ControllerDisconnectedError()
         return self._uuid
 
+
+_SDL_GAMEPAD_TYPE_CONTROLLER_TYPE: Final[Mapping[SdlGamepadType, ControllerType]] = {
+    _eplatform.SDL_GAMEPAD_TYPE_UNKNOWN: ControllerType.UNKNOWN,
+    _eplatform.SDL_GAMEPAD_TYPE_STANDARD: ControllerType.GAMEPAD,
+    _eplatform.SDL_GAMEPAD_TYPE_XBOX360: ControllerType.XBOX_360,
+    _eplatform.SDL_GAMEPAD_TYPE_XBOXONE: ControllerType.XBOX_ONE,
+    _eplatform.SDL_GAMEPAD_TYPE_PS3: ControllerType.PLAYSTATION_3,
+    _eplatform.SDL_GAMEPAD_TYPE_PS4: ControllerType.PLAYSTATION_4,
+    _eplatform.SDL_GAMEPAD_TYPE_PS5: ControllerType.PLAYSTATION_5,
+    _eplatform.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO: ControllerType.NINTENDO_SWITCH_PRO,
+    _eplatform.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT: ControllerType.NINTENDO_SWITCH_JOYCON_LEFT,
+    _eplatform.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT: ControllerType.NINTENDO_SWITCH_JOYCON_RIGHT,
+    _eplatform.SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR: ControllerType.NINTENDO_SWITCH_JOYCONS,
+}
 
 _SDL_GAMEPAD_BUTTON_NAME: Final[Mapping[SdlGamepadButton, ControllerButtonName]] = {
     _eplatform.SDL_GAMEPAD_BUTTON_SOUTH: ControllerButtonName.SOUTH,
@@ -665,16 +701,9 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
     assert sdl_joystick not in _controllers
     _controllers[sdl_joystick] = controller = Controller()
 
-    (
-        name,
-        guid,
-        serial,
-        player_index,
-        axis_details,
-        button_details,
-        hat_details,
-        mapping_details,
-    ) = open_sdl_joystick(sdl_joystick)
+    (name, guid, serial, player_index, axis_details, button_details, hat_details, gamepad_info) = (
+        open_sdl_joystick(sdl_joystick)
+    )
     controller._sdl_joystick = sdl_joystick
     controller._name = name
     controller._uuid = UUID(hex=guid)
@@ -721,7 +750,13 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
     controller._binary_inputs = tuple(binary_inputs)
     controller._directional_inputs = tuple(directional_inputs)
 
-    if mapping_details:
+    if gamepad_info:
+        mapping_details, sdl_gamepad_type = gamepad_info
+        try:
+            controller._type = _SDL_GAMEPAD_TYPE_CONTROLLER_TYPE[sdl_gamepad_type]
+        except KeyError:
+            pass
+
         input_affects: dict[_AffectorInput, list[_AffecteeInput]] = {}
         input_affected_by: dict[_AffecteeInput, list[_AffectorInput]] = {}
 

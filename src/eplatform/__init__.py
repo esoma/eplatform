@@ -15,6 +15,7 @@ __all__ = [
     "ControllerStickName",
     "ControllerTrigger",
     "ControllerTriggerName",
+    "ControllerType",
     "Display",
     "DisplayConnectionChanged",
     "DisplayDisconnectedError",
@@ -70,6 +71,7 @@ from ._controller import ControllerStick
 from ._controller import ControllerStickName
 from ._controller import ControllerTrigger
 from ._controller import ControllerTriggerName
+from ._controller import ControllerType
 from ._display import Display
 from ._display import DisplayConnectionChanged
 from ._display import DisplayDisconnectedError
