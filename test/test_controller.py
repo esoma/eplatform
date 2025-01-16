@@ -814,3 +814,35 @@ def test_trigger_directional_mapped(
 
         assert event == {"trigger": trigger, "position": trigger.position}
         assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+
+@pytest.mark.parametrize("mapped_trigger, trigger_name", GAMEPAD_MAP_TO_TRIGGER_NAME.items())
+@pytest.mark.parametrize("mapped_binary_index", [0, 1])
+@pytest.mark.parametrize("event_object", [ControllerTrigger, None])
+def test_trigger_binary_mapped(
+    capture_event, event_object, mapped_binary_index, mapped_trigger, trigger_name
+):
+    vc = VirtualController(
+        button_count=2, gamepad_map={f"{mapped_trigger}": f"b{mapped_binary_index}"}
+    )
+    with Platform():
+        controller = vc.get_controller()
+        trigger = controller.get_trigger(trigger_name)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, mapped_binary_index, True)
+            assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, mapped_binary_index, False)
+            assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 0, abs_tol=1e-04)
