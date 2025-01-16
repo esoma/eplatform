@@ -381,6 +381,9 @@ class ControllerTrigger(_ControllerInput[ControllerTriggerName]):
     _analog_input_affectors: tuple[
         tuple[ControllerAnalogInput, float, float, float, float], ...
     ] = ()
+    _directional_input_affectors: tuple[
+        tuple[ControllerDirectionalInput, ControllerDirectionalInputValue, float, float], ...
+    ] = ()
 
     changed: Event[ControllerTriggerChanged] = Event()
 
@@ -394,6 +397,16 @@ class ControllerTrigger(_ControllerInput[ControllerTriggerName]):
             v = analog_input._calculate_mapping_value(*calc_args)
             if v is not None:
                 value += v
+        for (
+            directional_input,
+            directional_input_mask,
+            output_min,
+            output_max,
+        ) in self._directional_input_affectors:
+            if (directional_input.value & directional_input_mask) != 0:
+                value += output_max
+            else:
+                value += output_min
         return max(0.0, min(value, 1.0))
 
     def _map(self) -> None:
@@ -827,6 +840,16 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                                 input,
                                 input_axis_min,
                                 input_axis_max,
+                                output_axis_min,
+                                output_axis_max,
+                            ),
+                        )
+                    elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
+                        assert input_directional_mask is not None
+                        output._directional_input_affectors += (
+                            (
+                                input,
+                                ControllerDirectionalInputValue(input_directional_mask),
                                 output_axis_min,
                                 output_axis_max,
                             ),

@@ -676,3 +676,66 @@ def test_trigger_analog_mapped(
 
         assert event == {"trigger": trigger, "position": trigger.position}
         assert isclose(trigger.position, 0.5, abs_tol=1e-04)
+
+
+@pytest.mark.parametrize("mapped_trigger, trigger_name", GAMEPAD_MAP_TO_TRIGGER_NAME.items())
+@pytest.mark.parametrize("mapped_directional_index", [0, 1])
+@pytest.mark.parametrize(
+    "mapped_mask, directional_value",
+    [
+        (8, ControllerDirectionalInputValue.LEFT),
+        (2, ControllerDirectionalInputValue.RIGHT),
+        (4, ControllerDirectionalInputValue.DOWN),
+        (1, ControllerDirectionalInputValue.UP),
+    ],
+)
+@pytest.mark.parametrize("event_object", [ControllerTrigger, None])
+def test_trigger_directional_mapped(
+    capture_event,
+    event_object,
+    mapped_directional_index,
+    mapped_trigger,
+    trigger_name,
+    mapped_mask,
+    directional_value,
+):
+    vc = VirtualController(
+        hat_count=2,
+        gamepad_map={f"{mapped_trigger}": f"h{mapped_directional_index}.{mapped_mask}"},
+    )
+    with Platform():
+        controller = vc.get_controller()
+        trigger = controller.get_trigger(trigger_name)
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, mapped_directional_index, directional_value
+            )
+            assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, mapped_directional_index, ControllerDirectionalInputValue.NEUTRAL
+            )
+            assert isclose(trigger.position, 1, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_hat_value(
+                vc.sdl_joystick, mapped_directional_index, ControllerDirectionalInputValue.ALL
+            )
+            assert isclose(trigger.position, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or trigger, "changed"))
+
+        assert event == {"trigger": trigger, "position": trigger.position}
+        assert isclose(trigger.position, 1, abs_tol=1e-04)
