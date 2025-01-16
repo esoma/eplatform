@@ -9,11 +9,16 @@ __all__ = [
     "ControllerButton",
     "ControllerButtonChanged",
     "ControllerButtonName",
+    "ControllerConnectionChanged",
     "ControllerDirectionalInput",
+    "ControllerDirectionalInputChanged",
     "ControllerDirectionalInputValue",
+    "ControllerDisconnectedError",
     "ControllerStick",
+    "ControllerStickChanged",
     "ControllerStickName",
     "ControllerTrigger",
+    "ControllerTriggerChanged",
     "ControllerTriggerName",
     "ControllerType",
     "Display",
@@ -65,11 +70,16 @@ from ._controller import ControllerBinaryInputChanged
 from ._controller import ControllerButton
 from ._controller import ControllerButtonChanged
 from ._controller import ControllerButtonName
+from ._controller import ControllerConnectionChanged
 from ._controller import ControllerDirectionalInput
+from ._controller import ControllerDirectionalInputChanged
 from ._controller import ControllerDirectionalInputValue
+from ._controller import ControllerDisconnectedError
 from ._controller import ControllerStick
+from ._controller import ControllerStickChanged
 from ._controller import ControllerStickName
 from ._controller import ControllerTrigger
+from ._controller import ControllerTriggerChanged
 from ._controller import ControllerTriggerName
 from ._controller import ControllerType
 from ._display import Display

@@ -1,4 +1,33 @@
-__all__ = ["Controller", "discover_controllers", "forget_controllers", "controller_change_axis"]
+__all__ = [
+    "connect_controller",
+    "Controller",
+    "ControllerAnalogInput",
+    "ControllerAnalogInputChanged",
+    "ControllerBinaryInput",
+    "ControllerBinaryInputChanged",
+    "ControllerButton",
+    "ControllerButtonChanged",
+    "ControllerButtonName",
+    "ControllerConnectionChanged",
+    "ControllerDirectionalInput",
+    "ControllerDirectionalInputChanged",
+    "ControllerDirectionalInputValue",
+    "ControllerDisconnectedError",
+    "ControllerStick",
+    "ControllerStickChanged",
+    "ControllerStickName",
+    "ControllerTrigger",
+    "ControllerTriggerChanged",
+    "ControllerTriggerName",
+    "ControllerType",
+    "controller_change_axis",
+    "controller_change_button",
+    "controller_change_hat",
+    "disconnect_controller",
+    "discover_controllers",
+    "forget_controllers",
+    "get_controllers",
+]
 
 from enum import IntFlag
 from enum import StrEnum
