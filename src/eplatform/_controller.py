@@ -317,6 +317,7 @@ class ControllerStick(_ControllerInput[ControllerStickName]):
     _analog_input_affectors: tuple[
         tuple[ControllerAnalogInput, float, float, float, float, int], ...
     ] = ()
+    _binary_input_affectors: tuple[tuple[ControllerBinaryInput, float, float, int], ...] = ()
     _directional_input_affectors: tuple[
         tuple[ControllerDirectionalInput, ControllerDirectionalInputValue, float, float, int], ...
     ] = ()
@@ -341,6 +342,11 @@ class ControllerStick(_ControllerInput[ControllerStickName]):
             component,
         ) in self._directional_input_affectors:
             if (directional_input.value & directional_input_mask) != 0:
+                value[component] += output_max
+            else:
+                value[component] += output_min
+        for binary_input, output_min, output_max, component in self._binary_input_affectors:
+            if binary_input.value:
                 value[component] += output_max
             else:
                 value[component] += output_min
@@ -817,6 +823,10 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
                                 output_axis_max,
                                 stick_component,
                             ),
+                        )
+                    elif input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
+                        output._binary_input_affectors += (
+                            (input, output_axis_min, output_axis_max, stick_component),
                         )
                     else:
                         log.warning(f"unexpected input type {input_type!r}, skipping mapping")

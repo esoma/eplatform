@@ -630,6 +630,81 @@ def test_stick_directional_mapped(
         assert isclose(stick.vector.y, input_min, abs_tol=1e-04)
 
 
+@pytest.mark.parametrize(
+    "input_range, input_min, input_max", [("", -1.0, 1.0), ("-", 0.0, -1.0), ("+", 0.0, 1.0)]
+)
+@pytest.mark.parametrize(
+    "mapped_stick, stick_name", [("left", "left stick"), ("right", "right stick")]
+)
+@pytest.mark.parametrize("x_mapped_binary_index, y_mapped_binary_index", [(0, 1), (1, 2)])
+@pytest.mark.parametrize("event_object", [ControllerStick, None])
+def test_stick_binary_mapped(
+    capture_event,
+    event_object,
+    mapped_stick,
+    stick_name,
+    x_mapped_binary_index,
+    y_mapped_binary_index,
+    input_range,
+    input_min,
+    input_max,
+):
+    vc = VirtualController(
+        button_count=3,
+        gamepad_map={
+            f"{input_range}{mapped_stick}x": f"b{x_mapped_binary_index}",
+            f"{input_range}{mapped_stick}y": f"b{y_mapped_binary_index}",
+        },
+    )
+    with Platform():
+        controller = vc.get_controller()
+        stick = controller.get_stick(stick_name)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, x_mapped_binary_index, True)
+            assert isclose(stick.vector.x, 0, abs_tol=1e-04)
+            assert isclose(stick.vector.y, 0, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, input_max, abs_tol=1e-04)
+        assert isclose(stick.vector.y, input_min, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, y_mapped_binary_index, True)
+            assert isclose(stick.vector.x, input_max, abs_tol=1e-04)
+            assert isclose(stick.vector.y, input_min, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, input_max, abs_tol=1e-04)
+        assert isclose(stick.vector.y, input_max, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, x_mapped_binary_index, False)
+            assert isclose(stick.vector.x, input_max, abs_tol=1e-04)
+            assert isclose(stick.vector.y, input_max, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, input_min, abs_tol=1e-04)
+        assert isclose(stick.vector.y, input_max, abs_tol=1e-04)
+
+        def _():
+            set_virtual_joystick_button_press(vc.sdl_joystick, y_mapped_binary_index, False)
+            assert isclose(stick.vector.x, input_min, abs_tol=1e-04)
+            assert isclose(stick.vector.y, input_max, abs_tol=1e-04)
+
+        event = capture_event(_, getattr(event_object or stick, "changed"))
+
+        assert event == {"stick": stick, "vector": stick.vector}
+        assert isclose(stick.vector.x, input_min, abs_tol=1e-04)
+        assert isclose(stick.vector.y, input_min, abs_tol=1e-04)
+
+
 @pytest.mark.parametrize("input_inverted, input_c", [("", 1.0), ("~", -1.0)])
 @pytest.mark.parametrize("mapped_trigger, trigger_name", GAMEPAD_MAP_TO_TRIGGER_NAME.items())
 @pytest.mark.parametrize("mapped_analog_index", [0, 1])
