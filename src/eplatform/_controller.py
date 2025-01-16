@@ -735,13 +735,31 @@ def connect_controller(sdl_joystick: SdlJoystickId) -> None:
 
             if input_type == SDL_GAMEPAD_BINDTYPE_BUTTON:
                 input_button_index = input_args[0]
-                input = binary_inputs[input_button_index]
+                try:
+                    input = binary_inputs[input_button_index]
+                except IndexError:
+                    log.warning(
+                        f"unable to map to binary input {input_button_index}, skipping mapping"
+                    )
+                    continue
             elif input_type == SDL_GAMEPAD_BINDTYPE_AXIS:
                 input_analog_index, input_axis_min, input_axis_max = input_args
-                input = analog_inputs[input_analog_index]
+                try:
+                    input = analog_inputs[input_analog_index]
+                except IndexError:
+                    log.warning(
+                        f"unable to map to analog input {input_analog_index}, skipping mapping"
+                    )
+                    continue
             elif input_type == SDL_GAMEPAD_BINDTYPE_HAT:
                 input_directional_index, input_directional_mask = input_args
-                input = directional_inputs[input_directional_index]
+                try:
+                    input = directional_inputs[input_directional_index]
+                except IndexError:
+                    log.warning(
+                        f"unable to map to directional input {directional_inputs}, skipping mapping"
+                    )
+                    continue
             else:
                 log.warning(f"unexpected input type {input_type!r}, skipping mapping")
                 continue

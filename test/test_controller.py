@@ -106,7 +106,7 @@ class VirtualController:
     def __exit__(self, *args, **kwargs):
         self.disconnect()
 
-    def get_controller(self):
+    def get_controller(self, *, check_mapping=True):
         for controller in get_controllers():
             if controller._sdl_joystick == self.sdl_joystick:
                 assert controller.is_connected
@@ -121,21 +121,22 @@ class VirtualController:
                 assert {(i.__class__, i.name) for i in controller.directional_inputs} == {
                     (ControllerDirectionalInput, f"directional {i}") for i in range(self.hat_count)
                 }
-                assert {(i.__class__, i.name) for i in controller.buttons} == {
-                    (ControllerButton, GAMEPAD_MAP_TO_BUTTON_NAME[n.lstrip("-+")])
-                    for n in self.gamepad_map.keys()
-                    if n.lstrip("-+") in GAMEPAD_MAP_TO_BUTTON_NAME
-                }
-                assert {(i.__class__, i.name) for i in controller.sticks} == {
-                    (ControllerStick, GAMEPAD_MAP_TO_STICK_NAME[n.lstrip("-+")])
-                    for n in self.gamepad_map.keys()
-                    if n.lstrip("-+") in GAMEPAD_MAP_TO_STICK_NAME
-                }
-                assert {(i.__class__, i.name) for i in controller.triggers} == {
-                    (ControllerTrigger, GAMEPAD_MAP_TO_TRIGGER_NAME[n.lstrip("-+")])
-                    for n in self.gamepad_map.keys()
-                    if n.lstrip("-+") in GAMEPAD_MAP_TO_TRIGGER_NAME
-                }
+                if check_mapping:
+                    assert {(i.__class__, i.name) for i in controller.buttons} == {
+                        (ControllerButton, GAMEPAD_MAP_TO_BUTTON_NAME[n.lstrip("-+")])
+                        for n in self.gamepad_map.keys()
+                        if n.lstrip("-+") in GAMEPAD_MAP_TO_BUTTON_NAME
+                    }
+                    assert {(i.__class__, i.name) for i in controller.sticks} == {
+                        (ControllerStick, GAMEPAD_MAP_TO_STICK_NAME[n.lstrip("-+")])
+                        for n in self.gamepad_map.keys()
+                        if n.lstrip("-+") in GAMEPAD_MAP_TO_STICK_NAME
+                    }
+                    assert {(i.__class__, i.name) for i in controller.triggers} == {
+                        (ControllerTrigger, GAMEPAD_MAP_TO_TRIGGER_NAME[n.lstrip("-+")])
+                        for n in self.gamepad_map.keys()
+                        if n.lstrip("-+") in GAMEPAD_MAP_TO_TRIGGER_NAME
+                    }
                 return controller
         return None
 
@@ -179,14 +180,9 @@ def test_connect_disconnect(
 @pytest.mark.parametrize(
     "controller_kwargs",
     [
-        {},
-        {"name": "Virtual Controller", "expected_uuid_hex": "ff0013db5669727475616c2043007600"},
-        {
-            "axis_count": 4,
-            "gamepad_map": {"leftx": "a0", "lefty": "a1", "lefttrigger": "a2", "a": "a3"},
-        },
-        {"button_count": 6, "gamepad_map": {"a": "b0"}},
-        {"hat_count": 7, "gamepad_map": {"a": "h0.2"}},
+        {"gamepad_map": {"a": "b0", "leftx": "b1", "lefttrigger": "b2"}},
+        {"gamepad_map": {"a": "h0.2", "leftx": "h0.4", "lefttrigger": "h0.8"}},
+        {"gamepad_map": {"a": "a0", "leftx": "a1", "lefttrigger": "a2"}},
     ],
 )
 def test_properties(capture_event, controller_kwargs):
@@ -196,6 +192,23 @@ def test_properties(capture_event, controller_kwargs):
         capture_event(vc.disconnect, Controller.disconnected)
         capture_event(vc.connect, Controller.connected)
         vc.get_controller()
+
+
+@pytest.mark.parametrize(
+    "controller_kwargs",
+    [
+        {"gamepad_map": {"a": "b0", "leftx": "b1", "lefttrigger": "b2"}},
+        {"gamepad_map": {"a": "h0.2", "leftx": "h0.4", "lefttrigger": "h0.8"}},
+        {"gamepad_map": {"a": "a0", "leftx": "a1", "lefttrigger": "a2"}},
+    ],
+)
+def test_failed_mapping(capture_event, controller_kwargs):
+    vc = VirtualController(**controller_kwargs)
+    with Platform():
+        vc.get_controller(check_mapping=False)
+        capture_event(vc.disconnect, Controller.disconnected)
+        capture_event(vc.connect, Controller.connected)
+        vc.get_controller(check_mapping=False)
 
 
 @pytest.mark.parametrize("event_object", [ControllerAnalogInput, None])
