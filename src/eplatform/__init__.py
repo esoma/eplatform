@@ -43,7 +43,7 @@ __all__ = [
     "Keyboard",
     "KeyboardKey",
     "KeyboardKeyChanged",
-    "KeyboardKeyName",
+    "KeyboardKeyLocation",
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
@@ -95,7 +95,7 @@ from ._event_loop import EventLoop
 from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey
 from ._keyboard import KeyboardKeyChanged
-from ._keyboard import KeyboardKeyName
+from ._keyboard import KeyboardKeyLocation
 from ._mouse import Mouse
 from ._mouse import MouseButton
 from ._mouse import MouseButtonChanged
