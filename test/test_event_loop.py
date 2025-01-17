@@ -458,21 +458,13 @@ def test_selector_handle_sdl_event_mouse_wheel(mock_mouse, x, y):
     mock_mouse.scroll.assert_called_once_with(delta)
 
 
-@pytest.mark.parametrize(
-    "sdl_button, button_name",
-    [
-        (_eplatform.SDL_BUTTON_LEFT, "left"),
-        (_eplatform.SDL_BUTTON_MIDDLE, "middle"),
-        (_eplatform.SDL_BUTTON_RIGHT, "right"),
-        (_eplatform.SDL_BUTTON_X1, "back"),
-        (_eplatform.SDL_BUTTON_X2, "forward"),
-    ],
-)
 @pytest.mark.parametrize("is_pressed", (False, True))
-def test_selector_handle_sdl_mouse_button_changed(mock_mouse, sdl_button, button_name, is_pressed):
+def test_selector_handle_sdl_mouse_button_changed(mock_mouse, is_pressed):
     selector = _Selector()
-    assert selector._handle_sdl_event_mouse_button_changed(sdl_button, is_pressed)
-    mock_mouse.change_button.assert_called_once_with(button_name, is_pressed)
+    sdl_button = MagicMock()
+    with patch("eplatform._event_loop.change_mouse_button") as change_mouse_button:
+        assert selector._handle_sdl_event_mouse_button_changed(sdl_button, is_pressed)
+    change_mouse_button.assert_called_once_with(mock_mouse, sdl_button, is_pressed)
 
 
 @pytest.mark.parametrize("is_pressed", (False, True))

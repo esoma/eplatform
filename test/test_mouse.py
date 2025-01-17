@@ -1,22 +1,17 @@
-# eplatform
-# python
 from typing import get_args
 from unittest.mock import MagicMock
 from unittest.mock import PropertyMock
 from unittest.mock import patch
 
-# pytest
 import pytest
-
-# eevent
 from eevent import Event
-
-# emath
 from emath import FMatrix4
 from emath import IVector2
 
 from eplatform import MouseButton
-from eplatform import MouseButtonName
+from eplatform import MouseButtonLocation
+from eplatform import _eplatform
+from eplatform._mouse import change_mouse_button
 
 
 def test_attrs(mouse, window):
@@ -44,10 +39,10 @@ def test_attrs(mouse, window):
     assert isinstance(mouse.button_pressed, Event)
     assert isinstance(mouse.button_released, Event)
 
-    for button_name in get_args(MouseButtonName):
-        button = getattr(mouse, button_name)
+    for button_location in MouseButtonLocation:
+        button = mouse.get_button(button_location)
         assert isinstance(button, MouseButton)
-        assert button.name == button_name
+        assert button.location == button_location
         assert not button.is_pressed
         assert isinstance(button.changed, Event)
         assert isinstance(button.released, Event)
@@ -101,11 +96,20 @@ def test_scroll(mouse, x, y):
             scrolled_left.assert_called_once_with({"delta": x})
 
 
-@pytest.mark.parametrize("button_name", get_args(MouseButtonName))
+@pytest.mark.parametrize(
+    "sdl_button, button_location",
+    [
+        (_eplatform.SDL_BUTTON_LEFT, MouseButtonLocation.LEFT),
+        (_eplatform.SDL_BUTTON_MIDDLE, MouseButtonLocation.MIDDLE),
+        (_eplatform.SDL_BUTTON_RIGHT, MouseButtonLocation.RIGHT),
+        (_eplatform.SDL_BUTTON_X1, MouseButtonLocation.BACK),
+        (_eplatform.SDL_BUTTON_X2, MouseButtonLocation.FORWARD),
+    ],
+)
 @pytest.mark.parametrize("is_pressed", [False, True])
-def test_change_button(mouse, button_name, is_pressed):
+def test_change_button(mouse, sdl_button, button_location, is_pressed):
     world_position = object()
-    button = getattr(mouse, button_name)
+    button = mouse.get_button(button_location)
     with (
         patch.object(mouse, "button_changed", new=MagicMock()) as mouse_button_changed,
         patch.object(mouse, "button_pressed", new=MagicMock()) as mouse_button_pressed,
@@ -119,7 +123,7 @@ def test_change_button(mouse, button_name, is_pressed):
             return_value=world_position,
         ),
     ):
-        mouse.change_button(button_name, is_pressed)
+        change_mouse_button(mouse, sdl_button, is_pressed)
     event_data = {
         "button": button,
         "is_pressed": is_pressed,
@@ -137,10 +141,10 @@ def test_change_button(mouse, button_name, is_pressed):
     assert button.is_pressed == is_pressed
 
 
-@pytest.mark.parametrize("button_name", get_args(MouseButtonName))
-def test_button_repr(mouse, button_name):
-    button = getattr(mouse, button_name)
-    assert repr(button) == f"<MouseButton {button_name!r}>"
+@pytest.mark.parametrize("button_location", MouseButtonLocation)
+def test_button_repr(mouse, button_location):
+    button = mouse.get_button(button_location)
+    assert repr(button) == f"<MouseButton {button_location!r}>"
 
 
 def test_visibility(mouse):

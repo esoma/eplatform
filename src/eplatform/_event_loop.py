@@ -26,7 +26,7 @@ from ._display import disconnect_display
 from ._eplatform import get_sdl_event
 from ._keyboard import KeyboardKeyLocation
 from ._keyboard import change_key
-from ._mouse import MouseButtonName
+from ._mouse import change_mouse_button
 from ._platform import get_keyboard
 from ._platform import get_mouse
 from ._platform import get_window
@@ -96,7 +96,7 @@ class _Selector(SelectSelector):
         self, button: SdlMouseButton, is_pressed: bool
     ) -> bool:
         mouse = get_mouse()
-        mouse.change_button(_SDL_MOUSE_BUTTON_TO_NAME[button], is_pressed)
+        change_mouse_button(mouse, button, is_pressed)
         return True
 
     def _handle_sdl_event_key_changed(
@@ -216,12 +216,3 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_JOYSTICK_BUTTON_UP: _handle_sdl_event_joystick_button_up,
         _eplatform.SDL_EVENT_JOYSTICK_HAT_MOTION: _handle_sdl_event_joystick_hat_motion,
     }
-
-
-_SDL_MOUSE_BUTTON_TO_NAME: Final[Mapping[SdlMouseButton, MouseButtonName]] = {
-    _eplatform.SDL_BUTTON_LEFT: "left",
-    _eplatform.SDL_BUTTON_MIDDLE: "middle",
-    _eplatform.SDL_BUTTON_RIGHT: "right",
-    _eplatform.SDL_BUTTON_X1: "back",
-    _eplatform.SDL_BUTTON_X2: "forward",
-}

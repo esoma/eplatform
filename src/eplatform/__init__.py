@@ -47,7 +47,7 @@ __all__ = [
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
-    "MouseButtonName",
+    "MouseButtonLocation",
     "MouseMoved",
     "MouseScrolled",
     "MouseScrolledDirection",
@@ -99,7 +99,7 @@ from ._keyboard import KeyboardKeyLocation
 from ._mouse import Mouse
 from ._mouse import MouseButton
 from ._mouse import MouseButtonChanged
-from ._mouse import MouseButtonName
+from ._mouse import MouseButtonLocation
 from ._mouse import MouseMoved
 from ._mouse import MouseScrolled
 from ._mouse import MouseScrolledDirection

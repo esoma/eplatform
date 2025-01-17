@@ -4,29 +4,40 @@ __all__ = [
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
-    "MouseButtonName",
+    "MouseButtonLocation",
     "MouseMoved",
     "MouseScrolled",
     "MouseScrolledDirection",
 ]
 
+from enum import StrEnum
+from typing import Final
 from typing import Literal
+from typing import Mapping
 from typing import TypeAlias
 from typing import TypedDict
 
 from eevent import Event
 from emath import IVector2
 
+from . import _eplatform
 from ._eplatform import hide_cursor
 from ._eplatform import show_cursor
 from ._platform import get_window
+from ._type import SdlMouseButton
 
-MouseButtonName: TypeAlias = Literal["left", "right", "middle", "forward", "back"]
+
+class MouseButtonLocation(StrEnum):
+    LEFT = "left"
+    RIGHT = "right"
+    MIDDLE = "middle"
+    FORWARD = "forward"
+    BACK = "back"
 
 
 class MouseButton:
-    def __init__(self, name: MouseButtonName):
-        self.name = name
+    def __init__(self, location: MouseButtonLocation):
+        self.location = location
         self.is_pressed = False
 
         self.changed: Event[MouseButtonChanged] = Event()
@@ -34,10 +45,12 @@ class MouseButton:
         self.released: Event[MouseButtonChanged] = Event()
 
     def __repr__(self) -> str:
-        return f"<MouseButton {self.name!r}>"
+        return f"<MouseButton {self.location!r}>"
 
 
 class Mouse:
+    _buttons_by_location: Mapping[MouseButtonLocation, MouseButton]
+
     def __init__(self) -> None:
         self.position = IVector2(0, 0)
         self.moved: Event[MouseMoved] = Event()
@@ -50,15 +63,14 @@ class Mouse:
         self.scrolled_left: Event[MouseScrolledDirection] = Event()
         self.scrolled_right: Event[MouseScrolledDirection] = Event()
 
-        self.left = MouseButton("left")
-        self.right = MouseButton("right")
-        self.middle = MouseButton("middle")
-        self.forward = MouseButton("forward")
-        self.back = MouseButton("back")
+        self._buttons_by_location = {l: MouseButton(l) for l in MouseButtonLocation}
 
         self.button_changed: Event[MouseButtonChanged] = Event()
         self.button_pressed: Event[MouseButtonChanged] = Event()
         self.button_released: Event[MouseButtonChanged] = Event()
+
+    def get_button(self, location: MouseButtonLocation) -> MouseButton:
+        return self._buttons_by_location[location]
 
     def move(self, position: IVector2, delta: IVector2) -> None:
         self.position = position
@@ -85,24 +97,6 @@ class Mouse:
                 assert delta.x < 0
                 self.scrolled_left(x_data)
 
-    def change_button(self, name: MouseButtonName, is_pressed: bool) -> None:
-        button: MouseButton = getattr(self, name)
-        button.is_pressed = is_pressed
-        event_data: MouseButtonChanged = {
-            "button": button,
-            "is_pressed": is_pressed,
-            "position": self.position,
-            "world_position": self.world_position,
-        }
-        self.button_changed(event_data)
-        button.changed(event_data)
-        if is_pressed:
-            self.button_pressed(event_data)
-            button.pressed(event_data)
-        else:
-            self.button_released(event_data)
-            button.released(event_data)
-
     def show(self) -> None:
         show_cursor()
 
@@ -113,6 +107,15 @@ class Mouse:
     def world_position(self) -> IVector2:
         window = get_window()
         return window.convert_screen_coordinate_to_world_coordinate(self.position)
+
+
+_SDL_MOUSE_BUTTON_TO_LOCATION: Final[Mapping[SdlMouseButton, MouseButtonLocation]] = {
+    _eplatform.SDL_BUTTON_LEFT: MouseButtonLocation.LEFT,
+    _eplatform.SDL_BUTTON_MIDDLE: MouseButtonLocation.MIDDLE,
+    _eplatform.SDL_BUTTON_RIGHT: MouseButtonLocation.RIGHT,
+    _eplatform.SDL_BUTTON_X1: MouseButtonLocation.BACK,
+    _eplatform.SDL_BUTTON_X2: MouseButtonLocation.FORWARD,
+}
 
 
 class MouseMoved(TypedDict):
@@ -134,3 +137,22 @@ class MouseButtonChanged(TypedDict):
     is_pressed: bool
     position: IVector2
     world_position: IVector2
+
+
+def change_mouse_button(mouse: Mouse, sdl_mouse_button: SdlMouseButton, is_pressed: bool) -> None:
+    button = mouse.get_button(_SDL_MOUSE_BUTTON_TO_LOCATION[sdl_mouse_button])
+    button.is_pressed = is_pressed
+    event_data: MouseButtonChanged = {
+        "button": button,
+        "is_pressed": is_pressed,
+        "position": mouse.position,
+        "world_position": mouse.world_position,
+    }
+    mouse.button_changed(event_data)
+    button.changed(event_data)
+    if is_pressed:
+        mouse.button_pressed(event_data)
+        button.pressed(event_data)
+    else:
+        mouse.button_released(event_data)
+        button.released(event_data)
