@@ -445,8 +445,9 @@ def test_selector_handle_sdl_event_mouse_motion(mock_mouse, x, y, xrel, yrel):
     selector = _Selector()
     position = IVector2(x, y)
     delta = IVector2(xrel, yrel)
-    assert selector._handle_sdl_event_mouse_motion(position, delta)
-    mock_mouse.move.assert_called_once_with(position, delta)
+    with patch("eplatform._event_loop.change_mouse_position") as change_mouse_position:
+        assert selector._handle_sdl_event_mouse_motion(position, delta)
+    change_mouse_position.assert_called_once_with(mock_mouse, position, delta)
 
 
 @pytest.mark.parametrize("x", [0, -1, 1])

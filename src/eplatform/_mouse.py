@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 __all__ = [
+    "change_mouse_button",
+    "change_mouse_position",
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
@@ -54,12 +56,14 @@ class MouseButton:
 
 class Mouse:
     _buttons_by_location: Mapping[MouseButtonLocation, MouseButton]
+    _position = IVector2(0)
+
+    moved: Event[MouseMoved] = Event()
 
     def __init__(self) -> None:
         self._buttons_by_location = {l: MouseButton(l) for l in MouseButtonLocation}
 
-        self.position = IVector2(0, 0)
-        self.moved: Event[MouseMoved] = Event()
+        self.moved = Event()
 
         self.scrolled: Event[MouseScrolled] = Event()
         self.scrolled_vertically: Event[MouseScrolledDirection] = Event()
@@ -72,11 +76,9 @@ class Mouse:
     def get_button(self, location: MouseButtonLocation) -> MouseButton:
         return self._buttons_by_location[location]
 
-    def move(self, position: IVector2, delta: IVector2) -> None:
-        self.position = position
-        self.moved(
-            {"position": self.position, "world_position": self.world_position, "delta": delta}
-        )
+    @property
+    def position(self) -> IVector2:
+        return self._position
 
     def scroll(self, delta: IVector2) -> None:
         self.scrolled({"delta": delta})
@@ -137,6 +139,17 @@ class MouseButtonChanged(TypedDict):
     is_pressed: bool
     position: IVector2
     world_position: IVector2
+
+
+def change_mouse_position(mouse: Mouse, position: IVector2, delta: IVector2) -> None:
+    mouse._position = position
+    event_data: MouseMoved = {
+        "position": position,
+        "world_position": mouse.world_position,
+        "delta": delta,
+    }
+    Mouse.moved(event_data)
+    mouse.moved(event_data)
 
 
 def change_mouse_button(mouse: Mouse, sdl_mouse_button: SdlMouseButton, is_pressed: bool) -> None:

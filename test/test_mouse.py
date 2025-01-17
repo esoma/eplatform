@@ -11,12 +11,14 @@ from emath import IVector2
 from eplatform import MouseButton
 from eplatform import MouseButtonLocation
 from eplatform import _eplatform
+from eplatform._mouse import Mouse
 from eplatform._mouse import change_mouse_button
+from eplatform._mouse import change_mouse_position
 
 
 def test_attrs(mouse, window):
     assert mouse.position == IVector2(0, 0)
-    mouse.position = IVector2(10, 10)
+    mouse._position = IVector2(10, 10)
     with patch.object(
         window,
         "screen_space_to_world_space_transform",
@@ -25,6 +27,8 @@ def test_attrs(mouse, window):
         ).inverse(),
     ):
         assert mouse.world_position == IVector2(5, 5)
+
+    assert isinstance(Mouse.moved, Event)
     assert isinstance(mouse.moved, Event)
 
     assert isinstance(mouse.scrolled, Event)
@@ -54,6 +58,7 @@ def test_attrs(mouse, window):
 def test_move(window, mouse, position, delta):
     world_position = object()
     with (
+        patch.object(Mouse, "moved", new=MagicMock()) as mouse_moved,
         patch.object(mouse, "moved", new=MagicMock()) as moved,
         patch(
             "eplatform._mouse.Mouse.world_position",
@@ -61,7 +66,10 @@ def test_move(window, mouse, position, delta):
             return_value=world_position,
         ),
     ):
-        mouse.move(position, delta)
+        change_mouse_position(mouse, position, delta)
+    mouse_moved.assert_called_once_with(
+        {"position": position, "delta": delta, "world_position": world_position}
+    )
     moved.assert_called_once_with(
         {"position": position, "delta": delta, "world_position": world_position}
     )
