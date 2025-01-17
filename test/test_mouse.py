@@ -35,9 +35,9 @@ def test_attrs(mouse, window):
     assert isinstance(mouse.scrolled_left, Event)
     assert isinstance(mouse.scrolled_right, Event)
 
-    assert isinstance(mouse.button_changed, Event)
-    assert isinstance(mouse.button_pressed, Event)
-    assert isinstance(mouse.button_released, Event)
+    assert isinstance(MouseButton.changed, Event)
+    assert isinstance(MouseButton.pressed, Event)
+    assert isinstance(MouseButton.released, Event)
 
     for button_location in MouseButtonLocation:
         button = mouse.get_button(button_location)
@@ -111,9 +111,9 @@ def test_change_button(mouse, sdl_button, button_location, is_pressed):
     world_position = object()
     button = mouse.get_button(button_location)
     with (
-        patch.object(mouse, "button_changed", new=MagicMock()) as mouse_button_changed,
-        patch.object(mouse, "button_pressed", new=MagicMock()) as mouse_button_pressed,
-        patch.object(mouse, "button_released", new=MagicMock()) as mouse_button_released,
+        patch.object(MouseButton, "changed", new=MagicMock()) as mouse_button_changed,
+        patch.object(MouseButton, "pressed", new=MagicMock()) as mouse_button_pressed,
+        patch.object(MouseButton, "released", new=MagicMock()) as mouse_button_released,
         patch.object(button, "changed", new=MagicMock()) as button_changed,
         patch.object(button, "pressed", new=MagicMock()) as button_pressed,
         patch.object(button, "released", new=MagicMock()) as button_released,

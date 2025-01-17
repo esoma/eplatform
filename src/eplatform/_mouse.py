@@ -36,13 +36,17 @@ class MouseButtonLocation(StrEnum):
 
 
 class MouseButton:
+    changed: Event[MouseButtonChanged] = Event()
+    pressed: Event[MouseButtonChanged] = Event()
+    released: Event[MouseButtonChanged] = Event()
+
     def __init__(self, location: MouseButtonLocation):
         self.location = location
         self.is_pressed = False
 
-        self.changed: Event[MouseButtonChanged] = Event()
-        self.pressed: Event[MouseButtonChanged] = Event()
-        self.released: Event[MouseButtonChanged] = Event()
+        self.changed = Event()
+        self.pressed = Event()
+        self.released = Event()
 
     def __repr__(self) -> str:
         return f"<MouseButton {self.location!r}>"
@@ -52,6 +56,8 @@ class Mouse:
     _buttons_by_location: Mapping[MouseButtonLocation, MouseButton]
 
     def __init__(self) -> None:
+        self._buttons_by_location = {l: MouseButton(l) for l in MouseButtonLocation}
+
         self.position = IVector2(0, 0)
         self.moved: Event[MouseMoved] = Event()
 
@@ -62,12 +68,6 @@ class Mouse:
         self.scrolled_horizontally: Event[MouseScrolledDirection] = Event()
         self.scrolled_left: Event[MouseScrolledDirection] = Event()
         self.scrolled_right: Event[MouseScrolledDirection] = Event()
-
-        self._buttons_by_location = {l: MouseButton(l) for l in MouseButtonLocation}
-
-        self.button_changed: Event[MouseButtonChanged] = Event()
-        self.button_pressed: Event[MouseButtonChanged] = Event()
-        self.button_released: Event[MouseButtonChanged] = Event()
 
     def get_button(self, location: MouseButtonLocation) -> MouseButton:
         return self._buttons_by_location[location]
@@ -148,11 +148,11 @@ def change_mouse_button(mouse: Mouse, sdl_mouse_button: SdlMouseButton, is_press
         "position": mouse.position,
         "world_position": mouse.world_position,
     }
-    mouse.button_changed(event_data)
+    MouseButton.changed(event_data)
     button.changed(event_data)
     if is_pressed:
-        mouse.button_pressed(event_data)
+        MouseButton.pressed(event_data)
         button.pressed(event_data)
     else:
-        mouse.button_released(event_data)
+        MouseButton.released(event_data)
         button.released(event_data)
