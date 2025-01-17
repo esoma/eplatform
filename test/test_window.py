@@ -33,14 +33,19 @@ def test_position(window):
 
     new_position = window.position + IVector2(-1, 1)
 
-    with patch.object(window, "moved", new=MagicMock()) as window_moved:
+    with (
+        patch.object(Window, "moved", new=MagicMock()) as window_moved,
+        patch.object(window, "moved", new=MagicMock()) as moved,
+    ):
         move_window(window, new_position)
 
     assert window.position == new_position
     window_moved.assert_called_once_with({"position": new_position})
+    moved.assert_called_once_with({"position": new_position})
 
 
-def test_move(window, capture_event):
+@pytest.mark.parametrize("event_object", [Window, None])
+def test_move(window, capture_event, event_object):
     original_position = window.position
     new_position = window.position + IVector2(-1, 1)
 
@@ -48,29 +53,39 @@ def test_move(window, capture_event):
         window.move(new_position)
         assert window.position == original_position
 
-    event = capture_event(_, window.moved)
+    event = capture_event(_, getattr(event_object or window, "moved"))
     assert event == {"position": new_position}
     assert window.position == new_position
 
 
 def test_close():
     window = MagicMock()
-    close_window(window)
+    with patch.object(Window, "closed", new=MagicMock()) as window_closed:
+        close_window(window)
+    window_closed.assert_called_once_with(None)
     window.closed.assert_called_once_with(None)
 
 
 def test_is_focused(window):
     assert not window.is_focused
 
-    with patch.object(window, "focused", new=MagicMock()) as window_focused:
+    with (
+        patch.object(Window, "focused", new=MagicMock()) as window_focused,
+        patch.object(window, "focused", new=MagicMock()) as focused,
+    ):
         focus_window(window)
     assert window.is_focused
     window_focused.assert_called_once_with(None)
+    focused.assert_called_once_with(None)
 
-    with patch.object(window, "blurred", new=MagicMock()) as window_blurred:
+    with (
+        patch.object(Window, "blurred", new=MagicMock()) as window_blurred,
+        patch.object(window, "blurred", new=MagicMock()) as blurred,
+    ):
         blur_window(window)
     assert not window.is_focused
     window_blurred.assert_called_once_with(None)
+    blurred.assert_called_once_with(None)
 
 
 def test_is_bordered(window):
@@ -118,19 +133,24 @@ def test_is_always_on_top(window):
 def test_size(window):
     assert window.size == IVector2(200, 200)
 
-    with patch.object(window, "resized", new=MagicMock()) as window_resized:
+    with (
+        patch.object(Window, "resized", new=MagicMock()) as window_resized,
+        patch.object(window, "resized", new=MagicMock()) as resized,
+    ):
         resize_window(window, IVector2(100, 101))
 
     assert window.size == IVector2(100, 101)
     window_resized.assert_called_once_with({"size": IVector2(100, 101)})
+    resized.assert_called_once_with({"size": IVector2(100, 101)})
 
 
-def test_resize(window, capture_event):
+@pytest.mark.parametrize("event_object", [Window, None])
+def test_resize(window, capture_event, event_object):
     def _():
         window.resize(IVector2(100, 150))
         assert window.size == IVector2(200, 200)
 
-    event = capture_event(_, window.resized)
+    event = capture_event(_, getattr(event_object or window, "resized"))
     assert event == {"size": IVector2(100, 150)}
     assert window.size == IVector2(100, 150)
 
@@ -139,31 +159,40 @@ def test_is_visible(window):
     assert not window.is_visible
 
     with (
-        patch.object(window, "visibility_changed", new=MagicMock()) as window_visibility_changed,
-        patch.object(window, "shown", new=MagicMock()) as window_shown,
+        patch.object(Window, "visibility_changed", new=MagicMock()) as window_visibility_changed,
+        patch.object(Window, "shown", new=MagicMock()) as window_shown,
+        patch.object(window, "visibility_changed", new=MagicMock()) as visibility_changed,
+        patch.object(window, "shown", new=MagicMock()) as shown,
     ):
         show_window(window)
     assert window.is_visible
     window_visibility_changed.assert_called_once_with({"is_visible": True})
     window_shown.assert_called_once_with({"is_visible": True})
+    visibility_changed.assert_called_once_with({"is_visible": True})
+    shown.assert_called_once_with({"is_visible": True})
 
     with (
-        patch.object(window, "visibility_changed", new=MagicMock()) as window_visibility_changed,
-        patch.object(window, "hidden", new=MagicMock()) as window_hidden,
+        patch.object(Window, "visibility_changed", new=MagicMock()) as window_visibility_changed,
+        patch.object(Window, "hidden", new=MagicMock()) as window_hidden,
+        patch.object(window, "visibility_changed", new=MagicMock()) as visibility_changed,
+        patch.object(window, "hidden", new=MagicMock()) as hidden,
     ):
         hide_window(window)
     assert not window.is_visible
     window_visibility_changed.assert_called_once_with({"is_visible": False})
     window_hidden.assert_called_once_with({"is_visible": False})
+    visibility_changed.assert_called_once_with({"is_visible": False})
+    hidden.assert_called_once_with({"is_visible": False})
 
 
 @pytest.mark.disruptive
-def test_show_hide(window, capture_event):
+@pytest.mark.parametrize("event_object", [Window, None])
+def test_show_hide(window, capture_event, event_object):
     def _():
         window.show()
         assert not window.is_visible
 
-    event = capture_event(_, window.visibility_changed)
+    event = capture_event(_, getattr(event_object or window, "visibility_changed"))
     assert event == {"is_visible": True}
     assert window.is_visible
 
@@ -171,7 +200,7 @@ def test_show_hide(window, capture_event):
         window.hide()
         assert window.is_visible
 
-    event = capture_event(_, window.visibility_changed)
+    event = capture_event(_, getattr(event_object or window, "visibility_changed"))
     assert event == {"is_visible": False}
     assert not window.is_visible
 
@@ -179,7 +208,7 @@ def test_show_hide(window, capture_event):
         window.show()
         assert not window.is_visible
 
-    event = capture_event(_, window.shown)
+    event = capture_event(_, getattr(event_object or window, "shown"))
     assert event == {"is_visible": True}
     assert window.is_visible
 
@@ -187,7 +216,7 @@ def test_show_hide(window, capture_event):
         window.hide()
         assert window.is_visible
 
-    event = capture_event(_, window.hidden)
+    event = capture_event(_, getattr(event_object or window, "hidden"))
     assert event == {"is_visible": False}
     assert not window.is_visible
 
@@ -236,8 +265,12 @@ def test_convert_screen_coordinate_to_world_coordinate(
 
 @pytest.mark.parametrize("text", ["", "hello", "私"])
 def test_input_text(window, text):
-    with patch.object(window, "text_inputted", new=MagicMock()) as text_inputted:
+    with (
+        patch.object(Window, "text_inputted", new=MagicMock()) as wiindow_text_inputted,
+        patch.object(window, "text_inputted", new=MagicMock()) as text_inputted,
+    ):
         input_window_text(window, text)
+    wiindow_text_inputted.assert_called_once_with({"text": text})
     text_inputted.assert_called_once_with({"text": text})
 
 

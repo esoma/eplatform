@@ -80,28 +80,38 @@ class WindowDestroyedError(RuntimeError):
 class Window:
     _sdl_window: SdlWindow | None = None
 
+    moved: Event[WindowMoved] = Event()
+    closed: Event[None] = Event()
+    text_inputted: Event[WindowTextInputted] = Event()
+    resized: Event[WindowResized] = Event()
+    visibility_changed: Event[WindowVisibilityChanged] = Event()
+    shown: Event[WindowVisibilityChanged] = Event()
+    hidden: Event[WindowVisibilityChanged] = Event()
+    focused: Event[None] = Event()
+    blurred: Event[None] = Event()
+
     def __init__(self) -> None:
         self._sdl_window, x, y = create_sdl_window()
 
         self._position = IVector2(x, y)
-        self.moved: Event[WindowMoved] = Event()
+        self.moved = Event()
 
-        self.closed: Event[None] = Event()
-        self.text_inputted: Event[WindowTextInputted] = Event()
+        self.closed = Event()
+        self.text_inputted = Event()
 
         self.screen_space_to_world_space_transform = FMatrix4(1)
 
         self._size = IVector2(200, 200)
-        self.resized: Event[WindowResized] = Event()
+        self.resized = Event()
 
         self._is_visible = False
-        self.visibility_changed: Event[WindowVisibilityChanged] = Event()
-        self.shown: Event[WindowVisibilityChanged] = Event()
-        self.hidden: Event[WindowVisibilityChanged] = Event()
+        self.visibility_changed = Event()
+        self.shown = Event()
+        self.hidden = Event()
 
         self._is_focused = False
-        self.focused: Event[None] = Event()
-        self.blurred: Event[None] = Event()
+        self.focused = Event()
+        self.blurred = Event()
 
         self._is_bordered = True
         self._is_always_on_top = False
@@ -257,42 +267,55 @@ def delete_window(window: Window) -> None:
 
 
 def close_window(window: Window) -> None:
+    Window.closed(None)
     window.closed(None)
 
 
 def input_window_text(window: Window, text: str) -> None:
-    window.text_inputted({"text": text})
+    data: WindowTextInputted = {"text": text}
+    Window.text_inputted(data)
+    window.text_inputted(data)
 
 
 def show_window(window: Window) -> None:
     window._is_visible = True
     event_data: WindowVisibilityChanged = {"is_visible": True}
+    Window.visibility_changed(event_data)
     window.visibility_changed(event_data)
+    Window.shown(event_data)
     window.shown(event_data)
 
 
 def hide_window(window: Window) -> None:
     window._is_visible = False
     event_data: WindowVisibilityChanged = {"is_visible": False}
+    Window.visibility_changed(event_data)
     window.visibility_changed(event_data)
+    Window.hidden(event_data)
     window.hidden(event_data)
 
 
 def resize_window(window: Window, size: IVector2) -> None:
     window._size = size
-    window.resized({"size": size})
+    event_data: WindowResized = {"size": size}
+    Window.resized(event_data)
+    window.resized(event_data)
 
 
 def move_window(window: Window, position: IVector2) -> None:
     window._position = position
-    window.moved({"position": position})
+    event_data: WindowMoved = {"position": position}
+    Window.moved(event_data)
+    window.moved(event_data)
 
 
 def focus_window(window: Window) -> None:
     window._is_focused = True
+    Window.focused(None)
     window.focused(None)
 
 
 def blur_window(window: Window) -> None:
     window._is_focused = False
+    Window.blurred(None)
     window.blurred(None)
