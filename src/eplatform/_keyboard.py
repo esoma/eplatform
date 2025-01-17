@@ -268,11 +268,7 @@ class Keyboard:
     _keys_by_location: Mapping[KeyboardKeyLocation, KeyboardKey]
 
     def __init__(self) -> None:
-        keys_by_location: dict[KeyboardKeyLocation, KeyboardKey] = {}
-        for key_location in KeyboardKeyLocation:
-            key = KeyboardKey(key_location)
-            keys_by_location[key_location] = key
-        self._keys_by_location = keys_by_location
+        self._keys_by_location = {l: KeyboardKey(l) for l in KeyboardKeyLocation}
 
     def get_key_by_location(self, location: KeyboardKeyLocation) -> KeyboardKey:
         return self._keys_by_location[location]
