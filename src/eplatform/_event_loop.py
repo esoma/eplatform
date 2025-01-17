@@ -28,6 +28,7 @@ from ._keyboard import KeyboardKeyLocation
 from ._keyboard import change_key
 from ._mouse import change_mouse_button
 from ._mouse import change_mouse_position
+from ._mouse import scroll_mouse_wheel
 from ._platform import get_keyboard
 from ._platform import get_mouse
 from ._platform import get_window
@@ -90,7 +91,7 @@ class _Selector(SelectSelector):
 
     def _handle_sdl_event_mouse_wheel(self, delta: IVector2) -> bool:
         mouse = get_mouse()
-        mouse.scroll(delta)
+        scroll_mouse_wheel(mouse, delta)
         return True
 
     def _handle_sdl_event_mouse_button_changed(

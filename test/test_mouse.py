@@ -14,6 +14,7 @@ from eplatform import _eplatform
 from eplatform._mouse import Mouse
 from eplatform._mouse import change_mouse_button
 from eplatform._mouse import change_mouse_position
+from eplatform._mouse import scroll_mouse_wheel
 
 
 def test_attrs(mouse, window):
@@ -30,6 +31,14 @@ def test_attrs(mouse, window):
 
     assert isinstance(Mouse.moved, Event)
     assert isinstance(mouse.moved, Event)
+
+    assert isinstance(Mouse.scrolled, Event)
+    assert isinstance(Mouse.scrolled_vertically, Event)
+    assert isinstance(Mouse.scrolled_up, Event)
+    assert isinstance(Mouse.scrolled_down, Event)
+    assert isinstance(Mouse.scrolled_horizontally, Event)
+    assert isinstance(Mouse.scrolled_left, Event)
+    assert isinstance(Mouse.scrolled_right, Event)
 
     assert isinstance(mouse.scrolled, Event)
     assert isinstance(mouse.scrolled_vertically, Event)
@@ -80,6 +89,15 @@ def test_move(window, mouse, position, delta):
 @pytest.mark.parametrize("y", [-1, 0, 1])
 def test_scroll(mouse, x, y):
     with (
+        patch.object(Mouse, "scrolled", new=MagicMock()) as mouse_scrolled,
+        patch.object(Mouse, "scrolled_vertically", new=MagicMock()) as mouse_scrolled_vertically,
+        patch.object(Mouse, "scrolled_up", new=MagicMock()) as mouse_scrolled_up,
+        patch.object(Mouse, "scrolled_down", new=MagicMock()) as mouse_scrolled_down,
+        patch.object(
+            Mouse, "scrolled_horizontally", new=MagicMock()
+        ) as mouse_scrolled_horizontally,
+        patch.object(Mouse, "scrolled_left", new=MagicMock()) as mouse_scrolled_left,
+        patch.object(Mouse, "scrolled_right", new=MagicMock()) as mouse_scrolled_right,
         patch.object(mouse, "scrolled", new=MagicMock()) as scrolled,
         patch.object(mouse, "scrolled_vertically", new=MagicMock()) as scrolled_vertically,
         patch.object(mouse, "scrolled_up", new=MagicMock()) as scrolled_up,
@@ -88,19 +106,26 @@ def test_scroll(mouse, x, y):
         patch.object(mouse, "scrolled_left", new=MagicMock()) as scrolled_left,
         patch.object(mouse, "scrolled_right", new=MagicMock()) as scrolled_right,
     ):
-        mouse.scroll(IVector2(x, y))
+        scroll_mouse_wheel(mouse, IVector2(x, y))
+    mouse_scrolled.assert_called_once_with({"delta": IVector2(x, y)})
     scrolled.assert_called_once_with({"delta": IVector2(x, y)})
     if y:
+        mouse_scrolled_vertically.assert_called_once_with({"delta": y})
         scrolled_vertically.assert_called_once_with({"delta": y})
         if y > 0:
+            mouse_scrolled_up.assert_called_once_with({"delta": y})
             scrolled_up.assert_called_once_with({"delta": y})
         else:
+            mouse_scrolled_down.assert_called_once_with({"delta": y})
             scrolled_down.assert_called_once_with({"delta": y})
     if x:
+        mouse_scrolled_horizontally.assert_called_once_with({"delta": x})
         scrolled_horizontally.assert_called_once_with({"delta": x})
         if x > 0:
+            mouse_scrolled_right.assert_called_once_with({"delta": x})
             scrolled_right.assert_called_once_with({"delta": x})
         else:
+            mouse_scrolled_left.assert_called_once_with({"delta": x})
             scrolled_left.assert_called_once_with({"delta": x})
 
 

@@ -455,8 +455,9 @@ def test_selector_handle_sdl_event_mouse_motion(mock_mouse, x, y, xrel, yrel):
 def test_selector_handle_sdl_event_mouse_wheel(mock_mouse, x, y):
     selector = _Selector()
     delta = IVector2(x, y)
-    assert selector._handle_sdl_event_mouse_wheel(delta)
-    mock_mouse.scroll.assert_called_once_with(delta)
+    with patch("eplatform._event_loop.scroll_mouse_wheel") as scroll_mouse_wheel:
+        assert selector._handle_sdl_event_mouse_wheel(delta)
+    scroll_mouse_wheel.assert_called_once_with(mock_mouse, delta)
 
 
 @pytest.mark.parametrize("is_pressed", (False, True))
