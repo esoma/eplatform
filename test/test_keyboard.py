@@ -263,9 +263,9 @@ assert len(SDL_SCANCODE_KEYBOARD_KEY_LOCATION) == len(KeyboardKeyLocation)
 def test_attrs(keyboard):
     assert isinstance(keyboard, Keyboard)
 
-    assert isinstance(keyboard.key_changed, Event)
-    assert isinstance(keyboard.key_pressed, Event)
-    assert isinstance(keyboard.key_released, Event)
+    assert isinstance(KeyboardKey.changed, Event)
+    assert isinstance(KeyboardKey.pressed, Event)
+    assert isinstance(KeyboardKey.released, Event)
 
     for key_location in KeyboardKeyLocation:
         key = keyboard.get_key_by_location(key_location)
@@ -282,9 +282,9 @@ def test_change_key(keyboard, is_pressed):
     for sdl_scancode, key_location in SDL_SCANCODE_KEYBOARD_KEY_LOCATION:
         key = keyboard.get_key_by_location(key_location)
         with (
-            patch.object(keyboard, "key_changed", new=MagicMock()) as keyboard_key_changed,
-            patch.object(keyboard, "key_pressed", new=MagicMock()) as keyboard_key_pressed,
-            patch.object(keyboard, "key_released", new=MagicMock()) as keyboard_key_released,
+            patch.object(KeyboardKey, "changed", new=MagicMock()) as keyboard_key_changed,
+            patch.object(KeyboardKey, "pressed", new=MagicMock()) as keyboard_key_pressed,
+            patch.object(KeyboardKey, "released", new=MagicMock()) as keyboard_key_released,
             patch.object(key, "changed", new=MagicMock()) as key_changed,
             patch.object(key, "pressed", new=MagicMock()) as key_pressed,
             patch.object(key, "released", new=MagicMock()) as key_released,
@@ -304,9 +304,9 @@ def test_change_key(keyboard, is_pressed):
 @pytest.mark.parametrize("is_pressed", [False, True])
 def test_change_key_unexpected_sdl_scancode(keyboard, is_pressed):
     with (
-        patch.object(keyboard, "key_changed", new=MagicMock()) as keyboard_key_changed,
-        patch.object(keyboard, "key_pressed", new=MagicMock()) as keyboard_key_pressed,
-        patch.object(keyboard, "key_released", new=MagicMock()) as keyboard_key_released,
+        patch.object(KeyboardKey, "changed", new=MagicMock()) as keyboard_key_changed,
+        patch.object(KeyboardKey, "pressed", new=MagicMock()) as keyboard_key_pressed,
+        patch.object(KeyboardKey, "released", new=MagicMock()) as keyboard_key_released,
     ):
         assert not change_key(keyboard, -1, is_pressed)
     keyboard_key_changed.assert_not_called()

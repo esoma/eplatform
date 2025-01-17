@@ -248,13 +248,17 @@ class KeyboardKeyLocation(StrEnum):
 
 
 class KeyboardKey:
+    changed: Event["KeyboardKeyChanged"] = Event()
+    pressed: Event["KeyboardKeyChanged"] = Event()
+    released: Event["KeyboardKeyChanged"] = Event()
+
     def __init__(self, location: KeyboardKeyLocation):
         self.location = location
         self.is_pressed = False
 
-        self.changed: Event[KeyboardKeyChanged] = Event()
-        self.pressed: Event[KeyboardKeyChanged] = Event()
-        self.released: Event[KeyboardKeyChanged] = Event()
+        self.changed = Event()
+        self.pressed = Event()
+        self.released = Event()
 
     def __repr__(self) -> str:
         return f"<KeyboardKey {self.location.value!r}>"
@@ -270,10 +274,6 @@ class Keyboard:
             keys_by_location[key_location] = key
         self._keys_by_location = keys_by_location
 
-        self.key_changed: Event[KeyboardKeyChanged] = Event()
-        self.key_pressed: Event[KeyboardKeyChanged] = Event()
-        self.key_released: Event[KeyboardKeyChanged] = Event()
-
     def get_key_by_location(self, location: KeyboardKeyLocation) -> KeyboardKey:
         return self._keys_by_location[location]
 
@@ -286,13 +286,13 @@ def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) 
     key = keyboard._keys_by_location[key_location]
     key.is_pressed = is_pressed
     data: KeyboardKeyChanged = {"key": key, "is_pressed": is_pressed}
-    keyboard.key_changed(data)
+    KeyboardKey.changed(data)
     key.changed(data)
     if is_pressed:
-        keyboard.key_pressed(data)
+        KeyboardKey.pressed(data)
         key.pressed(data)
     else:
-        keyboard.key_released(data)
+        KeyboardKey.released(data)
         key.released(data)
     return True
 
