@@ -47,28 +47,34 @@ def test_selector_select():
     selector = _Selector()
     # no events, timeout
     with (
+        patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
         patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
     ):
         assert selector.select(0.5) == []
         poll_sdl_events.assert_called_with()
         super_select.assert_called_with(0.001)
+        idle.assert_called_once_with(None)
     # sdl events
     with (
+        patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
         patch.object(selector, "_poll_sdl_events", return_value=True) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
     ):
         assert selector.select() == []
         poll_sdl_events.assert_called_once_with()
         super_select.assert_called_once_with(-1)
+        idle.assert_not_called()
     # select events
     with (
+        patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
         patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[True]) as super_select,
     ):
         assert selector.select() == [True]
         poll_sdl_events.assert_called_once_with()
         super_select.assert_called_once_with(0.001)
+        idle.assert_not_called()
 
 
 def test_selector_poll_sdl_events_no_platform():

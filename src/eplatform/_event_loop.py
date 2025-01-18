@@ -1,4 +1,4 @@
-__all__ = ["EventLoop"]
+__all__ = ["idle", "EventLoop"]
 
 from asyncio import SelectorEventLoop
 from selectors import SelectSelector
@@ -9,6 +9,7 @@ from typing import Final
 from typing import Mapping
 from typing import get_args
 
+from eevent import Event
 from emath import IVector2
 
 from . import _eplatform
@@ -48,6 +49,8 @@ from ._window import move_window
 from ._window import resize_window
 from ._window import show_window
 
+idle: Event[None] = Event()
+
 
 class EventLoop(SelectorEventLoop):
     def __init__(self) -> None:
@@ -63,6 +66,8 @@ class _Selector(SelectSelector):
             result = super().select(-1 if events_found else 0.001)
             if result or events_found or (timeout is not None and time() - start > timeout):
                 break
+        if not result and not events_found:
+            idle(None)
         return result
 
     def _poll_sdl_events(self) -> bool:

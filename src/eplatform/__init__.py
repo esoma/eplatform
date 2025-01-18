@@ -31,6 +31,7 @@ __all__ = [
     "DisplayRefreshRateChanged",
     "DisplayResized",
     "EventLoop",
+    "idle",
     "get_clipboard",
     "get_color_bits",
     "get_controllers",
@@ -92,6 +93,7 @@ from ._display import DisplayOrientationChanged
 from ._display import DisplayRefreshRateChanged
 from ._display import DisplayResized
 from ._event_loop import EventLoop
+from ._event_loop import idle
 from ._keyboard import Keyboard
 from ._keyboard import KeyboardKey
 from ._keyboard import KeyboardKeyChanged
