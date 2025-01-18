@@ -28,6 +28,14 @@ def test_init(create_sdl_window):
     assert window.screen_space_to_world_space_transform == FMatrix4(1)
 
 
+def test_title(window):
+    assert window.title == ""
+    window.title = "test"
+    assert window.title == "test"
+    window.title = ""
+    assert window.title == ""
+
+
 def test_position(window):
     assert isinstance(window.position, IVector2)
 
@@ -304,4 +312,7 @@ def test_destroyed_window(window):
     with pytest.raises(WindowDestroyedError):
         window.resize(IVector2(100, 100))
     assert window.size
+    _ = window.title
+    with pytest.raises(WindowDestroyedError):
+        window.title = "something"
     window.convert_screen_coordinate_to_world_coordinate(IVector2(0, 0))

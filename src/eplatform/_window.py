@@ -46,6 +46,7 @@ from ._eplatform import set_sdl_window_fullscreen
 from ._eplatform import set_sdl_window_not_fullscreen
 from ._eplatform import set_sdl_window_position
 from ._eplatform import set_sdl_window_size
+from ._eplatform import set_sdl_window_title
 from ._eplatform import show_sdl_window
 from ._eplatform import swap_sdl_window
 from ._type import SdlWindow
@@ -92,6 +93,8 @@ class Window:
 
     def __init__(self) -> None:
         self._sdl_window, x, y = create_sdl_window()
+
+        self._title = ""
 
         self._position = IVector2(x, y)
         self.moved = Event()
@@ -252,6 +255,17 @@ class Window:
     @property
     def is_focused(self) -> bool:
         return self._is_focused
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @title.setter
+    def title(self, value: str) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_title(self._sdl_window, value)
+        self._title = value
 
 
 def get_sdl_window(window: Window) -> SdlWindow:
