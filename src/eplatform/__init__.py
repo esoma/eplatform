@@ -57,6 +57,7 @@ __all__ = [
     "Window",
     "WindowBufferSynchronization",
     "WindowDestroyedError",
+    "WindowIcon",
     "WindowMoved",
     "WindowResized",
     "WindowTextInputted",
@@ -123,3 +124,4 @@ from ._window import WindowMoved
 from ._window import WindowResized
 from ._window import WindowTextInputted
 from ._window import WindowVisibilityChanged
+from ._window_icon import WindowIcon

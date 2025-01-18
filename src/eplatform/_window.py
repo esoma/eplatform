@@ -22,6 +22,7 @@ __all__ = [
 
 from contextlib import contextmanager
 from enum import Enum
+from typing import Collection
 from typing import Generator
 from typing import TypedDict
 
@@ -43,6 +44,7 @@ from ._eplatform import hide_sdl_window
 from ._eplatform import set_sdl_window_always_on_top
 from ._eplatform import set_sdl_window_border
 from ._eplatform import set_sdl_window_fullscreen
+from ._eplatform import set_sdl_window_icon
 from ._eplatform import set_sdl_window_not_fullscreen
 from ._eplatform import set_sdl_window_position
 from ._eplatform import set_sdl_window_size
@@ -50,6 +52,7 @@ from ._eplatform import set_sdl_window_title
 from ._eplatform import show_sdl_window
 from ._eplatform import swap_sdl_window
 from ._type import SdlWindow
+from ._window_icon import WindowIcon
 
 
 class WindowBufferSynchronization(Enum):
@@ -266,6 +269,11 @@ class Window:
             raise WindowDestroyedError()
         set_sdl_window_title(self._sdl_window, value)
         self._title = value
+
+    def set_icon(self, icon: WindowIcon, alternatives: Collection[WindowIcon]) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_icon(self._sdl_window, icon, *alternatives)
 
 
 def get_sdl_window(window: Window) -> SdlWindow:

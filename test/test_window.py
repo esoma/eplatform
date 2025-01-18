@@ -5,10 +5,13 @@ import pytest
 from egeometry import IRectangle
 from emath import FMatrix4
 from emath import IVector2
+from emath import U8Vector4
+from emath import U8Vector4Array
 
 from eplatform import Window
 from eplatform import WindowBufferSynchronization
 from eplatform import WindowDestroyedError
+from eplatform import WindowIcon
 from eplatform import get_displays
 from eplatform._window import blur_window
 from eplatform._window import close_window
@@ -293,6 +296,28 @@ def test_start_stop_input(window):
         pass
 
 
+def test_set_icon(window):
+    window.set_icon(
+        WindowIcon(
+            U8Vector4Array(*(U8Vector4(255, 255, 0, 255) for i in range(32 * 32))),
+            IVector2(32, 32),
+        ),
+        [],
+    )
+    window.set_icon(
+        WindowIcon(
+            U8Vector4Array(*(U8Vector4(255, 255, 0, 255) for i in range(32 * 32))),
+            IVector2(32, 32),
+        ),
+        [
+            WindowIcon(
+                U8Vector4Array(*(U8Vector4(255, 0, 0, 255) for i in range(64 * 64))),
+                IVector2(64, 64),
+            )
+        ],
+    )
+
+
 def test_destroyed_window(window):
     delete_window(window)
     delete_window(window)
@@ -315,4 +340,6 @@ def test_destroyed_window(window):
     _ = window.title
     with pytest.raises(WindowDestroyedError):
         window.title = "something"
+    with pytest.raises(WindowDestroyedError):
+        window.set_icon(MagicMock(), MagicMock())
     window.convert_screen_coordinate_to_world_coordinate(IVector2(0, 0))

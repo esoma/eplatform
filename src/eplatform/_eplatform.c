@@ -404,6 +404,70 @@ error:
     return 0;
 }
 
+
+static PyObject *
+set_sdl_window_icon(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    PyObject *ex = 0;
+    struct EMathApi *emath_api = 0;
+    SDL_Surface *icon = 0;
+
+    if (nargs < 2)
+    {
+        PyErr_Format(PyExc_TypeError, "expected at least 2 args, got %zi", nargs);
+        goto error;
+    }
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    emath_api = EMathApi_Get();
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    for (int i = 0; i < nargs - 1; i++)
+    {
+        PyObject *py_icon = args[i + 1];
+        PyObject *py_pixels = PyObject_GetAttrString(py_icon, "pixels");
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        const uint8_t *pixels = emath_api->U8Vector4Array_GetValuePointer(py_pixels);
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+
+        PyObject *py_size = PyObject_GetAttrString(py_icon, "size");
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+        const int *size = emath_api->IVector2_GetValuePointer(py_size);
+        CHECK_UNEXPECTED_PYTHON_ERROR();
+
+        SDL_Surface *i_icon = SDL_CreateSurfaceFrom(size[0], size[1], SDL_PIXELFORMAT_RGBA8888, (void *)pixels, size[0] * 4);
+        if (!i_icon){ RAISE_SDL_ERROR(); }
+
+        if (i == 0)
+        {
+            icon = i_icon;
+        }
+        else
+        {
+            bool success = SDL_AddSurfaceAlternateImage(icon, i_icon);
+            SDL_DestroySurface(i_icon);
+            if (!success){ RAISE_SDL_ERROR(); }
+        }
+    }
+
+    EMathApi_Release();
+    emath_api = 0;
+
+    if (!SDL_SetWindowIcon(sdl_window, icon)){ RAISE_SDL_ERROR(); }
+
+    SDL_DestroySurface(icon);
+
+    Py_RETURN_NONE;
+error:
+    if (icon){ SDL_DestroySurface(icon); }
+    ex = PyErr_GetRaisedException();
+    if (emath_api){ EMathApi_Release(); }
+    PyErr_SetRaisedException(ex);
+    return 0;
+}
+
 static PyObject *
 create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
 {
@@ -1419,6 +1483,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"set_sdl_window_always_on_top", (PyCFunction)set_sdl_window_always_on_top, METH_FASTCALL, 0},
     {"set_sdl_window_fullscreen", (PyCFunction)set_sdl_window_fullscreen, METH_FASTCALL, 0},
     {"set_sdl_window_not_fullscreen", set_sdl_window_not_fullscreen, METH_O, 0},
+    {"set_sdl_window_icon", (PyCFunction)set_sdl_window_icon, METH_FASTCALL, 0},
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},
