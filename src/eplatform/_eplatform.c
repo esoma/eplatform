@@ -437,7 +437,7 @@ set_sdl_window_icon(PyObject *module, PyObject **args, Py_ssize_t nargs)
         const int *size = emath_api->IVector2_GetValuePointer(py_size);
         CHECK_UNEXPECTED_PYTHON_ERROR();
 
-        SDL_Surface *i_icon = SDL_CreateSurfaceFrom(size[0], size[1], SDL_PIXELFORMAT_RGBA8888, (void *)pixels, size[0] * 4);
+        SDL_Surface *i_icon = SDL_CreateSurfaceFrom(size[0], size[1], SDL_PIXELFORMAT_RGBA32, (void *)pixels, size[0] * 4);
         if (!i_icon){ RAISE_SDL_ERROR(); }
 
         if (i == 0)
