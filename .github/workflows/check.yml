@@ -85,7 +85,7 @@ jobs:
         export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
         xvfb-run -a poetry run python .github/info.py
         xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml --disruptive\
-          --deselect tests/test_window.py::test_maximize
+          --deselect test/test_window.py::test_maximize
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
