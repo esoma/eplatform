@@ -53,6 +53,7 @@ def set_sdl_window_title(sdl_window: SdlWindow, title: str, /) -> None: ...
 def set_sdl_window_icon(
     sdl_window: SdlWindow, icon: WindowIcon, /, *alternatives: WindowIcon
 ) -> None: ...
+def maximize_sdl_window(sdl_window: SdlWindow, /) -> None: ...
 
 # gl context
 def create_sdl_gl_context(sdl_window: SdlWindow, /) -> SdlGlContext: ...
@@ -102,6 +103,8 @@ SDL_EVENT_JOYSTICK_AXIS_MOTION: SdlEventType
 SDL_EVENT_JOYSTICK_BUTTON_DOWN: SdlEventType
 SDL_EVENT_JOYSTICK_BUTTON_UP: SdlEventType
 SDL_EVENT_JOYSTICK_HAT_MOTION: SdlEventType
+SDL_EVENT_WINDOW_MAXIMIZED: SdlEventType
+SDL_EVENT_WINDOW_RESTORED: SdlEventType
 
 # keyboard
 #    number

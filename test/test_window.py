@@ -19,9 +19,11 @@ from eplatform._window import delete_window
 from eplatform._window import focus_window
 from eplatform._window import hide_window
 from eplatform._window import input_window_text
+from eplatform._window import maximize_window
 from eplatform._window import move_window
 from eplatform._window import resize_window
 from eplatform._window import show_window
+from eplatform._window import unmaximize_window
 
 
 @patch("eplatform._window.create_sdl_window")
@@ -163,8 +165,8 @@ def test_size(window):
         resize_window(window, IVector2(100, 101))
 
     assert window.size == IVector2(100, 101)
-    window_resized.assert_called_once_with({"size": IVector2(100, 101)})
-    resized.assert_called_once_with({"size": IVector2(100, 101)})
+    window_resized.assert_called_once_with({"size": IVector2(100, 101), "is_maximized": False})
+    resized.assert_called_once_with({"size": IVector2(100, 101), "is_maximized": False})
 
 
 @pytest.mark.parametrize("event_object", [Window, None])
@@ -174,8 +176,52 @@ def test_resize(window, capture_event, event_object):
         assert window.size == IVector2(200, 200)
 
     event = capture_event(_, getattr(event_object or window, "resized"))
-    assert event == {"size": IVector2(100, 150)}
+    assert event == {"size": IVector2(100, 150), "is_maximized": False}
     assert window.size == IVector2(100, 150)
+
+
+def test_is_maximized(window):
+    assert not window.is_maximized
+
+    with (
+        patch.object(Window, "resized", new=MagicMock()) as window_resized,
+        patch.object(window, "resized", new=MagicMock()) as resized,
+    ):
+        maximize_window(window)
+
+    window_resized.assert_called_once_with({"size": window.size, "is_maximized": True})
+    resized.assert_called_once_with({"size": window.size, "is_maximized": True})
+
+    with (
+        patch.object(Window, "resized", new=MagicMock()) as window_resized,
+        patch.object(window, "resized", new=MagicMock()) as resized,
+    ):
+        unmaximize_window(window)
+
+    window_resized.assert_called_once_with({"size": window.size, "is_maximized": False})
+    resized.assert_called_once_with({"size": window.size, "is_maximized": False})
+
+
+@pytest.mark.disruptive
+def test_maximize_not_resizeable(window):
+    window.show()
+    window.maximize()
+
+
+@pytest.mark.disruptive
+@pytest.mark.parametrize("event_object", [Window, None])
+def test_maximize(window, capture_event, event_object):
+    window.allow_resize()
+    window.show()
+
+    def _():
+        window.maximize()
+        assert window.size == IVector2(200, 200)
+        assert not window.is_maximized
+
+    event = capture_event(_, getattr(event_object or window, "resized"))
+    assert window.size > IVector2(100, 100)
+    assert event == {"size": window.size, "is_maximized": True}
 
 
 def test_is_visible(window):

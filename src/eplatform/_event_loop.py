@@ -45,9 +45,11 @@ from ._window import close_window
 from ._window import focus_window
 from ._window import hide_window
 from ._window import input_window_text
+from ._window import maximize_window
 from ._window import move_window
 from ._window import resize_window
 from ._window import show_window
+from ._window import unmaximize_window
 
 idle: Event[None] = Event()
 
@@ -197,6 +199,14 @@ class _Selector(SelectSelector):
     ) -> bool:
         return controller_change_hat(sdl_joystick, hat_index, value)
 
+    def _handle_sdl_event_window_maximized(self):
+        maximize_window(get_window())
+        return True
+
+    def _handle_sdl_event_window_restored(self):
+        unmaximize_window(get_window())
+        return True
+
     _SDL_EVENT_DISPATCH: Final[Mapping[SdlEventType, Callable[..., bool]]] = {
         _eplatform.SDL_EVENT_QUIT: _handle_sdl_event_quit,
         _eplatform.SDL_EVENT_MOUSE_MOTION: _handle_sdl_event_mouse_motion,
@@ -223,4 +233,6 @@ class _Selector(SelectSelector):
         _eplatform.SDL_EVENT_JOYSTICK_BUTTON_DOWN: _handle_sdl_event_joystick_button_down,
         _eplatform.SDL_EVENT_JOYSTICK_BUTTON_UP: _handle_sdl_event_joystick_button_up,
         _eplatform.SDL_EVENT_JOYSTICK_HAT_MOTION: _handle_sdl_event_joystick_hat_motion,
+        _eplatform.SDL_EVENT_WINDOW_MAXIMIZED: _handle_sdl_event_window_maximized,
+        _eplatform.SDL_EVENT_WINDOW_RESTORED: _handle_sdl_event_window_restored,
     }

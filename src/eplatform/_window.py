@@ -8,9 +8,11 @@ __all__ = [
     "get_sdl_window",
     "hide_window",
     "input_window_text",
+    "maximize_window",
     "move_window",
     "resize_window",
     "show_window",
+    "unmaximize_window",
     "Window",
     "WindowBufferSynchronization",
     "WindowDestroyedError",
@@ -41,6 +43,7 @@ from ._eplatform import delete_sdl_window
 from ._eplatform import disable_sdl_window_text_input
 from ._eplatform import enable_sdl_window_text_input
 from ._eplatform import hide_sdl_window
+from ._eplatform import maximize_sdl_window
 from ._eplatform import set_sdl_window_always_on_top
 from ._eplatform import set_sdl_window_border
 from ._eplatform import set_sdl_window_fullscreen
@@ -68,6 +71,7 @@ class WindowTextInputted(TypedDict):
 
 class WindowResized(TypedDict):
     size: IVector2
+    is_maximized: bool
 
 
 class WindowMoved(TypedDict):
@@ -124,6 +128,7 @@ class Window:
         self._is_bordered = True
         self._is_always_on_top = False
         self._is_fullscreen = False
+        self._is_maximized = False
 
     def __del__(self) -> None:
         delete_window(self)
@@ -293,6 +298,15 @@ class Window:
             raise WindowDestroyedError()
         set_sdl_window_icon(self._sdl_window, icon, *alternatives)
 
+    @property
+    def is_maximized(self) -> bool:
+        return self._is_maximized
+
+    def maximize(self) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        maximize_sdl_window(self._sdl_window)
+
 
 def get_sdl_window(window: Window) -> SdlWindow:
     assert window._sdl_window is not None
@@ -337,7 +351,7 @@ def hide_window(window: Window) -> None:
 
 def resize_window(window: Window, size: IVector2) -> None:
     window._size = size
-    event_data: WindowResized = {"size": size}
+    event_data: WindowResized = {"size": size, "is_maximized": window.is_maximized}
     Window.resized(event_data)
     window.resized(event_data)
 
@@ -359,3 +373,17 @@ def blur_window(window: Window) -> None:
     window._is_focused = False
     Window.blurred(None)
     window.blurred(None)
+
+
+def maximize_window(window: Window) -> None:
+    window._is_maximized = True
+    event_data: WindowResized = {"size": window.size, "is_maximized": True}
+    Window.resized(event_data)
+    window.resized(event_data)
+
+
+def unmaximize_window(window: Window) -> None:
+    window._is_maximized = False
+    event_data: WindowResized = {"size": window.size, "is_maximized": False}
+    Window.resized(event_data)
+    window.resized(event_data)

@@ -101,6 +101,8 @@ def test_selector_poll_sdl_events_none(platform):
         _eplatform.SDL_EVENT_WINDOW_SHOWN,
         _eplatform.SDL_EVENT_WINDOW_FOCUS_GAINED,
         _eplatform.SDL_EVENT_WINDOW_FOCUS_LOST,
+        _eplatform.SDL_EVENT_WINDOW_MAXIMIZED,
+        _eplatform.SDL_EVENT_WINDOW_RESTORED,
     ],
 )
 def test_selector_poll_sdl_events_default(platform, event_type):
@@ -417,6 +419,8 @@ def test_selector_poll_sdl_events_mode_changed(platform):
             _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED,
             "_handle_sdl_event_current_mode_changed",
         ),
+        (_eplatform.SDL_EVENT_WINDOW_MAXIMIZED, "_handle_sdl_event_window_maximized"),
+        (_eplatform.SDL_EVENT_WINDOW_RESTORED, "_handle_sdl_event_window_restored"),
     ],
 )
 @pytest.mark.parametrize("return_value", [False, True])
@@ -592,3 +596,17 @@ def test_handle_sdl_event_current_mode_changed():
         assert selector._handle_sdl_event_current_mode_changed(sdl_display, size, refresh_rate)
     change_display_size.assert_called_once_with(sdl_display, size)
     change_display_refresh_rate.assert_called_once_with(sdl_display, refresh_rate)
+
+
+def test_selector_handle_sdl_event_window_maximized(mock_window):
+    selector = _Selector()
+    with patch("eplatform._event_loop.maximize_window") as maximize_window:
+        assert selector._handle_sdl_event_window_maximized()
+    maximize_window.assert_called_once_with(mock_window)
+
+
+def test_selector_handle_sdl_event_window_restored(mock_window):
+    selector = _Selector()
+    with patch("eplatform._event_loop.unmaximize_window") as unmaximize_window:
+        assert selector._handle_sdl_event_window_restored()
+    unmaximize_window.assert_called_once_with(mock_window)

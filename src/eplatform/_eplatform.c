@@ -484,6 +484,22 @@ error:
 }
 
 static PyObject *
+maximize_sdl_window(PyObject *module, PyObject *py_sdl_window)
+{
+    SDL_Window *sdl_window = PyCapsule_GetPointer(py_sdl_window, "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    if (SDL_GetWindowFlags(sdl_window) & SDL_WINDOW_RESIZABLE)
+    {
+        if (!SDL_MaximizeWindow(sdl_window)){ RAISE_SDL_ERROR(); }
+    }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
 create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
 {
     SDL_GLContext sdl_gl_context = 0;
@@ -1500,6 +1516,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"set_sdl_window_fullscreen", (PyCFunction)set_sdl_window_fullscreen, METH_FASTCALL, 0},
     {"set_sdl_window_not_fullscreen", set_sdl_window_not_fullscreen, METH_O, 0},
     {"set_sdl_window_icon", (PyCFunction)set_sdl_window_icon, METH_FASTCALL, 0},
+    {"maximize_sdl_window", maximize_sdl_window, METH_O, 0},
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},
@@ -1589,6 +1606,8 @@ PyInit__eplatform()
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_BUTTON_DOWN);
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_BUTTON_UP);
     ADD_CONSTANT(SDL_EVENT_JOYSTICK_HAT_MOTION);
+    ADD_CONSTANT(SDL_EVENT_WINDOW_MAXIMIZED);
+    ADD_CONSTANT(SDL_EVENT_WINDOW_RESTORED);
 
     ADD_CONSTANT(SDL_ORIENTATION_UNKNOWN);
     ADD_CONSTANT(SDL_ORIENTATION_LANDSCAPE);
