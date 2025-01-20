@@ -111,6 +111,18 @@ def test_is_bordered(window):
     assert window.is_bordered
 
 
+def test_is_resizeable(window):
+    assert not window.is_resizeable
+    window.prevent_resize()
+    assert not window.is_resizeable
+    window.allow_resize()
+    assert window.is_resizeable
+    window.allow_resize()
+    assert window.is_resizeable
+    window.prevent_resize()
+    assert not window.is_resizeable
+
+
 def test_is_fullscreen(window):
     displays = tuple(d for d in get_displays() if d.modes)
     if len(displays) < 1:

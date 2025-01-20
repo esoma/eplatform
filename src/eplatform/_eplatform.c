@@ -328,6 +328,21 @@ error:
 }
 
 static PyObject *
+set_sdl_window_resizeable(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    if (!SDL_SetWindowResizable(sdl_window, args[1] == Py_True)){ RAISE_SDL_ERROR(); }
+
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
 set_sdl_window_always_on_top(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
@@ -1480,6 +1495,7 @@ static PyMethodDef module_PyMethodDef[] = {
     {"enable_sdl_window_text_input", (PyCFunction)enable_sdl_window_text_input, METH_FASTCALL, 0},
     {"disable_sdl_window_text_input", disable_sdl_window_text_input, METH_O, 0},
     {"set_sdl_window_border", (PyCFunction)set_sdl_window_border, METH_FASTCALL, 0},
+    {"set_sdl_window_resizeable", (PyCFunction)set_sdl_window_resizeable, METH_FASTCALL, 0},
     {"set_sdl_window_always_on_top", (PyCFunction)set_sdl_window_always_on_top, METH_FASTCALL, 0},
     {"set_sdl_window_fullscreen", (PyCFunction)set_sdl_window_fullscreen, METH_FASTCALL, 0},
     {"set_sdl_window_not_fullscreen", set_sdl_window_not_fullscreen, METH_O, 0},

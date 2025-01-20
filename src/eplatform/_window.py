@@ -47,6 +47,7 @@ from ._eplatform import set_sdl_window_fullscreen
 from ._eplatform import set_sdl_window_icon
 from ._eplatform import set_sdl_window_not_fullscreen
 from ._eplatform import set_sdl_window_position
+from ._eplatform import set_sdl_window_resizeable
 from ._eplatform import set_sdl_window_size
 from ._eplatform import set_sdl_window_title
 from ._eplatform import show_sdl_window
@@ -119,6 +120,7 @@ class Window:
         self.focused = Event()
         self.blurred = Event()
 
+        self._is_resizeable = False
         self._is_bordered = True
         self._is_always_on_top = False
         self._is_fullscreen = False
@@ -210,6 +212,22 @@ class Window:
             raise WindowDestroyedError()
         set_sdl_window_border(self._sdl_window, False)
         self._is_bordered = False
+
+    @property
+    def is_resizeable(self) -> bool:
+        return self._is_resizeable
+
+    def allow_resize(self) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_resizeable(self._sdl_window, True)
+        self._is_resizeable = True
+
+    def prevent_resize(self) -> None:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        set_sdl_window_resizeable(self._sdl_window, False)
+        self._is_resizeable = False
 
     @property
     def is_always_on_top(self) -> bool:
