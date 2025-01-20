@@ -62,14 +62,10 @@ class EventLoop(SelectorEventLoop):
 class _Selector(SelectSelector):
     def select(self, timeout: float | None = None) -> Any:
         start = time()
-        events_found = self._poll_sdl_events()
-        # don't select block if we've found events
-        result = super().select(-1 if events_found else 0.001)
-        if (
-            not result
-            and not events_found
-            and not (timeout is not None and time() - start > timeout)
-        ):
+        if self._poll_sdl_events():
+            return []
+        result = super().select(-1)
+        if not result and not (timeout is not None and time() - start > timeout):
             idle(None)
         return result
 

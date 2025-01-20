@@ -45,7 +45,7 @@ def test_event_loop(super_init):
 
 def test_selector_select():
     selector = _Selector()
-    # no events, timeout
+    # no events
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
         patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
@@ -53,7 +53,7 @@ def test_selector_select():
     ):
         assert selector.select(0.5) == []
         poll_sdl_events.assert_called_with()
-        super_select.assert_called_with(0.001)
+        super_select.assert_called_with(-1)
         idle.assert_called_once_with(None)
     # sdl events
     with (
@@ -63,7 +63,7 @@ def test_selector_select():
     ):
         assert selector.select() == []
         poll_sdl_events.assert_called_once_with()
-        super_select.assert_called_once_with(-1)
+        super_select.assert_not_called()
         idle.assert_not_called()
     # select events
     with (
@@ -73,7 +73,7 @@ def test_selector_select():
     ):
         assert selector.select() == [True]
         poll_sdl_events.assert_called_once_with()
-        super_select.assert_called_once_with(0.001)
+        super_select.assert_called_once_with(-1)
         idle.assert_not_called()
 
 
