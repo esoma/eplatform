@@ -98,13 +98,13 @@ files = [
 
 [[package]]
 name = "egeometry"
-version = "0.3.0"
+version = "0.7.0"
 description = "Python geometry library."
 optional = false
 python-versions = "<4.0,>=3.12"
 files = [
-    {file = "egeometry-0.3.0-py3-none-any.whl", hash = "sha256:54c4013553ee1ddb319bb250037ea31d73ad87c759eebf3963db1236b4f60d23"},
-    {file = "egeometry-0.3.0.tar.gz", hash = "sha256:23b96cd3eea11c138e344673376fdd25d7ea7fba47f023a86a36f7033c9796be"},
+    {file = "egeometry-0.7.0-py3-none-any.whl", hash = "sha256:998f1427fa07886e0b066385ef2d4c6852839b8f02431b841a5753a6e5d6a36b"},
+    {file = "egeometry-0.7.0.tar.gz", hash = "sha256:80367af34e405dd841578d797e0f2f34a838112757382557e298ad78c62788ed"},
 ]
 
 [package.dependencies]
@@ -112,20 +112,20 @@ emath = ">=0.1.13,<0.2.0"
 
 [[package]]
 name = "emath"
-version = "0.1.13"
+version = "0.1.14"
 description = "Fast immutable math primitives."
 optional = false
-python-versions = "<4.0,>=3.12"
+python-versions = ">=3.12"
 files = [
-    {file = "emath-0.1.13-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:9adbf8390018fd4c6c3693b9c1323afc05f78328453b158729ad3d4442cbefc9"},
-    {file = "emath-0.1.13-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:b649f9d253fd549366f7b0bab3123e74045921650f5a5036a8ad2f4a299e1314"},
-    {file = "emath-0.1.13-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:289e0aaf2b6bc5f927c16693492e9dc8227b6f1a56bb6a1a7944be4cd67d51d0"},
-    {file = "emath-0.1.13-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e73e47338b2a17940e0a7fe3c705ed0241fea508c3157f597b71edc57c885efb"},
-    {file = "emath-0.1.13-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:20882fad6c76a5d0049e03e2e04ff803e1f9e77cc6bf292b8cb0a0a5395cb9ee"},
-    {file = "emath-0.1.13-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:41169a0c92038a075a7d1fe952a309f8c0e2f69d655b67f4ac11ff9768a9c9e6"},
-    {file = "emath-0.1.13-cp312-cp312-win32.whl", hash = "sha256:cbe790ef96bb74d8981d41fb8484b409ebe3b6c2bda82987817fda12a33cd61c"},
-    {file = "emath-0.1.13-cp312-cp312-win_amd64.whl", hash = "sha256:2b8ca831244a55a6c2d42f7b00aec9ea190bd56b9ee76808fd597c3322778046"},
-    {file = "emath-0.1.13.tar.gz", hash = "sha256:a1faad95fc42cf2257c1e5d07b3692ee9480d60d727d3b2112160f4eedd8e8b0"},
+    {file = "emath-0.1.14-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:4601daa82b986bece94ef7dba7b45e37da20f802d0ef59b3b735a5dacab82a0b"},
+    {file = "emath-0.1.14-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:58906ab2a144f5becb633816f20024a858611f1438208301ab19e5dcabedaff1"},
+    {file = "emath-0.1.14-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2b4a6d4a6e7fb5317b22ee5c0c030b7d25041e398da7fb2879ecd6c7f81d5f9b"},
+    {file = "emath-0.1.14-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3b630390f47873d43913f775e1f6ed44a987e630ceccc1774db4c5628d56fa01"},
+    {file = "emath-0.1.14-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:faa99f434567ca6a19242234edeea99b7763b70c0bf65a497e98645859068d99"},
+    {file = "emath-0.1.14-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:baee11046fa5045f3ecdf33a8e61f6b13753001296003b2e426c12883b94e485"},
+    {file = "emath-0.1.14-cp312-cp312-win32.whl", hash = "sha256:5e546383f67f5bd5ee251bbc2f08c2227acd2ccf6757737af2cf500afcd5336f"},
+    {file = "emath-0.1.14-cp312-cp312-win_amd64.whl", hash = "sha256:ee42055a5467c52e2f3ae245074652f725118df790fdbb19a09989dc4310f214"},
+    {file = "emath-0.1.14.tar.gz", hash = "sha256:444e07e378d0c5389480c65d828a8814c6f2a95b7f05d3afd132f72dbbe5b55c"},
 ]
 
 [[package]]
@@ -233,4 +233,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "b7c1f49a4b68dc06e621f39eae62e2cfa59d37c7b682c2e21972c5776140e4c9"
+content-hash = "cacdd0e1df237b2d44ed5697ac3463a7b09fe8f75e63362d94222c5f5a451327"
