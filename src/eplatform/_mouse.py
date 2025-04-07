@@ -95,11 +95,6 @@ class Mouse:
     def hide(self) -> None:
         hide_cursor()
 
-    @property
-    def world_position(self) -> IVector2:
-        window = get_window()
-        return window.convert_screen_coordinate_to_world_coordinate(self.position)
-
 
 _SDL_MOUSE_BUTTON_TO_LOCATION: Final[Mapping[SdlMouseButton, MouseButtonLocation]] = {
     _eplatform.SDL_BUTTON_LEFT: MouseButtonLocation.LEFT,
@@ -112,7 +107,6 @@ _SDL_MOUSE_BUTTON_TO_LOCATION: Final[Mapping[SdlMouseButton, MouseButtonLocation
 
 class MouseMoved(TypedDict):
     position: IVector2
-    world_position: IVector2
     delta: IVector2
 
 
@@ -128,16 +122,11 @@ class MouseButtonChanged(TypedDict):
     button: MouseButton
     is_pressed: bool
     position: IVector2
-    world_position: IVector2
 
 
 def change_mouse_position(mouse: Mouse, position: IVector2, delta: IVector2) -> None:
     mouse._position = position
-    event_data: MouseMoved = {
-        "position": position,
-        "world_position": mouse.world_position,
-        "delta": delta,
-    }
+    event_data: MouseMoved = {"position": position, "delta": delta}
     Mouse.moved(event_data)
     mouse.moved(event_data)
 
@@ -149,7 +138,6 @@ def change_mouse_button(mouse: Mouse, sdl_mouse_button: SdlMouseButton, is_press
         "button": button,
         "is_pressed": is_pressed,
         "position": mouse.position,
-        "world_position": mouse.world_position,
     }
     MouseButton.changed(event_data)
     button.changed(event_data)

@@ -30,7 +30,6 @@ from eplatform._window import unmaximize_window
 def test_init(create_sdl_window):
     create_sdl_window.return_value = (None, 0, 0)
     window = Window()
-    assert window.screen_space_to_world_space_transform == FMatrix4(1)
 
 
 def test_title(window):
@@ -299,39 +298,6 @@ def test_refresh(window, synchronization: WindowBufferSynchronization) -> None:
     window.refresh(synchronization)
 
 
-@pytest.mark.parametrize(
-    "transform, screen_coordinate, expected_world_coordinate",
-    [
-        (FMatrix4.orthographic(0, 100, 100, 0, -1000, 1000).inverse(), IVector2(0), IVector2(0)),
-        (
-            FMatrix4.orthographic(0, 100, 100, 0, -1000, 1000).inverse(),
-            IVector2(10, 20),
-            IVector2(5, 10),
-        ),
-        (FMatrix4.orthographic(0, 200, 200, 0, -1000, 1000).inverse(), IVector2(0), IVector2(0)),
-        (
-            FMatrix4.orthographic(0, 200, 200, 0, -1000, 1000).inverse(),
-            IVector2(10, 20),
-            IVector2(10, 20),
-        ),
-        (FMatrix4.orthographic(0, 400, 400, 0, -1000, 1000).inverse(), IVector2(0), IVector2(0)),
-        (
-            FMatrix4.orthographic(0, 400, 400, 0, -1000, 1000).inverse(),
-            IVector2(10, 20),
-            IVector2(20, 40),
-        ),
-    ],
-)
-def test_convert_screen_coordinate_to_world_coordinate(
-    window, transform, screen_coordinate, expected_world_coordinate
-):
-    window.screen_space_to_world_space_transform = transform
-    assert (
-        window.convert_screen_coordinate_to_world_coordinate(screen_coordinate)
-        == expected_world_coordinate
-    )
-
-
 @pytest.mark.parametrize("text", ["", "hello", "私"])
 def test_input_text(window, text):
     with (
@@ -400,4 +366,3 @@ def test_destroyed_window(window):
         window.title = "something"
     with pytest.raises(WindowDestroyedError):
         window.set_icon(MagicMock(), MagicMock())
-    window.convert_screen_coordinate_to_world_coordinate(IVector2(0, 0))

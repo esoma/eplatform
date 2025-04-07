@@ -20,14 +20,6 @@ from eplatform._mouse import scroll_mouse_wheel
 def test_attrs(mouse, window):
     assert mouse.position == IVector2(0, 0)
     mouse._position = IVector2(10, 10)
-    with patch.object(
-        window,
-        "screen_space_to_world_space_transform",
-        FMatrix4.orthographic(
-            0, window.size.x * 0.5, window.size.y * 0.5, 0, -1000, 1000
-        ).inverse(),
-    ):
-        assert mouse.world_position == IVector2(5, 5)
 
     assert isinstance(Mouse.moved, Event)
     assert isinstance(mouse.moved, Event)
@@ -65,23 +57,13 @@ def test_attrs(mouse, window):
 @pytest.mark.parametrize("position", [IVector2(0, 0), IVector2(-1, 4)])
 @pytest.mark.parametrize("delta", [IVector2(2, -3), IVector2(-1, 4)])
 def test_move(window, mouse, position, delta):
-    world_position = object()
     with (
         patch.object(Mouse, "moved", new=MagicMock()) as mouse_moved,
         patch.object(mouse, "moved", new=MagicMock()) as moved,
-        patch(
-            "eplatform._mouse.Mouse.world_position",
-            new_callable=PropertyMock,
-            return_value=world_position,
-        ),
     ):
         change_mouse_position(mouse, position, delta)
-    mouse_moved.assert_called_once_with(
-        {"position": position, "delta": delta, "world_position": world_position}
-    )
-    moved.assert_called_once_with(
-        {"position": position, "delta": delta, "world_position": world_position}
-    )
+    mouse_moved.assert_called_once_with({"position": position, "delta": delta})
+    moved.assert_called_once_with({"position": position, "delta": delta})
     assert mouse.position == position
 
 
@@ -141,7 +123,6 @@ def test_scroll(mouse, x, y):
 )
 @pytest.mark.parametrize("is_pressed", [False, True])
 def test_change_button(mouse, sdl_button, button_location, is_pressed):
-    world_position = object()
     button = mouse.get_button(button_location)
     with (
         patch.object(MouseButton, "changed", new=MagicMock()) as mouse_button_changed,
@@ -150,19 +131,9 @@ def test_change_button(mouse, sdl_button, button_location, is_pressed):
         patch.object(button, "changed", new=MagicMock()) as button_changed,
         patch.object(button, "pressed", new=MagicMock()) as button_pressed,
         patch.object(button, "released", new=MagicMock()) as button_released,
-        patch(
-            "eplatform._mouse.Mouse.world_position",
-            new_callable=PropertyMock,
-            return_value=world_position,
-        ),
     ):
         change_mouse_button(mouse, sdl_button, is_pressed)
-    event_data = {
-        "button": button,
-        "is_pressed": is_pressed,
-        "position": mouse.position,
-        "world_position": world_position,
-    }
+    event_data = {"button": button, "is_pressed": is_pressed, "position": mouse.position}
     mouse_button_changed.assert_called_once_with(event_data)
     button_changed.assert_called_once_with(event_data)
     if is_pressed:

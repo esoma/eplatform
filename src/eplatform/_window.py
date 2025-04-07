@@ -110,8 +110,6 @@ class Window:
         self.closed = Event()
         self.text_inputted = Event()
 
-        self.screen_space_to_world_space_transform = FMatrix4(1)
-
         self._size = IVector2(200, 200)
         self.resized = Event()
 
@@ -249,15 +247,6 @@ class Window:
             raise WindowDestroyedError()
         set_sdl_window_always_on_top(self._sdl_window, False)
         self._is_always_on_top = False
-
-    def convert_screen_coordinate_to_world_coordinate(self, coord: IVector2) -> IVector2:
-        clip_space_position = FVector4(
-            (coord.x / self.size.x) * 2 - 1, -(coord.y / self.size.y) * 2 + 1, 0, 1
-        )
-        world_space_mouse_position = (
-            self.screen_space_to_world_space_transform @ clip_space_position
-        )
-        return IVector2(int(world_space_mouse_position.x), int(world_space_mouse_position.y))
 
     @property
     def is_fullscreen(self) -> bool:
