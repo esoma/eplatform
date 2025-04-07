@@ -4,7 +4,7 @@ requires-python = ">=3.12"
 
 [tool.poetry]
 name = "eplatform"
-version = "0.14.1"
+version = "0.15.0"
 description = "Operating System Library"
 authors = ["Erik Soma <stillusingirc@gmail.com>"]
 include = [
