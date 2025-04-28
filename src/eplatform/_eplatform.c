@@ -92,8 +92,33 @@ deinitialize_sdl(PyObject *module, PyObject *unused)
 }
 
 static PyObject *
-create_sdl_window(PyObject *module, PyObject *unused)
+create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    int open_gl_major_version = PyLong_AsLong(args[0]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    int open_gl_minor_version = PyLong_AsLong(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
+    {
+        RAISE_SDL_ERROR();
+    }
+    if (!SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1))
+    {
+        RAISE_SDL_ERROR();
+    }
+    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, open_gl_major_version))
+    {
+        RAISE_SDL_ERROR();
+    }
+    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, open_gl_minor_version))
+    {
+        RAISE_SDL_ERROR();
+    }
+
     SDL_Window *sdl_window = SDL_CreateWindow("", 200, 200, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
     if (!sdl_window){ RAISE_SDL_ERROR(); }
     if (!SDL_StopTextInput(sdl_window)){ RAISE_SDL_ERROR(); }
@@ -507,41 +532,13 @@ create_sdl_gl_context(PyObject *module, PyObject *py_sdl_window)
     SDL_Window *sdl_window = PyCapsule_GetPointer(py_sdl_window, "_eplatform.SDL_Window");
     if (!sdl_window){ goto error; }
 
-    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
+    sdl_gl_context = SDL_GL_CreateContext(sdl_window);
+    if (!sdl_gl_context)
     {
-        RAISE_SDL_ERROR();
-    }
-    if (!SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1))
-    {
-        RAISE_SDL_ERROR();
-    }
-    static const int gl_versions[][2] = {
-        {4, 6},
-        {4, 5},
-        {4, 4},
-        {4, 3},
-        {4, 2},
-        {4, 1},
-        {4, 0},
-        {3, 3},
-        {3, 2},
-        {3, 1},
-    };
-    for (size_t i = 0; i < (sizeof(gl_versions) / sizeof(int) * 2); i++)
-    {
-        if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_versions[i][0]))
-        {
-            RAISE_SDL_ERROR();
-        }
-        if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_versions[i][1]))
-        {
-            RAISE_SDL_ERROR();
-        }
-        sdl_gl_context = SDL_GL_CreateContext(sdl_window);
-        if (sdl_gl_context){ break; }
+        PyErr_Format(PyExc_RuntimeError, "unable to create open gl context");
         SDL_ClearError();
+        goto error;
     }
-    if (!sdl_gl_context){ RAISE_SDL_ERROR(); }
 
     PyObject *py_sdl_gl_context = PyCapsule_New(sdl_gl_context, "_eplatform.SDL_GLContext", 0);
     if (!py_sdl_gl_context){ goto error; }
@@ -1499,7 +1496,7 @@ error:
 static PyMethodDef module_PyMethodDef[] = {
     {"initialize_sdl", initialize_sdl, METH_NOARGS, 0},
     {"deinitialize_sdl", deinitialize_sdl, METH_NOARGS, 0},
-    {"create_sdl_window", create_sdl_window, METH_NOARGS, 0},
+    {"create_sdl_window", (PyCFunction)create_sdl_window, METH_FASTCALL, 0},
     {"delete_sdl_window", delete_sdl_window, METH_O, 0},
     {"show_sdl_window", show_sdl_window, METH_O, 0},
     {"hide_sdl_window", hide_sdl_window, METH_O, 0},

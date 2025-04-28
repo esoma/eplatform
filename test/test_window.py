@@ -29,7 +29,7 @@ from eplatform._window import unmaximize_window
 @patch("eplatform._window.create_sdl_window")
 def test_init(create_sdl_window):
     create_sdl_window.return_value = (None, 0, 0)
-    window = Window()
+    window = Window(4, 6)
 
 
 def test_title(window):

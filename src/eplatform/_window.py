@@ -99,8 +99,8 @@ class Window:
     focused: Event[None] = Event()
     blurred: Event[None] = Event()
 
-    def __init__(self) -> None:
-        self._sdl_window, x, y = create_sdl_window()
+    def __init__(self, gl_major_version: int, gl_minor_version: int) -> None:
+        self._sdl_window, x, y = create_sdl_window(gl_major_version, gl_minor_version)
 
         self._title = ""
 

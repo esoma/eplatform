@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import ClassVar
+from typing import Final
 from typing import Generator
 from typing import Self
 
@@ -44,6 +45,20 @@ from ._window import get_sdl_window
 
 if TYPE_CHECKING:
     from ._mouse import Mouse
+
+
+_GL_VERSIONS: Final[tuple[tuple[int, int], ...]] = (
+    (4, 6),
+    (4, 5),
+    (4, 4),
+    (4, 3),
+    (4, 2),
+    (4, 1),
+    (4, 0),
+    (3, 3),
+    (3, 2),
+    (3, 1),
+)
 
 
 class Platform:
@@ -85,12 +100,22 @@ class Platform:
         if Platform._singleton:
             raise RuntimeError("platform already active")
         initialize_sdl()
-        self._window = self._window_cls()
+        for gl_major_version, gl_minor_version in _GL_VERSIONS:
+            self._window = self._window_cls(gl_major_version, gl_minor_version)
+            try:
+                self._setup_open_gl()
+            except RuntimeError as ex:
+                if str(ex) == "unable to create open gl context":
+                    self._window = None
+                    continue
+                raise
+            break
+        else:
+            raise RuntimeError("unable to create open gl context")
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()
         discover_displays()
         discover_controllers()
-        self._setup_open_gl()
         clear_sdl_events()
         Platform._singleton = self
 
