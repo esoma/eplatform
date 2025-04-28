@@ -94,6 +94,8 @@ deinitialize_sdl(PyObject *module, PyObject *unused)
 static PyObject *
 create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
+    SDL_Window *sdl_window = 0;
+
     CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
 
     int open_gl_major_version = PyLong_AsLong(args[0]);
@@ -119,7 +121,7 @@ create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
         RAISE_SDL_ERROR();
     }
 
-    SDL_Window *sdl_window = SDL_CreateWindow("", 200, 200, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    sdl_window = SDL_CreateWindow("", 200, 200, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
     if (!sdl_window){ RAISE_SDL_ERROR(); }
     if (!SDL_StopTextInput(sdl_window)){ RAISE_SDL_ERROR(); }
     int x;

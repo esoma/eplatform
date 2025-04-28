@@ -56,8 +56,10 @@ def test_position(window):
     moved.assert_called_once_with({"position": new_position})
 
 
+@pytest.mark.disruptive
 @pytest.mark.parametrize("event_object", [Window, None])
 def test_move(window, capture_event, event_object):
+    window.show()
     original_position = window.position
     new_position = window.position + IVector2(-1, 1)
 
