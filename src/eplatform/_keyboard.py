@@ -1,6 +1,8 @@
 __all__ = ["change_key", "Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyLocation"]
 
+from enum import IntFlag
 from enum import StrEnum
+from enum import auto
 from inspect import get_annotations
 from typing import Final
 from typing import Literal
@@ -13,6 +15,13 @@ from eevent import Event
 
 from . import _eplatform
 from ._type import SdlScancode
+
+
+class KeyboardModifier(IntFlag):
+    CONTROL = auto()
+    ALT = auto()
+    SHIFT = auto()
+    NONE = 0
 
 
 class KeyboardKeyLocation(StrEnum):
@@ -269,9 +278,26 @@ class Keyboard:
 
     def __init__(self) -> None:
         self._keys_by_location = {l: KeyboardKey(l) for l in KeyboardKeyLocation}
+        self._left_control = self._keys_by_location[KeyboardKeyLocation.LEFT_CONTROL]
+        self._right_control = self._keys_by_location[KeyboardKeyLocation.RIGHT_CONTROL]
+        self._left_shift = self._keys_by_location[KeyboardKeyLocation.LEFT_SHIFT]
+        self._right_shift = self._keys_by_location[KeyboardKeyLocation.RIGHT_SHIFT]
+        self._left_alt = self._keys_by_location[KeyboardKeyLocation.LEFT_ALT]
+        self._right_alt = self._keys_by_location[KeyboardKeyLocation.RIGHT_ALT]
 
     def get_key_by_location(self, location: KeyboardKeyLocation) -> KeyboardKey:
         return self._keys_by_location[location]
+
+    @property
+    def modifier(self) -> KeyboardModifier:
+        modifier = KeyboardModifier.NONE
+        if self._left_control.is_pressed or self._right_control.is_pressed:
+            modifier |= KeyboardModifier.CONTROL
+        if self._left_shift.is_pressed or self._right_shift.is_pressed:
+            modifier |= KeyboardModifier.SHIFT
+        if self._left_alt.is_pressed or self._right_alt.is_pressed:
+            modifier |= KeyboardModifier.ALT
+        return modifier
 
 
 def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) -> bool:
@@ -281,7 +307,11 @@ def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) 
         return False
     key = keyboard._keys_by_location[key_location]
     key.is_pressed = is_pressed
-    data: KeyboardKeyChanged = {"key": key, "is_pressed": is_pressed}
+    data: KeyboardKeyChanged = {
+        "key": key,
+        "is_pressed": is_pressed,
+        "modifier": keyboard.modifier,
+    }
     KeyboardKey.changed(data)
     key.changed(data)
     if is_pressed:
@@ -296,6 +326,7 @@ def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) 
 class KeyboardKeyChanged(TypedDict):
     key: KeyboardKey
     is_pressed: bool
+    modifier: KeyboardModifier
 
 
 _SDL_SCANCODE_TO_KEY_LOCATION: Final[Mapping[SdlScancode, KeyboardKeyLocation]] = {

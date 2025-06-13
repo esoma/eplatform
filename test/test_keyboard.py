@@ -8,6 +8,7 @@ from eevent import Event
 from eplatform import Keyboard
 from eplatform import KeyboardKey
 from eplatform import KeyboardKeyLocation
+from eplatform import KeyboardModifier
 from eplatform import _eplatform
 from eplatform._keyboard import change_key
 
@@ -262,6 +263,7 @@ assert len(SDL_SCANCODE_KEYBOARD_KEY_LOCATION) == len(KeyboardKeyLocation)
 
 def test_attrs(keyboard):
     assert isinstance(keyboard, Keyboard)
+    assert keyboard.modifier == KeyboardModifier.NONE
 
     assert isinstance(KeyboardKey.changed, Event)
     assert isinstance(KeyboardKey.pressed, Event)
@@ -290,15 +292,91 @@ def test_change_key(keyboard, is_pressed):
             patch.object(key, "released", new=MagicMock()) as key_released,
         ):
             assert change_key(keyboard, sdl_scancode, is_pressed)
-        keyboard_key_changed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-        key_changed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+
+        expected_modifier = KeyboardModifier.NONE
         if is_pressed:
-            keyboard_key_pressed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-            key_pressed.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+            if key_location in {
+                KeyboardKeyLocation.LEFT_CONTROL,
+                KeyboardKeyLocation.RIGHT_CONTROL,
+            }:
+                expected_modifier |= KeyboardModifier.CONTROL
+            elif key_location in {KeyboardKeyLocation.LEFT_SHIFT, KeyboardKeyLocation.RIGHT_SHIFT}:
+                expected_modifier |= KeyboardModifier.SHIFT
+            elif key_location in {KeyboardKeyLocation.LEFT_ALT, KeyboardKeyLocation.RIGHT_ALT}:
+                expected_modifier |= KeyboardModifier.ALT
+
+        keyboard_key_changed.assert_called_once_with(
+            {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+        )
+        key_changed.assert_called_once_with(
+            {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+        )
+        if is_pressed:
+            keyboard_key_pressed.assert_called_once_with(
+                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+            )
+            key_pressed.assert_called_once_with(
+                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+            )
         else:
-            keyboard_key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
-            key_released.assert_called_once_with({"key": key, "is_pressed": is_pressed})
+            keyboard_key_released.assert_called_once_with(
+                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+            )
+            key_released.assert_called_once_with(
+                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+            )
         assert key.is_pressed == is_pressed
+
+        change_key(keyboard, sdl_scancode, False)
+
+
+def test_modifier(keyboard):
+    assert keyboard.modifier == KeyboardModifier.NONE
+    keyboard.get_key_by_location(KeyboardKeyLocation.LEFT_CONTROL).is_pressed = True
+    assert keyboard.modifier == KeyboardModifier.CONTROL
+    keyboard.get_key_by_location(KeyboardKeyLocation.LEFT_SHIFT).is_pressed = True
+    assert keyboard.modifier == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT
+    keyboard.get_key_by_location(KeyboardKeyLocation.LEFT_ALT).is_pressed = True
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.RIGHT_CONTROL).is_pressed = True
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.RIGHT_SHIFT).is_pressed = True
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.RIGHT_ALT).is_pressed = True
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.LEFT_CONTROL).is_pressed = False
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.LEFT_SHIFT).is_pressed = False
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.LEFT_ALT).is_pressed = False
+    assert (
+        keyboard.modifier
+        == KeyboardModifier.CONTROL | KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    )
+    keyboard.get_key_by_location(KeyboardKeyLocation.RIGHT_CONTROL).is_pressed = False
+    assert keyboard.modifier == KeyboardModifier.SHIFT | KeyboardModifier.ALT
+    keyboard.get_key_by_location(KeyboardKeyLocation.RIGHT_SHIFT).is_pressed = False
+    assert keyboard.modifier == KeyboardModifier.ALT
+    keyboard.get_key_by_location(KeyboardKeyLocation.RIGHT_ALT).is_pressed = False
+    assert keyboard.modifier == KeyboardModifier.NONE
 
 
 @pytest.mark.parametrize("is_pressed", [False, True])
