@@ -280,7 +280,8 @@ def test_attrs(keyboard):
 
 
 @pytest.mark.parametrize("is_pressed", [False, True])
-def test_change_key(keyboard, is_pressed):
+@pytest.mark.parametrize("is_repeat", [False, True])
+def test_change_key(keyboard, is_pressed, is_repeat):
     for sdl_scancode, key_location in SDL_SCANCODE_KEYBOARD_KEY_LOCATION:
         key = keyboard.get_key_by_location(key_location)
         with (
@@ -291,7 +292,7 @@ def test_change_key(keyboard, is_pressed):
             patch.object(key, "pressed", new=MagicMock()) as key_pressed,
             patch.object(key, "released", new=MagicMock()) as key_released,
         ):
-            assert change_key(keyboard, sdl_scancode, is_pressed)
+            assert change_key(keyboard, sdl_scancode, is_pressed, is_repeat)
 
         expected_modifier = KeyboardModifier.NONE
         if is_pressed:
@@ -306,28 +307,58 @@ def test_change_key(keyboard, is_pressed):
                 expected_modifier |= KeyboardModifier.ALT
 
         keyboard_key_changed.assert_called_once_with(
-            {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+            {
+                "key": key,
+                "is_pressed": is_pressed,
+                "is_repeat": is_repeat,
+                "modifier": expected_modifier,
+            }
         )
         key_changed.assert_called_once_with(
-            {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+            {
+                "key": key,
+                "is_pressed": is_pressed,
+                "is_repeat": is_repeat,
+                "modifier": expected_modifier,
+            }
         )
         if is_pressed:
             keyboard_key_pressed.assert_called_once_with(
-                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+                {
+                    "key": key,
+                    "is_pressed": is_pressed,
+                    "is_repeat": is_repeat,
+                    "modifier": expected_modifier,
+                }
             )
             key_pressed.assert_called_once_with(
-                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+                {
+                    "key": key,
+                    "is_pressed": is_pressed,
+                    "is_repeat": is_repeat,
+                    "modifier": expected_modifier,
+                }
             )
         else:
             keyboard_key_released.assert_called_once_with(
-                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+                {
+                    "key": key,
+                    "is_pressed": is_pressed,
+                    "is_repeat": is_repeat,
+                    "modifier": expected_modifier,
+                }
             )
             key_released.assert_called_once_with(
-                {"key": key, "is_pressed": is_pressed, "modifier": expected_modifier}
+                {
+                    "key": key,
+                    "is_pressed": is_pressed,
+                    "is_repeat": is_repeat,
+                    "modifier": expected_modifier,
+                }
             )
         assert key.is_pressed == is_pressed
 
-        change_key(keyboard, sdl_scancode, False)
+        change_key(keyboard, sdl_scancode, False, False)
 
 
 def test_modifier(keyboard):
@@ -386,7 +417,7 @@ def test_change_key_unexpected_sdl_scancode(keyboard, is_pressed):
         patch.object(KeyboardKey, "pressed", new=MagicMock()) as keyboard_key_pressed,
         patch.object(KeyboardKey, "released", new=MagicMock()) as keyboard_key_released,
     ):
-        assert not change_key(keyboard, -1, is_pressed)
+        assert not change_key(keyboard, -1, is_pressed, False)
     keyboard_key_changed.assert_not_called()
     keyboard_key_pressed.assert_not_called()
     keyboard_key_released.assert_not_called()

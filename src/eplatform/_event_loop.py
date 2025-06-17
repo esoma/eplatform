@@ -108,9 +108,7 @@ class _Selector(SelectSelector):
     def _handle_sdl_event_key_changed(
         self, key: SdlScancode, is_pressed: bool, is_repeat: bool
     ) -> bool:
-        if is_repeat:
-            return False
-        return change_key(get_keyboard(), key, is_pressed)
+        return change_key(get_keyboard(), key, is_pressed, is_repeat)
 
     def _handle_sdl_event_text_input(self, text: str) -> bool:
         input_window_text(get_window(), text)

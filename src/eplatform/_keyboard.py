@@ -300,7 +300,9 @@ class Keyboard:
         return modifier
 
 
-def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) -> bool:
+def change_key(
+    keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool, is_repeat: bool
+) -> bool:
     try:
         key_location = _SDL_SCANCODE_TO_KEY_LOCATION[sdl_scancode]
     except KeyError:
@@ -310,6 +312,7 @@ def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) 
     data: KeyboardKeyChanged = {
         "key": key,
         "is_pressed": is_pressed,
+        "is_repeat": is_repeat,
         "modifier": keyboard.modifier,
     }
     KeyboardKey.changed(data)
@@ -326,6 +329,7 @@ def change_key(keyboard: Keyboard, sdl_scancode: SdlScancode, is_pressed: bool) 
 class KeyboardKeyChanged(TypedDict):
     key: KeyboardKey
     is_pressed: bool
+    is_repeat: bool
     modifier: KeyboardModifier
 
 

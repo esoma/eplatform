@@ -486,12 +486,8 @@ def test_selector_handle_sdl_event_key_changed(mock_keyboard, is_pressed, is_rep
     sdl_scancode = MagicMock()
     with patch("eplatform._event_loop.change_key") as change_key:
         result = selector._handle_sdl_event_key_changed(sdl_scancode, is_pressed, is_repeat)
-    if is_repeat:
-        assert not result
-        assert not change_key.called
-    else:
-        change_key.assert_called_once_with(mock_keyboard, sdl_scancode, is_pressed)
-        assert result == change_key.return_value
+    change_key.assert_called_once_with(mock_keyboard, sdl_scancode, is_pressed, is_repeat)
+    assert result == change_key.return_value
 
 
 @pytest.mark.parametrize("text", ["", "hello", "私"])
