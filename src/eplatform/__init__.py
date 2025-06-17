@@ -45,7 +45,7 @@ __all__ = [
     "KeyboardKey",
     "KeyboardKeyChanged",
     "KeyboardKeyLocation",
-    "KehboardModifier",
+    "KeyboardModifier",
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
