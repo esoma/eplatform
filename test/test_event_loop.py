@@ -1,3 +1,4 @@
+import inspect
 import platform
 from contextlib import contextmanager
 from unittest.mock import MagicMock
@@ -35,16 +36,30 @@ def mock_window():
         yield window
 
 
+@patch("eplatform._event_loop._Selector")
 @patch("eplatform._event_loop.SelectorEventLoop.__init__")
-def test_event_loop(super_init):
+def test_event_loop(super_init, selector_cls_mock):
+    ready_callbacks = MagicMock()
+
+    def _(*args, **kwargs):
+        frame = inspect.currentframe().f_back
+        while not isinstance(frame.f_locals["self"], EventLoop):
+            frame = frame.f_back
+        self = frame.f_locals["self"]
+        self._ready = ready_callbacks
+
+    super_init.side_effect = _
+
     el = EventLoop()
     el._closed = True
     super_init.assert_called_once()
-    assert isinstance(super_init.call_args[0][0], _Selector)
+    selector_cls_mock.assert_called_once_with()
+    assert selector_cls_mock.return_value._ready_callbacks is ready_callbacks
 
 
 def test_selector_select():
     selector = _Selector()
+    selector._ready_callbacks = []
     # no events
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
@@ -55,6 +70,18 @@ def test_selector_select():
         poll_sdl_events.assert_called_with()
         super_select.assert_called_with(-1)
         idle.assert_called_once_with(None)
+    # no events, but ready callbacks
+    selector._ready_callbacks = [1]
+    with (
+        patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
+        patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
+        patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
+    ):
+        assert selector.select(0.5) == []
+        poll_sdl_events.assert_called_with()
+        super_select.assert_called_with(-1)
+        idle.assert_not_called()
+    selector._ready_callbacks.clear()
     # sdl events
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,

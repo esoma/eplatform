@@ -5,6 +5,7 @@ from selectors import SelectSelector
 from time import time
 from typing import Any
 from typing import Callable
+from typing import Collection
 from typing import Final
 from typing import Mapping
 from typing import get_args
@@ -56,16 +57,27 @@ idle: Event[None] = Event()
 
 class EventLoop(SelectorEventLoop):
     def __init__(self) -> None:
-        super().__init__(_Selector())
+        selector = _Selector()
+        super().__init__(selector)
+        # _ready is an implementation detail of asyncio.base_events.BaseEventLoop
+        # it's the only way of determining if there are callbacks ready to be processed or if
+        # the "idle" event can be sent
+        selector._ready_callbacks = self._ready  # type: ignore
 
 
 class _Selector(SelectSelector):
+    _ready_callbacks: Any = None
+
     def select(self, timeout: float | None = None) -> Any:
         start = time()
         if self._poll_sdl_events():
             return []
         result = super().select(-1)
-        if not result and not (timeout is not None and time() - start > timeout):
+        if (
+            not self._ready_callbacks
+            and not result
+            and not (timeout is not None and time() - start > timeout)
+        ):
             idle(None)
         return result
 
