@@ -1,7 +1,7 @@
 [project]
 name = "eplatform"
 requires-python = ">=3.12"
-version = "0.18.2"
+version = "0.18.3"
 description = "Operating System Library"
 authors = [
     {name = "Erik Soma", email= "stillusingirc@gmail.com"}
