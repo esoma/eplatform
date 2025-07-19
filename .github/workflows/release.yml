@@ -25,6 +25,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-13, macos-14]
+        arch: [x86, x64]
+
+        include:
+          - ciwb-arch: native
+          - ciwb-arch: x86
+            os: windows-latest
+            arch: x86
+          - ciwb-arch: AMD64
+            os: windows-latest
+            arch: x64
+
+        exclude:
+          - os: ubuntu-latest
+            arch: x86
+          - os: macos-13
+            arch: x86
+          - os: macos-14
+            arch: x86
 
     steps:
     - uses: actions/checkout@v2
@@ -41,6 +59,8 @@ jobs:
 
     - name: Build Wheels
       uses: pypa/cibuildwheel@v3.0.0
+      env:
+        CIBW_ARCHS: ${{ matrix.ciwb-arch }}
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'
