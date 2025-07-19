@@ -10,6 +10,9 @@ on:
 jobs:
   test:
 
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -53,8 +56,6 @@ jobs:
 
     - name: Install Poetry
       uses: snok/install-poetry@v1.4.1
-      with:
-        virtualenvs-in-project: true
 
     - name: Install
       run: |
