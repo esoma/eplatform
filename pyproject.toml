@@ -1,12 +1,13 @@
 [project]
 name = "eplatform"
 requires-python = ">=3.12"
-
-[tool.poetry]
-name = "eplatform"
 version = "0.18.2"
 description = "Operating System Library"
-authors = ["Erik Soma <stillusingirc@gmail.com>"]
+authors = [
+    {name = "Erik Soma", email= "stillusingirc@gmail.com"}
+]
+
+[tool.poetry]
 include = [
     {path = "src/eplatform/*.so", format = "wheel"},
     {path = "src/eplatform/*.pyd", format = "wheel"},
@@ -58,3 +59,6 @@ before-all = [
     "brew install ninja",
 ]
 repair-wheel-command = ""
+
+[tool.cibuildwheel]
+enable = ["cpython-prerelease"]
