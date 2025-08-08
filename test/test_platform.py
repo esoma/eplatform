@@ -33,6 +33,29 @@ def test_platform_instance_not_active():
     assert str(excinfo.value) == "platform instance is not active"
 
 
+@pytest.mark.parametrize(
+    "open_gl_version_max",
+    [(4, 6), (4, 5), (4, 4), (4, 3), (4, 2), (4, 1), (4, 0), (3, 3), (3, 2), (3, 1)],
+)
+def test_open_gl_version_max(open_gl_version_max):
+    platform = Platform(open_gl_version_max=open_gl_version_max)
+    with platform:
+        assert platform._gl_version <= open_gl_version_max
+
+
+@pytest.mark.parametrize(
+    "open_gl_version_min, open_gl_version_max", [((3, 0), (3, 0)), ((4, 7), (4, 7))]
+)
+def test_unable_to_create_open_gl_context(open_gl_version_min, open_gl_version_max):
+    platform = Platform(
+        open_gl_version_min=open_gl_version_min, open_gl_version_max=open_gl_version_max
+    )
+    with pytest.raises(RuntimeError) as excinfo:
+        with platform:
+            pass
+    assert str(excinfo.value) == "unable to create open gl context"
+
+
 def test_get_window_no_platform():
     with pytest.raises(RuntimeError) as excinfo:
         get_window()

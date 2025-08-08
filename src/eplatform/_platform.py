@@ -14,6 +14,7 @@ __all__ = [
     "set_clipboard",
 ]
 
+import os
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
@@ -68,6 +69,7 @@ class Platform:
     _mouse: Mouse | None = None
     _keyboard: Keyboard | None = None
     _gl_context: Any = None
+    _gl_version: tuple[int, int] | None = None
     _color_bits: tuple[int, int, int, int] | None = None
     _depth_bits: int | None = None
     _stencil_bits: int | None = None
@@ -78,7 +80,12 @@ class Platform:
         window_cls: type[Window] | None = None,
         mouse_cls: type[Mouse] | None = None,
         keyboard_cls: type[Keyboard] | None = None,
+        open_gl_version_min: tuple[int, int] = _GL_VERSIONS[-1],
+        open_gl_version_max: tuple[int, int] = _GL_VERSIONS[0],
     ) -> None:
+        self._gl_version_min = open_gl_version_min
+        self._gl_version_max = open_gl_version_max
+
         if window_cls is None:
             self._window_cls = Window
         else:
@@ -100,7 +107,12 @@ class Platform:
         if Platform._singleton:
             raise RuntimeError("platform already active")
         initialize_sdl()
-        for gl_major_version, gl_minor_version in _GL_VERSIONS:
+        for gl_version in _GL_VERSIONS:
+            if gl_version > self._gl_version_max:
+                continue
+            if gl_version < self._gl_version_min:
+                continue
+            gl_major_version, gl_minor_version = gl_version
             self._window = self._window_cls(gl_major_version, gl_minor_version)
             try:
                 self._setup_open_gl()
@@ -112,6 +124,7 @@ class Platform:
             break
         else:
             raise RuntimeError("unable to create open gl context")
+        self._gl_version = gl_version
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()
         discover_displays()
@@ -149,6 +162,7 @@ class Platform:
     def _teardown_open_gl(self) -> None:
         if self._gl_context is not None:
             delete_sdl_gl_context(self._gl_context)
+            self._gl_version = None
             self._gl_context = None
             self._color_bits = None
             self._depth_bits = None
