@@ -8,7 +8,9 @@ import asyncio
 import pytest
 
 from eplatform import EventLoop
+from eplatform import OpenGlWindow
 from eplatform import Platform
+from eplatform import VulkanWindow
 from eplatform import get_keyboard
 from eplatform import get_mouse
 from eplatform import get_window
@@ -28,6 +30,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "disruptive: a test which might be disruptive or fail due to user interaction"
     )
+    config.addinivalue_line("markers", "opengl: a test which requires an OpenGL window")
+    config.addinivalue_line("markers", "vulkan: a test which requires a Vulkan window")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -44,8 +48,14 @@ def _reset_platform_callbacks():
 
 
 @pytest.fixture
-def platform():
-    platform = Platform()
+def platform(request):
+    window_cls = None
+    if request.node.get_closest_marker("opengl"):
+        window_cls = OpenGlWindow
+    elif request.node.get_closest_marker("vulkan"):
+        window_cls = VulkanWindow
+
+    platform = Platform(window_cls=window_cls)
     with platform:
         yield platform
 

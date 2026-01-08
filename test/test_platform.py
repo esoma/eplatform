@@ -6,15 +6,14 @@ import pytest
 
 from eplatform import Keyboard
 from eplatform import Mouse
+from eplatform import OpenGlWindow
 from eplatform import Platform
+from eplatform import VulkanWindow
 from eplatform import Window
 from eplatform import get_clipboard
-from eplatform import get_color_bits
-from eplatform import get_depth_bits
 from eplatform import get_displays
 from eplatform import get_keyboard
 from eplatform import get_mouse
-from eplatform import get_stencil_bits
 from eplatform import get_window
 from eplatform import set_clipboard
 
@@ -38,7 +37,7 @@ def test_platform_instance_not_active():
     [(4, 6), (4, 5), (4, 4), (4, 3), (4, 2), (4, 1), (4, 0), (3, 3), (3, 2), (3, 1)],
 )
 def test_open_gl_version_max(open_gl_version_max):
-    platform = Platform(open_gl_version_max=open_gl_version_max)
+    platform = Platform(window_cls=OpenGlWindow, open_gl_version_max=open_gl_version_max)
     with platform:
         assert platform._gl_version <= open_gl_version_max
 
@@ -48,7 +47,9 @@ def test_open_gl_version_max(open_gl_version_max):
 )
 def test_unable_to_create_open_gl_context(open_gl_version_min, open_gl_version_max):
     platform = Platform(
-        open_gl_version_min=open_gl_version_min, open_gl_version_max=open_gl_version_max
+        window_cls=OpenGlWindow,
+        open_gl_version_min=open_gl_version_min,
+        open_gl_version_max=open_gl_version_max,
     )
     with pytest.raises(RuntimeError) as excinfo:
         with platform:
@@ -96,41 +97,6 @@ def test_deactivate_callbacks():
     with Platform():
         mock_callback.assert_not_called()
     mock_callback.assert_called_once_with()
-
-
-def test_get_color_bits_no_platform():
-    with pytest.raises(RuntimeError) as excinfo:
-        get_color_bits()
-    assert str(excinfo.value) == "platform is not active"
-
-
-def test_get_color_bits(platform):
-    color_bits = get_color_bits()
-    assert isinstance(color_bits, tuple)
-    assert len(color_bits) == 4
-    assert all(isinstance(b, int) for b in color_bits)
-
-
-def test_get_depth_bits_no_platform():
-    with pytest.raises(RuntimeError) as excinfo:
-        get_depth_bits()
-    assert str(excinfo.value) == "platform is not active"
-
-
-def test_get_depth_bits(platform):
-    depth_bits = get_depth_bits()
-    assert isinstance(depth_bits, int)
-
-
-def test_get_stencil_bits_no_platform():
-    with pytest.raises(RuntimeError) as excinfo:
-        get_stencil_bits()
-    assert str(excinfo.value) == "platform is not active"
-
-
-def test_get_stencil_bits(platform):
-    stencil_bits = get_stencil_bits()
-    assert isinstance(stencil_bits, int)
 
 
 def test_platform_custom_cls():
@@ -191,3 +157,10 @@ def test_get_displays_platform_lost():
         with pytest.raises(RuntimeError) as excinfo:
             next(displays)
         assert str(excinfo.value) == "platform is not active"
+
+
+def test_vulkan_window():
+    platform = Platform(window_cls=VulkanWindow)
+    with platform:
+        window = get_window()
+        assert isinstance(window, VulkanWindow)

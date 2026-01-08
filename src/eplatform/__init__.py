@@ -33,13 +33,10 @@ __all__ = [
     "EventLoop",
     "idle",
     "get_clipboard",
-    "get_color_bits",
     "get_controllers",
-    "get_depth_bits",
     "get_displays",
     "get_keyboard",
     "get_mouse",
-    "get_stencil_bits",
     "get_window",
     "Keyboard",
     "KeyboardKey",
@@ -53,8 +50,10 @@ __all__ = [
     "MouseMoved",
     "MouseScrolled",
     "MouseScrolledDirection",
+    "OpenGlWindow",
     "Platform",
     "set_clipboard",
+    "VulkanWindow",
     "Window",
     "WindowBufferSynchronization",
     "WindowDestroyedError",
@@ -110,15 +109,14 @@ from ._mouse import MouseScrolled
 from ._mouse import MouseScrolledDirection
 from ._platform import Platform
 from ._platform import get_clipboard
-from ._platform import get_color_bits
 from ._platform import get_controllers
-from ._platform import get_depth_bits
 from ._platform import get_displays
 from ._platform import get_keyboard
 from ._platform import get_mouse
-from ._platform import get_stencil_bits
 from ._platform import get_window
 from ._platform import set_clipboard
+from ._window import OpenGlWindow
+from ._window import VulkanWindow
 from ._window import Window
 from ._window import WindowBufferSynchronization
 from ._window import WindowDestroyedError

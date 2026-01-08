@@ -3,13 +3,10 @@ from __future__ import annotations
 __all__ = [
     "Platform",
     "get_clipboard",
-    "get_color_bits",
     "get_controllers",
-    "get_depth_bits",
     "get_displays",
     "get_keyboard",
     "get_mouse",
-    "get_stencil_bits",
     "get_window",
     "set_clipboard",
 ]
@@ -23,6 +20,8 @@ from typing import Final
 from typing import Generator
 from typing import Self
 
+from emath import IVector2
+
 from ._controller import Controller
 from ._controller import discover_controllers
 from ._controller import forget_controllers
@@ -31,15 +30,25 @@ from ._display import Display
 from ._display import discover_displays
 from ._display import forget_displays
 from ._display import get_displays as _get_displays
+from ._eplatform import GRAPHICS_LIBRARY_OPEN_GL
 from ._eplatform import clear_sdl_events
 from ._eplatform import create_sdl_gl_context
+from ._eplatform import create_sdl_vulkan_surface
+from ._eplatform import create_sdl_window
+from ._eplatform import create_vulkan_instance
 from ._eplatform import deinitialize_sdl
 from ._eplatform import delete_sdl_gl_context
+from ._eplatform import delete_sdl_vulkan_surface
+from ._eplatform import delete_vulkan_instance
 from ._eplatform import get_clipboard as _get_clipboard
 from ._eplatform import get_gl_attrs
 from ._eplatform import initialize_sdl
 from ._eplatform import set_clipboard as _set_clipboard
 from ._keyboard import Keyboard
+from ._type import VkInstance
+from ._type import VkSurface
+from ._window import OpenGlWindow
+from ._window import VulkanWindow
 from ._window import Window
 from ._window import delete_window
 from ._window import get_sdl_window
@@ -73,6 +82,8 @@ class Platform:
     _color_bits: tuple[int, int, int, int] | None = None
     _depth_bits: int | None = None
     _stencil_bits: int | None = None
+    _vk_instance: VkInstance | None = None
+    _vk_surface: VkSurface | None = None
 
     def __init__(
         self,
@@ -107,24 +118,34 @@ class Platform:
         if Platform._singleton:
             raise RuntimeError("platform already active")
         initialize_sdl()
-        for gl_version in _GL_VERSIONS:
-            if gl_version > self._gl_version_max:
-                continue
-            if gl_version < self._gl_version_min:
-                continue
-            gl_major_version, gl_minor_version = gl_version
-            self._window = self._window_cls(gl_major_version, gl_minor_version)
-            try:
-                self._setup_open_gl()
-            except RuntimeError as ex:
-                if str(ex) == "unable to create open gl context":
-                    self._window = None
+        if issubclass(self._window_cls, VulkanWindow):
+            self._window = self._window_cls()
+            self._setup_vulkan()
+        elif issubclass(self._window_cls, OpenGlWindow):
+            for gl_version in _GL_VERSIONS:
+                if gl_version > self._gl_version_max:
                     continue
-                raise
-            break
+                if gl_version < self._gl_version_min:
+                    continue
+                gl_major_version, gl_minor_version = gl_version
+                self._window = self._window_cls(
+                    major_version=gl_major_version, minor_version=gl_minor_version
+                )
+                try:
+                    self._setup_open_gl()
+                except RuntimeError as ex:
+                    if str(ex) == "unable to create open gl context":
+                        if self._window is not None:
+                            delete_window(self._window)
+                        self._window = None
+                        continue
+                    raise
+                break
+            else:
+                raise RuntimeError("unable to create open gl context")
+            self._gl_version = gl_version
         else:
-            raise RuntimeError("unable to create open gl context")
-        self._gl_version = gl_version
+            self._window = self._window_cls()
         self._mouse = self._mouse_cls()
         self._keyboard = self._keyboard_cls()
         discover_displays()
@@ -140,6 +161,7 @@ class Platform:
             callback()
 
         self._teardown_open_gl()
+        self._teardown_vulkan()
         forget_controllers()
         forget_displays()
         assert self._window is not None
@@ -151,6 +173,8 @@ class Platform:
 
     def _setup_open_gl(self) -> None:
         assert self._window is not None
+        if not isinstance(self._window, OpenGlWindow):
+            return
         sdl_window = get_sdl_window(self._window)
         self._gl_context = create_sdl_gl_context(sdl_window)
 
@@ -167,6 +191,22 @@ class Platform:
             self._color_bits = None
             self._depth_bits = None
             self._stencil_bits = None
+
+    def _setup_vulkan(self) -> None:
+        assert self._window is not None
+        if not isinstance(self._window, VulkanWindow):
+            return
+        self._vk_instance = create_vulkan_instance([], [])
+        sdl_window = get_sdl_window(self._window)
+        self._vk_surface = create_sdl_vulkan_surface(sdl_window, self._vk_instance)
+
+    def _teardown_vulkan(self) -> None:
+        if self._vk_surface is not None and self._vk_instance is not None:
+            delete_sdl_vulkan_surface(self._vk_instance, self._vk_surface)
+            self._vk_surface = None
+        if self._vk_instance is not None:
+            delete_vulkan_instance(self._vk_instance)
+            self._vk_instance = None
 
     @classmethod
     def register_deactivate_callback(cls, callback: Callable[[], None]) -> Callable[[], None]:
@@ -198,28 +238,46 @@ def get_keyboard() -> Keyboard:
     return keyboard
 
 
-def get_color_bits() -> tuple[int, int, int, int]:
-    if Platform._singleton is None:
-        raise RuntimeError("platform is not active")
+def get_gl_color_bits() -> tuple[int, int, int, int]:
+    assert Platform._singleton is not None
     color_bits = Platform._singleton._color_bits
     assert color_bits is not None
     return color_bits
 
 
-def get_depth_bits() -> int:
-    if Platform._singleton is None:
-        raise RuntimeError("platform is not active")
+def get_gl_depth_bits() -> int:
+    assert Platform._singleton is not None
     depth_bits = Platform._singleton._depth_bits
     assert depth_bits is not None
     return depth_bits
 
 
-def get_stencil_bits() -> int:
-    if Platform._singleton is None:
-        raise RuntimeError("platform is not active")
+def get_gl_stencil_bits() -> int:
+    assert Platform._singleton is not None
     stencil_bits = Platform._singleton._stencil_bits
     assert stencil_bits is not None
     return stencil_bits
+
+
+def get_gl_version() -> tuple[int, int]:
+    assert Platform._singleton is not None
+    gl_version = Platform._singleton._gl_version
+    assert gl_version is not None
+    return gl_version
+
+
+def get_vk_instance() -> VkInstance:
+    assert Platform._singleton is not None
+    vk_instance = Platform._singleton._vk_instance
+    assert vk_instance is not None
+    return vk_instance
+
+
+def get_vk_surface() -> VkSurface:
+    assert Platform._singleton is not None
+    vk_surface = Platform._singleton._vk_surface
+    assert vk_surface is not None
+    return vk_surface
 
 
 def get_clipboard() -> str:

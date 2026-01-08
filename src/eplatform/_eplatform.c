@@ -2,6 +2,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+#include <vulkan/vulkan.h>
 
 #include "emath.h"
 
@@ -40,6 +42,10 @@
     }
 
 static const int SUB_SYSTEMS = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD;
+
+#define GRAPHICS_LIBRARY_OPEN_GL 0
+#define GRAPHICS_LIBRARY_VULKAN 1
+#define GRAPHICS_LIBRARY_NONE 2
 
 static double
 normalize_sdl_joystick_axis_value_(Sint16 value)
@@ -96,7 +102,7 @@ create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     SDL_Window *sdl_window = 0;
 
-    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
 
     int open_gl_major_version = PyLong_AsLong(args[0]);
     CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -104,24 +110,40 @@ create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
     int open_gl_minor_version = PyLong_AsLong(args[1]);
     CHECK_UNEXPECTED_PYTHON_ERROR();
 
-    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
+    int graphics_library = PyLong_AsLong(args[2]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    Uint32 window_flags = SDL_WINDOW_HIDDEN;
+
+    if (graphics_library == GRAPHICS_LIBRARY_OPEN_GL)
     {
-        RAISE_SDL_ERROR();
+        if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
+        {
+            RAISE_SDL_ERROR();
+        }
+        if (!SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1))
+        {
+            RAISE_SDL_ERROR();
+        }
+        if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, open_gl_major_version))
+        {
+            RAISE_SDL_ERROR();
+        }
+        if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, open_gl_minor_version))
+        {
+            RAISE_SDL_ERROR();
+        }
+        window_flags |= SDL_WINDOW_OPENGL;
     }
-    if (!SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1))
+    else if (graphics_library == GRAPHICS_LIBRARY_VULKAN)
     {
-        RAISE_SDL_ERROR();
+        window_flags |= SDL_WINDOW_VULKAN;
     }
-    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, open_gl_major_version))
+    else if (graphics_library == GRAPHICS_LIBRARY_NONE)
     {
-        RAISE_SDL_ERROR();
-    }
-    if (!SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, open_gl_minor_version))
-    {
-        RAISE_SDL_ERROR();
     }
 
-    sdl_window = SDL_CreateWindow("", 200, 200, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    sdl_window = SDL_CreateWindow("", 200, 200, window_flags);
     if (!sdl_window){ RAISE_SDL_ERROR(); }
     if (!SDL_StopTextInput(sdl_window)){ RAISE_SDL_ERROR(); }
     int x;
@@ -1495,6 +1517,156 @@ error:
     return 0;
 }
 
+static PyObject *
+create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    VkInstance vk_instance = 0;
+    const char **enabled_layer_names = 0;
+    const char **enabled_extension_names = 0;
+    const char *const *sdl_extensions = 0;
+    Py_ssize_t layer_count = 0;
+    Py_ssize_t extension_count = 0;
+    Py_ssize_t sdl_extension_count = 0;
+    Uint32 sdl_extension_count_uint = 0;
+
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    PyObject *py_enabled_layers = args[0];
+    PyObject *py_enabled_extensions = args[1];
+
+    layer_count = PySequence_Length(py_enabled_layers);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (layer_count > 0)
+    {
+        enabled_layer_names = (const char **)PyMem_Malloc(layer_count * sizeof(const char *));
+        if (!enabled_layer_names){ goto error; }
+        for (Py_ssize_t i = 0; i < layer_count; i++)
+        {
+            PyObject *py_layer = PySequence_GetItem(py_enabled_layers, i);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            const char *layer = PyUnicode_AsUTF8(py_layer);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            enabled_layer_names[i] = layer;
+            Py_DECREF(py_layer);
+        }
+    }
+
+    // sdl requires certain extensions to create the window surface, we'll need to combine these
+    // with the ones requested by the caller
+    sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_extension_count_uint);
+    if (!sdl_extensions)
+    {
+        RAISE_SDL_ERROR();
+    }
+    sdl_extension_count = (Py_ssize_t)sdl_extension_count_uint;
+    extension_count = PySequence_Length(py_enabled_extensions);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    Py_ssize_t total_extension_count = sdl_extension_count + extension_count;
+    if (total_extension_count > 0)
+    {
+        enabled_extension_names = (const char **)PyMem_Malloc(total_extension_count * sizeof(const char *));
+        if (!enabled_extension_names){ goto error; }
+        for (Py_ssize_t i = 0; i < sdl_extension_count; i++)
+        {
+            enabled_extension_names[i] = sdl_extensions[i];
+        }
+        for (Py_ssize_t i = 0; i < extension_count; i++)
+        {
+            PyObject *py_extension = PySequence_GetItem(py_enabled_extensions, i);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            const char *extension = PyUnicode_AsUTF8(py_extension);
+            CHECK_UNEXPECTED_PYTHON_ERROR();
+            enabled_extension_names[sdl_extension_count + i] = extension;
+            Py_DECREF(py_extension);
+        }
+    }
+
+    VkInstanceCreateInfo create_info = {0};
+    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    create_info.pApplicationInfo = 0;
+    create_info.enabledLayerCount = (uint32_t)layer_count;
+    create_info.ppEnabledLayerNames = enabled_layer_names;
+    create_info.enabledExtensionCount = (uint32_t)total_extension_count;
+    create_info.ppEnabledExtensionNames = enabled_extension_names;
+    create_info.pNext = 0;
+
+    VkResult result = vkCreateInstance(&create_info, 0, &vk_instance);
+    if (result != VK_SUCCESS)
+    {
+        PyErr_Format(PyExc_RuntimeError, "vkCreateInstance failed with result: %d", result);
+        goto error;
+    }
+
+    PyMem_Free((void *)enabled_layer_names);
+    enabled_layer_names = 0;
+    PyMem_Free((void *)enabled_extension_names);
+    enabled_extension_names = 0;
+
+    return PyLong_FromVoidPtr((void *)vk_instance);
+
+error:
+    PyMem_Free((void *)enabled_layer_names);
+    PyMem_Free((void *)enabled_extension_names);
+    if (vk_instance)
+    {
+        vkDestroyInstance(vk_instance, 0);
+    }
+    return 0;
+}
+
+static PyObject *
+delete_vulkan_instance(PyObject *module, PyObject *py_vk_instance)
+{
+    VkInstance vk_instance = (VkInstance)PyLong_AsVoidPtr(py_vk_instance);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    vkDestroyInstance(vk_instance, 0);
+    Py_RETURN_NONE;
+error:
+    return 0;
+}
+
+static PyObject *
+create_sdl_vulkan_surface(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    VkSurfaceKHR vk_surface = 0;
+
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    SDL_Window *sdl_window = PyCapsule_GetPointer(args[0], "_eplatform.SDL_Window");
+    if (!sdl_window){ goto error; }
+
+    VkInstance vk_instance = (VkInstance)PyLong_AsVoidPtr(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    if (!SDL_Vulkan_CreateSurface(sdl_window, vk_instance, 0, &vk_surface))
+    {
+        RAISE_SDL_ERROR();
+    }
+
+    return PyLong_FromVoidPtr((void *)vk_surface);
+
+error:
+    return 0;
+}
+
+static PyObject *
+delete_sdl_vulkan_surface(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    VkInstance vk_instance = (VkInstance)PyLong_AsVoidPtr(args[0]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    VkSurfaceKHR vk_surface = (VkSurfaceKHR)PyLong_AsVoidPtr(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    SDL_Vulkan_DestroySurface(vk_instance, vk_surface, 0);
+    Py_RETURN_NONE;
+
+error:
+    return 0;
+}
+
 static PyMethodDef module_PyMethodDef[] = {
     {"initialize_sdl", initialize_sdl, METH_NOARGS, 0},
     {"deinitialize_sdl", deinitialize_sdl, METH_NOARGS, 0},
@@ -1517,7 +1689,11 @@ static PyMethodDef module_PyMethodDef[] = {
     {"set_sdl_window_icon", (PyCFunction)set_sdl_window_icon, METH_FASTCALL, 0},
     {"maximize_sdl_window", maximize_sdl_window, METH_O, 0},
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
+    {"create_sdl_vulkan_surface", (PyCFunction)create_sdl_vulkan_surface, METH_FASTCALL, 0},
+    {"create_vulkan_instance", (PyCFunction)create_vulkan_instance, METH_FASTCALL, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
+    {"delete_sdl_vulkan_surface", (PyCFunction)delete_sdl_vulkan_surface, METH_FASTCALL, 0},
+    {"delete_vulkan_instance", delete_vulkan_instance, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},
     {"set_clipboard", set_clipboard, METH_O, 0},
     {"get_clipboard", get_clipboard, METH_NOARGS, 0},
@@ -1579,6 +1755,10 @@ PyInit__eplatform()
             return 0;\
         }\
     }
+
+    ADD_CONSTANT(GRAPHICS_LIBRARY_OPEN_GL);
+    ADD_CONSTANT(GRAPHICS_LIBRARY_VULKAN);
+    ADD_CONSTANT(GRAPHICS_LIBRARY_NONE);
 
     ADD_CONSTANT(SDL_EVENT_QUIT);
     ADD_CONSTANT(SDL_EVENT_MOUSE_MOTION);

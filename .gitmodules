@@ -4,3 +4,6 @@
 [submodule "vendor/emath"]
 	path = vendor/emath
 	url = https://github.com/esoma/emath
+[submodule "vendor/Vulkan-Headers"]
+	path = vendor/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git

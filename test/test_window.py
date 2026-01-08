@@ -8,6 +8,8 @@ from emath import IVector2
 from emath import U8Vector4
 from emath import U8Vector4Array
 
+from eplatform import OpenGlWindow
+from eplatform import VulkanWindow
 from eplatform import Window
 from eplatform import WindowBufferSynchronization
 from eplatform import WindowDestroyedError
@@ -29,7 +31,7 @@ from eplatform._window import unmaximize_window
 @patch("eplatform._window.create_sdl_window")
 def test_init(create_sdl_window):
     create_sdl_window.return_value = (None, 0, 0)
-    window = Window(4, 6)
+    window = Window()
 
 
 def test_title(window):
@@ -368,3 +370,51 @@ def test_destroyed_window(window):
         window.title = "something"
     with pytest.raises(WindowDestroyedError):
         window.set_icon(MagicMock(), MagicMock())
+
+
+@pytest.mark.opengl
+def test_gl_color_bits(window):
+    color_bits = window.gl_color_bits
+    assert isinstance(color_bits, tuple)
+    assert len(color_bits) == 4
+    assert all(isinstance(b, int) for b in color_bits)
+
+
+@pytest.mark.opengl
+def test_gl_depth_bits(window):
+    depth_bits = window.gl_depth_bits
+    assert isinstance(depth_bits, int)
+
+
+@pytest.mark.opengl
+def test_gl_stencil_bits(window):
+    stencil_bits = window.gl_stencil_bits
+    assert isinstance(stencil_bits, int)
+
+
+@pytest.mark.vulkan
+def test_vk_instance(window):
+    vk_instance = window.vk_instance
+    assert isinstance(vk_instance, int)
+    assert vk_instance != 0
+
+
+@pytest.mark.vulkan
+def test_vk_surface(window):
+    vk_surface = window.vk_surface
+    assert isinstance(vk_surface, int)
+    assert vk_surface != 0
+
+
+@pytest.mark.vulkan
+def test_vk_instance_destroyed(window):
+    delete_window(window)
+    with pytest.raises(WindowDestroyedError):
+        _ = window.vk_instance
+
+
+@pytest.mark.vulkan
+def test_vk_surface_destroyed(window):
+    delete_window(window)
+    with pytest.raises(WindowDestroyedError):
+        _ = window.vk_surface

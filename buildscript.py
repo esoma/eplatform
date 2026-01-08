@@ -25,8 +25,13 @@ if os.environ.get("EPLATFORM_BUILD_WITH_COVERAGE", "0") == "1":
 _eplatform = Extension(
     "eplatform._eplatform",
     library_dirs=["vendor/SDL"],
-    libraries=["SDL3"],
-    include_dirs=["src/eplatform", "vendor/SDL/include", "vendor/emath/include"],
+    libraries=["SDL3", "vulkan-1"],
+    include_dirs=[
+        "src/eplatform",
+        "vendor/SDL/include",
+        "vendor/emath/include",
+        "vendor/Vulkan-Headers/include",
+    ],
     sources=["src/eplatform/_eplatform.c"],
     extra_compile_args=_coverage_compile_args,
     extra_link_args=_coverage_links_args,

@@ -13,6 +13,8 @@ __all__ = [
     "SdlMouseButton",
     "SdlScancode",
     "SdlWindow",
+    "VkInstance",
+    "VkSurface",
 ]
 
 from typing import NewType
@@ -31,3 +33,5 @@ SdlGamepadAxis = NewType("SdlGamepadAxis", int)
 SdlGamepadBindingType = NewType("SdlGamepadBindingType", int)
 SdlHat = NewType("SdlHat", int)
 SdlGamepadType = NewType("SdlGamepadType", int)
+VkInstance = NewType("VkInstance", int)
+VkSurface = NewType("VkSurface", int)

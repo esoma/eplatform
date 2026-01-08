@@ -10,9 +10,11 @@ __all__ = [
     "input_window_text",
     "maximize_window",
     "move_window",
+    "OpenGlWindow",
     "resize_window",
     "show_window",
     "unmaximize_window",
+    "VulkanWindow",
     "Window",
     "WindowBufferSynchronization",
     "WindowDestroyedError",
@@ -25,6 +27,7 @@ __all__ = [
 from contextlib import contextmanager
 from enum import Enum
 from typing import Collection
+from typing import Final
 from typing import Generator
 from typing import TypedDict
 
@@ -37,6 +40,9 @@ from emath import IVector2
 from ._display import Display
 from ._display import DisplayMode
 from ._display import get_sdl_display_id
+from ._eplatform import GRAPHICS_LIBRARY_NONE
+from ._eplatform import GRAPHICS_LIBRARY_OPEN_GL
+from ._eplatform import GRAPHICS_LIBRARY_VULKAN
 from ._eplatform import center_sdl_window
 from ._eplatform import create_sdl_window
 from ._eplatform import delete_sdl_window
@@ -56,6 +62,8 @@ from ._eplatform import set_sdl_window_title
 from ._eplatform import show_sdl_window
 from ._eplatform import swap_sdl_window
 from ._type import SdlWindow
+from ._type import VkInstance
+from ._type import VkSurface
 from ._window_icon import WindowIcon
 
 
@@ -99,8 +107,16 @@ class Window:
     focused: Event[None] = Event()
     blurred: Event[None] = Event()
 
-    def __init__(self, gl_major_version: int, gl_minor_version: int) -> None:
-        self._sdl_window, x, y = create_sdl_window(gl_major_version, gl_minor_version)
+    def __init__(
+        self,
+        *,
+        _gl_major_version: int = 0,
+        _gl_minor_version: int = 0,
+        _graphics_library_value: int = GRAPHICS_LIBRARY_NONE,
+    ) -> None:
+        self._sdl_window, x, y = create_sdl_window(
+            _gl_major_version, _gl_minor_version, _graphics_library_value
+        )
 
         self._title = ""
 
@@ -295,6 +311,68 @@ class Window:
         if self._sdl_window is None:
             raise WindowDestroyedError()
         maximize_sdl_window(self._sdl_window)
+
+
+class OpenGlWindow(Window):
+    def __init__(self, *, major_version: int, minor_version: int) -> None:
+        super().__init__(
+            _gl_major_version=major_version,
+            _gl_minor_version=minor_version,
+            _graphics_library_value=GRAPHICS_LIBRARY_OPEN_GL,
+        )
+
+    @property
+    def gl_color_bits(self) -> tuple[int, int, int, int]:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        from ._platform import get_gl_color_bits
+
+        return get_gl_color_bits()
+
+    @property
+    def gl_depth_bits(self) -> int:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        from ._platform import get_gl_depth_bits
+
+        return get_gl_depth_bits()
+
+    @property
+    def gl_stencil_bits(self) -> int:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        from ._platform import get_gl_stencil_bits
+
+        return get_gl_stencil_bits()
+
+    @property
+    def gl_version(self) -> tuple[int, int]:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        from ._platform import get_gl_version
+
+        return get_gl_version()
+
+
+class VulkanWindow(Window):
+    def __init__(self) -> None:
+        super().__init__(_graphics_library_value=GRAPHICS_LIBRARY_VULKAN)
+
+    @property
+    def vk_instance(self) -> VkInstance:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        from ._platform import get_vk_instance
+
+        return get_vk_instance()
+
+    @property
+    def vk_surface(self) -> VkSurface:
+        if self._sdl_window is None:
+            raise WindowDestroyedError()
+        from ._platform import get_vk_surface
+
+        return get_vk_surface()
 
 
 def get_sdl_window(window: Window) -> SdlWindow:
