@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 from platform import system
+from warnings import warn
 
 from setuptools import Distribution
 from setuptools import Extension
@@ -36,6 +37,11 @@ _eplatform = Extension(
     extra_compile_args=_coverage_compile_args,
     extra_link_args=_coverage_links_args,
 )
+
+try:
+    _eplatform.library_dirs.append(str(Path(os.environ["VULKAN_SDK"]) / "Lib"))
+except KeyError:
+    warn("VULKAN_SDK env var not set, linking may fail")
 
 
 def _build_sdl() -> None:
