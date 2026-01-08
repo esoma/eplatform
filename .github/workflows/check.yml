@@ -36,16 +36,22 @@ jobs:
         install_runtime: true
         cache: true
         stripdown: true
+        install_lavapipe: true
 
-    - name: Install Mesa Linux
+    - name: Install Linux Dependencies
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev
+        sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev libxcursor-dev
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
+
+    - name: Register Lavapipe Windows
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "C:\lavapipe\share\vulkan\icd.d\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
 
     - name: Install ninja
       uses: seanmiddleditch/gha-setup-ninja@v5

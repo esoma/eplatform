@@ -49,6 +49,12 @@ jobs:
       run: |
         git submodule update --init --recursive
 
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev libxcursor-dev
+
     - name: Install Vulkan SDK
       uses: jakoch/install-vulkan-sdk-action@v1
       with:
