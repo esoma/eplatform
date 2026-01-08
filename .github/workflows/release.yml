@@ -49,6 +49,14 @@ jobs:
       run: |
         git submodule update --init --recursive
 
+    - name: Install Vulkan SDK
+      uses: jakoch/install-vulkan-sdk-action@v1
+      with:
+        vulkan_version: 1.4.335.0
+        install_runtime: true
+        cache: true
+        stripdown: true
+
     - name: Setup MSVC
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
