@@ -25,22 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [x86, x64]
-
-        include:
-          - ciwb-arch: native
-          - ciwb-arch: x86
-            os: windows-latest
-            arch: x86
-          - ciwb-arch: AMD64
-            os: windows-latest
-            arch: x64
-
-        exclude:
-          - os: ubuntu-latest
-            arch: x86
-          - os: macos-latest
-            arch: x86
+        arch: [x64]
 
     steps:
     - uses: actions/checkout@v2
@@ -54,13 +39,13 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install xvfb libglu1-mesa-dev freeglut3-dev mesa-common-dev
-        sudo apt-get-install build-essential git make pkg-config cmake ninja-build
-        sudo apt-get-install gnome-desktop-testing libasound2-dev libpulse-dev libaudio-dev
-        sudo apt-get-install libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev
-        sudo apt-get-install  libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev
-        sudo apt-get-install  libxtst-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev
-        sudo apt-get-install  libgles2-mesa-dev libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev
-        sudo apt-get-install  libudev-dev libthai-dev
+        sudo apt-get install build-essential git make pkg-config cmake ninja-build
+        sudo apt-get install gnome-desktop-testing libasound2-dev libpulse-dev libaudio-dev
+        sudo apt-get install libfribidi-dev libjack-dev libsndio-dev libx11-dev libxext-dev
+        sudo apt-get install  libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev
+        sudo apt-get install  libxtst-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev
+        sudo apt-get install  libgles2-mesa-dev libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev
+        sudo apt-get install  libudev-dev libthai-dev
 
     - name: Install Vulkan SDK
       uses: jakoch/install-vulkan-sdk-action@v1
