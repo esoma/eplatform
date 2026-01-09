@@ -1,4 +1,5 @@
 import os
+import os.path
 import subprocess
 import sys
 from pathlib import Path
@@ -27,7 +28,7 @@ if system() == "Windows":
         [
             sdk_file_name,
             "--root",
-            os.abspath("vulkan-sdk"),
+            os.path.abspath("vulkan-sdk"),
             "--accept-licenses",
             "--confirm-command",
             "install",
@@ -48,7 +49,7 @@ elif system() == "Darwin":
                 "sudo",
                 Path(unzip_dir) / f"Contents/MacOS/vulkansdk-macOS-{SDK_VERSION}",
                 "--root",
-                os.abspath("vulkan-sdk"),
+                os.path.abspath("vulkan-sdk"),
                 "--accept-licenses",
                 "--confirm-command",
                 "install",
@@ -59,4 +60,4 @@ else:
     raise RuntimeError(f"unexpected system: {system()}")
 
 with open(os.environ["GITHUB_ENV"], "w") as github_env:
-    github_env.write(f"VULKAN_SDK={os.abspath('vulkan-sdk')}")
+    github_env.write(f"VULKAN_SDK={os.path.abspath('vulkan-sdk')}")
