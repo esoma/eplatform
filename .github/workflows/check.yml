@@ -29,9 +29,14 @@ jobs:
       run: |
         git submodule update --init --recursive
 
-    - uses: NcStudios/VulkanCI@v1.3
+    - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
+      uses: actions/setup-python@v5
       with:
-        sdkVersion: 1.4.321.0
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.arch }}
+
+    - name: Setup Vulkan
+      uses: ./.github/workflows/vulkan-sdk.yml
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
@@ -58,12 +63,6 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: ${{ matrix.arch }}
-
-    - name: Set up Python ${{ matrix.python-version }}-${{ matrix.arch }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        architecture: ${{ matrix.arch }}
 
     - name: Install Poetry
       uses: snok/install-poetry@v1.4.1
