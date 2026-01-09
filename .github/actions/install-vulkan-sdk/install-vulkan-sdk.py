@@ -43,10 +43,10 @@ elif system() == "Linux":
             "-xf",
             sdk_file_name,
             "-C",
-            "vulkan-sdk/x86_64",
+            "vulkan-sdk",
             "--strip-components",
             "2",
-            SDK_VERSION,
+            f"{SDK_VERSION}/x86_64",
         ],
         check=True,
     )
@@ -66,7 +66,7 @@ elif system() == "Darwin":
                 ],
                 check=True,
             )
-            subprocess.run("cp", "-R", f"{install_dir}/*", "vulkan-sdk")
+            subprocess.run(["cp", "-R", f"{install_dir}/*", "vulkan-sdk"], check=True)
 
 else:
     raise RuntimeError(f"unexpected system: {system()}")
