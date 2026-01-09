@@ -73,16 +73,6 @@ jobs:
       env:
         EPLATFORM_BUILD_WITH_COVERAGE: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
 
-    - name: Vulkan Info
-      if: runner.os != 'Windows'
-      run: |
-        ls $HOME
-        ls $HOME/lavapipe
-        ls $HOME/lavapipe/share
-        ls $HOME/lavapipe/share/vulkan
-        ls $HOME/lavapipe/share/vulkan/icd.d
-        vulkaninfo --summary
-
     - name: Test Window
       if: runner.os == 'Windows'
       run: |
