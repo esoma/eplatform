@@ -38,7 +38,16 @@ if system() == "Windows":
     )
 elif system() == "Linux":
     subprocess.run(
-        ["tar", "-xf", sdk_file_name, "-C", "vulkan-sdk", "--strip-components", "1", SDK_VERSION],
+        [
+            "tar",
+            "-xf",
+            sdk_file_name,
+            "-C",
+            "vulkan-sdk/x86_64",
+            "--strip-components",
+            "2",
+            SDK_VERSION,
+        ],
         check=True,
     )
 elif system() == "Darwin":
@@ -47,7 +56,6 @@ elif system() == "Darwin":
         with TemporaryDirectory() as install_dir:
             subprocess.run(
                 [
-                    "sudo",
                     Path(unzip_dir)
                     / f"vulkansdk-macOS-{SDK_VERSION}.app/Contents/MacOS/vulkansdk-macOS-{SDK_VERSION}",
                     "--root",
