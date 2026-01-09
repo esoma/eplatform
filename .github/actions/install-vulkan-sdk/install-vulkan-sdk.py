@@ -45,7 +45,8 @@ elif system() == "Darwin":
         subprocess.run(
             [
                 "sudo",
-                Path(unzip_dir) / f"Contents/MacOS/vulkansdk-macOS-{SDK_VERSION}",
+                Path(unzip_dir)
+                / f"vulkansdk-macOS-{SDK_VERSION}.app/Contents/MacOS/vulkansdk-macOS-{SDK_VERSION}",
                 "--root",
                 os.path.abspath("vulkan-sdk"),
                 "--accept-licenses",

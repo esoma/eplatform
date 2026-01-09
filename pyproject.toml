@@ -1,6 +1,6 @@
 [project]
 name = "eplatform"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 version = "0.19.1"
 description = "Operating System Library"
 authors = [
@@ -18,7 +18,7 @@ generate-setup-file = false
 script = "buildscript.py"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.14"
 emath = "^0"
 eevent = "^0"
 egeometry = "^0"

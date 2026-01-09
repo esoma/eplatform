@@ -22,4 +22,6 @@ runs:
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        python ${{ github.action_path }}/install-vulkan-sdk.py ${{ inputs.version }}
+        python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
+        ls vulkan-sdk
+        ls vulkan-sdk/${{ inputs.version }}
