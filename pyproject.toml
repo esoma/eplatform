@@ -48,7 +48,7 @@ before-all = [
     "dnf install ibus-devel systemd-devel mesa-libGL-devel libxkbcommon-devel -y",
     "dnf install mesa-libGLES-devel mesa-libEGL-devel vulkan-devel wayland-devel -y",
     "dnf install wayland-protocols-devel libdrm-devel mesa-libgbm-devel libusb1-devel -y",
-    "dnf install libdecor-devel pipewire-jack-audio-connection-kit-devel libthai-devel -y",
+    "dnf install libthai-devel -y",
 ]
 repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.0' {wheel}"
 
