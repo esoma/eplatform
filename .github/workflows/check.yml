@@ -31,7 +31,7 @@ jobs:
 
     - uses: NcStudios/VulkanCI@v1.0
       with:
-        sdkVersion: 1.4.309.0
+        sdkVersion: 1.4.321.0
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
