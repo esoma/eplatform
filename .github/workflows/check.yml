@@ -96,7 +96,7 @@ jobs:
     - name: Test Mac
       if: runner.os == 'macOS'
       run: |
-        export VK_DRIVER_FILES="$HOME/lavapipe/share/vulkan/icd.d/lvp_icd.x86_64.json
+        export VK_DRIVER_FILES=$HOME/lavapipe/share/vulkan/icd.d/lvp_icd.x86_64.json
         export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
         poetry run pytest --cov=eplatform --cov-report=xml --disruptive
