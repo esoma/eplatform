@@ -54,6 +54,7 @@ jobs:
         install_runtime: true
         cache: true
         stripdown: true
+        github_token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup MSVC
       if: runner.os == 'Windows'
