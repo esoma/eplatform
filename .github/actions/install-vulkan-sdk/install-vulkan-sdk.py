@@ -1,5 +1,6 @@
 import os
 import os.path
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -43,18 +44,21 @@ elif system() == "Linux":
 elif system() == "Darwin":
     with TemporaryDirectory() as unzip_dir:
         subprocess.run(["unzip", sdk_file_name, "-d", unzip_dir])
-        subprocess.run(
-            [
-                "sudo",
-                Path(unzip_dir)
-                / f"vulkansdk-macOS-{SDK_VERSION}.app/Contents/MacOS/vulkansdk-macOS-{SDK_VERSION}",
-                "--root",
-                os.path.abspath("vulkan-sdk"),
-                "--accept-licenses",
-                "--confirm-command",
-                "install",
-            ],
-            check=True,
-        )
+        with TemporaryDirectory() as install_dir:
+            subprocess.run(
+                [
+                    "sudo",
+                    Path(unzip_dir)
+                    / f"vulkansdk-macOS-{SDK_VERSION}.app/Contents/MacOS/vulkansdk-macOS-{SDK_VERSION}",
+                    "--root",
+                    install_dir,
+                    "--accept-licenses",
+                    "--confirm-command",
+                    "install",
+                ],
+                check=True,
+            )
+            subprocess.run("cp", "-R", f"{install_dir}/*", "vulkan-sdk")
+
 else:
     raise RuntimeError(f"unexpected system: {system()}")
