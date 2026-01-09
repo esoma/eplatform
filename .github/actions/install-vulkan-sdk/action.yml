@@ -23,7 +23,6 @@ runs:
       shell: bash
       run: |
         python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
-        ls vulkan-sdk
     - name: save vulkan sdk cache
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
