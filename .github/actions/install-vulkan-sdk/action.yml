@@ -20,6 +20,5 @@ runs:
         key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
     - name: install vulkan sdk
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
-      shell: bash
       run: |
         python ${{ github.action_path }}/install-vulkan-sdk.py ${{ inputs.version }}

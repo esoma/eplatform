@@ -35,12 +35,10 @@ if system() == "Windows":
         ],
         check=True,
     )
+    SDK_PATH = str((Path("vulkan-sdk") / SDK_VERSION).absolute())
 elif system() == "Linux":
-    subprocess.run(
-        ["sudo", "apt", "install", "libxcb-xinput0", "libxcb-xinerama0", "libxcb-cursor-dev"],
-        check=True,
-    )
     subprocess.run(["tar", "-xf", sdk_file_name, "-C", "vulkan-sdk"], check=True)
+    SDK_PATH = str((Path("vulkan-sdk") / SDK_VERSION).absolute())
 elif system() == "Darwin":
     with TemporaryDirectory() as unzip_dir:
         subprocess.run(["unzip", sdk_file_name, "-d", unzip_dir])
@@ -56,8 +54,9 @@ elif system() == "Darwin":
             ],
             check=True,
         )
+    SDK_PATH = str((Path("vulkan-sdk") / SDK_VERSION).absolute())
 else:
     raise RuntimeError(f"unexpected system: {system()}")
 
 with open(os.environ["GITHUB_ENV"], "w") as github_env:
-    github_env.write(f"VULKAN_SDK={os.path.abspath('vulkan-sdk')}")
+    github_env.write(f"VULKAN_SDK={SDK_PATH}")
