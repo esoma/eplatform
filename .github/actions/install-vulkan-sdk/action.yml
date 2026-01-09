@@ -25,3 +25,7 @@ runs:
         python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
         ls vulkan-sdk
         ls vulkan-sdk/${{ inputs.version }}
+    - name: set vulkan sdk env vars
+      shell: bash
+      run: |
+        echo "VULKAN_SDK=${PWD}/vulkan-sdk" >> $GITHUB_ENV
