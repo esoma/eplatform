@@ -66,7 +66,7 @@ elif system() == "Darwin":
                 ],
                 check=True,
             )
-            subprocess.run(["cp", "-R", f"{install_dir}/*", "vulkan-sdk"], check=True)
+            subprocess.run(["cp", "-R", f"{install_dir}/.", "vulkan-sdk"], check=True)
 
 else:
     raise RuntimeError(f"unexpected system: {system()}")

@@ -12,9 +12,9 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: vulkan sdk cache
+    - name: restore vulkan sdk cache
       id: vulkan-sdk-cache
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
       with:
         path: vulkan-sdk
         key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
@@ -24,6 +24,12 @@ runs:
       run: |
         python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
         ls vulkan-sdk
+    - name: save vulkan sdk cache
+      if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: vulkan-sdk
+        key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
     - name: set vulkan sdk env vars
       shell: bash
       run: |
