@@ -29,15 +29,9 @@ jobs:
       run: |
         git submodule update --init --recursive
 
-    - name: Install Vulkan SDK
-      uses: jakoch/install-vulkan-sdk-action@v1
+    - uses: NcStudios/VulkanCI@v1.0
       with:
-        vulkan_version: 1.4.335.0
-        install_runtime: true
-        cache: true
-        stripdown: true
-        install_lavapipe: true
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        sdkVersion: 1.4.309.0
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
@@ -55,11 +49,6 @@ jobs:
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
-
-    - name: Register Lavapipe Windows
-      if: runner.os == 'Windows'
-      shell: powershell
-      run: reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "C:\lavapipe\share\vulkan\icd.d\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
 
     - name: Install ninja
       uses: seanmiddleditch/gha-setup-ninja@v5
@@ -88,7 +77,6 @@ jobs:
     - name: Vulkan Info
       if: runner.os != 'Windows'
       run: |
-        export VK_DRIVER_FILES=$HOME/lavapipe/share/vulkan/icd.d/lvp_icd.x86_64.json
         ls $HOME
         ls $HOME/lavapipe
         ls $HOME/lavapipe/share
@@ -107,7 +95,6 @@ jobs:
     - name: Test Mac
       if: runner.os == 'macOS'
       run: |
-        export VK_DRIVER_FILES=$HOME/lavapipe/share/vulkan/icd.d/lvp_icd.x86_64.json
         export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
         poetry run pytest --cov=eplatform --cov-report=xml --disruptive
@@ -117,7 +104,6 @@ jobs:
     - name: Test Linux
       if: runner.os == 'Linux'
       run: |
-        export VK_DRIVER_FILES=$HOME/lavapipe/share/vulkan/icd.d/lvp_icd.x86_64.json
         export LD_LIBRARY_PATH=$PWD/vendor/SDL:$LD_LIBRARY_PATH
         xvfb-run -a poetry run python .github/info.py
         xvfb-run -a poetry run pytest --cov=eplatform --cov-report=xml --disruptive\
