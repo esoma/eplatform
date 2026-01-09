@@ -1,0 +1,25 @@
+name: 'Install Vulkan SDK'
+description: 'Install and cache the Vulkan SDK'
+inputs:
+  version:
+    description: 'Vulkan SDK version to install'
+    required: false
+    default: '1.4.335.0'
+outputs:
+  cache-hit:
+    description: 'Whether the cache was hit'
+    value: ${{ steps.vulkan-sdk-cache.outputs.cache-hit }}
+runs:
+  using: 'composite'
+  steps:
+    - name: vulkan sdk cache
+      id: vulkan-sdk-cache
+      uses: actions/cache@v4
+      with:
+        path: vulkan-sdk
+        key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
+    - name: install vulkan sdk
+      if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/install-vulkan-sdk.py ${{ inputs.version }}

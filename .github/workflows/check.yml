@@ -36,7 +36,7 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Setup Vulkan
-      uses: ./.github/workflows/vulkan-sdk.yml
+      uses: ./.github/actions/install-vulkan-sdk
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
