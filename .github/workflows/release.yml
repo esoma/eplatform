@@ -48,9 +48,7 @@ jobs:
       uses: pypa/cibuildwheel@v3.3.0
       env:
         CIBW_ARCHS: ${{ matrix.ciwb-arch }}
-      with:
-        environment:
-          VULKAN_SDK: ${{ steps.vulkan-sdk.outputs.path }}
+        VULKAN_SDK: ${{ steps.vulkan-sdk.outputs.path }}
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'
