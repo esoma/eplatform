@@ -1,6 +1,5 @@
 name: 'Install Swiftshader'
 description: 'Install Swiftshader'
-inputs:
 runs:
   using: 'composite'
   steps:
