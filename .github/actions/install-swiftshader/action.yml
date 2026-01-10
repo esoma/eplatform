@@ -21,7 +21,7 @@ runs:
 
     - name: save cache
       if: steps.swiftshader-cache.outputs.cache-hit != 'true'
-      uses: actions/cache/restore@v4
+      uses: actions/cache/save@v4
       with:
         path: swiftshader/build
         key: ${{ runner.os }}-swiftshader
@@ -29,6 +29,6 @@ runs:
     - name: setup
       shell: bash
       run: |
-        echo "$PWD/Darwin/vk_swiftshader_icd.json" >> $GITHUB_ENV
+        echo "VK_ICD_FILENAMES=$PWD/Darwin/vk_swiftshader_icd.json" >> $GITHUB_ENV
         ls swiftshader/build/Darwin
         vulkaninfo
