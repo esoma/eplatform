@@ -30,5 +30,4 @@ runs:
         curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o./mesa
         ./mesa/systemwidedeploy.cmd 1
-      env:
-        VULKAN_DRIVER: ${PWD}/mesa/x64/lvp_icd.x86_64.json
+        echo "VULKAN_DRIVER=${PWD}/mesa/x64/lvp_icd.x86_64.json" >> $GITHUB_ENV
