@@ -21,7 +21,7 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew install mesa
+        brew install molten-vk vulkan-loader vulkan-tools
         vulkaninfo
 
     - name: Install Mesa Windows
