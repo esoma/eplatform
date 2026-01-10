@@ -27,7 +27,7 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        curl -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
+        curl -O mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o ./mesa
         ./mesa/systemwidedeploy.cmd
       env:
