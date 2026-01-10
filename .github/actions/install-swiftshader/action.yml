@@ -30,3 +30,7 @@ runs:
       shell: bash
       run: |
         echo "VK_ICD_FILENAMES=$PWD/Darwin/vk_swiftshader_icd.json" >> $GITHUB_ENV
+        cd $VULKAN_SDK
+        ls
+        ls bin
+        bin/vulkaninfo
