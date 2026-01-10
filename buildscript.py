@@ -35,10 +35,16 @@ _eplatform = Extension(
 )
 
 try:
-    _eplatform.library_dirs.append(str(Path(os.environ["VULKAN_SDK"]) / "lib"))
-    _eplatform.include_dirs.append(str(Path(os.environ["VULKAN_SDK"]) / "include"))
+    vulkan_sdk_path = os.environ["VULKAN_SDK"]
+    if system() == "Windows":
+        if not os.path.isdir(VULKAN_SDK) and VULKAN_SDK.startswith("/"):
+            vulkan_sdk_path = f"{VULKAN_SDK[1:2]}:/{VULKAN_SDK[3:]}"
+    print(f"Vulkan SDK: {vulkan_sdk_path}", file=sys.stderr)
+    _eplatform.library_dirs.append(str(Path(vulkan_sdk_path) / "lib"))
+    _eplatform.include_dirs.append(str(Path(vulkan_sdk_path) / "include"))
 except KeyError:
-    warn("VULKAN_SDK env var not set, linking may fail")
+    vulkan_sdk_path = None
+    print("VULKAN_SDK env var not set, linking may fail", file=sys.stderr)
 
 
 def _build_sdl() -> None:
@@ -58,10 +64,6 @@ def _build_sdl() -> None:
 
 
 def _build() -> None:
-    try:
-        print(f"Vulkan SDK: {str(Path(os.environ['VULKAN_SDK']))}", file=sys.stderr)
-    except KeyError:
-        print("VULKAN_SDK env var not set, linking may fail", file=sys.stderr)
     _build_sdl()
     cmd = build_ext(Distribution({"name": "extended", "ext_modules": [_eplatform]}))
     cmd.ensure_finalized()
