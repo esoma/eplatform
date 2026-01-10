@@ -21,14 +21,13 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        brew search mesa@
-        brew install mesa@${{ inputs.version }}
+        brew install mesa
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        curl -O https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z mesa.7z
+        curl -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o ./mesa
         ./mesa/systemwidedeploy.cmd
       env:
