@@ -30,6 +30,7 @@ runs:
       shell: bash
       run: |
         echo "VK_ICD_FILENAMES=$PWD/Darwin/vk_swiftshader_icd.json" >> $GITHUB_ENV
+        export DYLD_LIBRARY_PATH=$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH
         cd $VULKAN_SDK
         ls
         ls bin

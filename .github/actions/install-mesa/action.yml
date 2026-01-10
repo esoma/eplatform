@@ -30,6 +30,7 @@ runs:
         CALL ./mesa/systemwidedeploy.cmd 1
         cd ..
         reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "%CD%/mesa/x64/lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
+        echo "?????"
         cd "%VULKAN_SDK%/bin"
         dir
         vulkaninfoSDK
