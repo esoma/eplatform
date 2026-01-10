@@ -21,6 +21,8 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
+        brew update
+        brew upgrade cmake
         git clone https://github.com/google/swiftshader.git
         cd swiftshader/build
         cmake ..
