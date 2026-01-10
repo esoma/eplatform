@@ -22,6 +22,8 @@ runs:
       shell: bash
       run: |
         brew install molten-vk vulkan-loader vulkan-tools
+        export VK_ICD_FILENAMES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json
+        echo "VK_ICD_FILENAMES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json" >> $GITHUB_ENV
         vulkaninfo
 
     - name: Install Mesa Windows
@@ -31,4 +33,4 @@ runs:
         curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o./mesa
         ./mesa/systemwidedeploy.cmd 1
-        reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "%CD%/mesa/x64/lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
+        reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "%CD%\mesa\x64\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
