@@ -85,7 +85,7 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
-        poetry run pytest --cov=eplatform --cov-report=xml --disruptive
+        poetry run pytest test/ --cov=eplatform --cov-report=xml --disruptive
       env:
         LIBGL_ALWAYS_SOFTWARE: "true"
 
