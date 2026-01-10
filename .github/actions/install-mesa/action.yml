@@ -23,11 +23,16 @@ runs:
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
-      shell: bash
+      shell: cmd
       run: |
         curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o./mesa
-        reg.exe add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "${PWD}\mesa\x64\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
+        reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "%CD%\mesa\x64\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
+
+    - name: Vulkan SDK
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
         cd $VULKAN_SDK
         ls
         bin\vulkaninfoSDK.exe
