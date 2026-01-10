@@ -26,7 +26,7 @@ runs:
         cmake --version
         git clone https://github.com/google/swiftshader.git
         cd swiftshader/build
-        cmake ..
+        cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         cmake --build . --parallel
         ls
         export VK_ICD_FILENAMES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json
@@ -35,7 +35,7 @@ runs:
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
-      shell: base
+      shell: bash
       run: |
         curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o./mesa
