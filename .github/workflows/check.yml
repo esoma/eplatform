@@ -38,6 +38,9 @@ jobs:
     - name: Setup Vulkan
       uses: ./.github/actions/install-vulkan-sdk
 
+    - name: Setup Mesa
+      uses: ./.github/actions/install-mesa
+
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
       run: |
