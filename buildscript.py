@@ -59,9 +59,9 @@ def _build_sdl() -> None:
 
 def _build() -> None:
     try:
-        print(f"Vulkan SDK: {str(Path(os.environ['VULKAN_SDK']))}")
+        print(f"Vulkan SDK: {str(Path(os.environ['VULKAN_SDK']))}", file=sys.stderr)
     except KeyError:
-        print("VULKAN_SDK env var not set, linking may fail")
+        print("VULKAN_SDK env var not set, linking may fail", file=sys.stderr)
     _build_sdl()
     cmd = build_ext(Distribution({"name": "extended", "ext_modules": [_eplatform]}))
     cmd.ensure_finalized()
