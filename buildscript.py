@@ -37,8 +37,8 @@ _eplatform = Extension(
 try:
     vulkan_sdk_path = os.environ["VULKAN_SDK"]
     if system() == "Windows":
-        if not os.path.isdir(VULKAN_SDK) and VULKAN_SDK.startswith("/"):
-            vulkan_sdk_path = f"{VULKAN_SDK[1:2]}:/{VULKAN_SDK[3:]}"
+        if not os.path.isdir(vulkan_sdk_path) and vulkan_sdk_path.startswith("/"):
+            vulkan_sdk_path = f"{vulkan_sdk_path[1:2]}:/{vulkan_sdk_path[3:]}"
     print(f"Vulkan SDK: {vulkan_sdk_path}", file=sys.stderr)
     _eplatform.library_dirs.append(str(Path(vulkan_sdk_path) / "lib"))
     _eplatform.include_dirs.append(str(Path(vulkan_sdk_path) / "include"))
