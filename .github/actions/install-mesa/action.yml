@@ -17,31 +17,18 @@ runs:
         sudo apt-get install libgl1-mesa-dri libglx-mesa0
         sudo apt-get install mesa-vulkan-drivers vulkan-tools
 
-    - name: Install Mesa MacOS
+    - name: Install Swiftshader
       if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        brew update
-        brew upgrade cmake
-        cmake --version
-        git clone https://github.com/google/swiftshader.git
-        cd swiftshader/build
-        cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-        cmake --build .
-        ls
-        export VK_ICD_FILENAMES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json
-        echo "VK_ICD_FILENAMES=/opt/homebrew/etc/vulkan/icd.d/MoltenVK_icd.json" >> $GITHUB_ENV
-        vulkaninfo
+      uses: ./.github/actions/install-mesa
 
     - name: Install Mesa Windows
       if: runner.os == 'Windows'
-      shell: bash
+      shell: cmd
       run: |
         curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o./mesa
         ./mesa/systemwidedeploy.cmd 1
-        MESA_ICD_PATH=$(echo "$PWD/mesa/x64/lvp_icd.x86_64.json" | sed 's|^/d/|D:|' | sed 's|^/c/|C:|' | sed 's|/|\\|g')
-        reg.exe add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "$MESA_ICD_PATH" /t REG_DWORD /d 0 /f
-        cd $VULKAN_SDK/bin/
+        reg add "HKLM\\SOFTWARE\\Khronos\\Vulkan\\Drivers" /v "%CD%/mesa/x64/lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
+        cd %VULKAN_SDK%/bin/
         dir
         vulkaninfoSDK.exe
