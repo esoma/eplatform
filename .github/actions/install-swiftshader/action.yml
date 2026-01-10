@@ -21,7 +21,6 @@ runs:
 
     - name: save cache
       if: steps.swiftshader-cache.outputs.cache-hit != 'true'
-      id: swiftshader-cache
       uses: actions/cache/restore@v4
       with:
         path: swiftshader/build

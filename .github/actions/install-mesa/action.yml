@@ -27,10 +27,9 @@ runs:
       run: |
         curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/${{ inputs.version }}/mesa3d-${{ inputs.version }}-release-msvc.7z
         7z x mesa.7z -o./mesa
-        START "" cmd /c ./mesa/systemwidedeploy.cmd 1
-        cd %VULKAN_SDK%/bin/
+        CALL ./mesa/systemwidedeploy.cmd 1
         echo "???"
-        dir
-        vulkaninfoSDK.exe
+        dir %VULKAN_SDK%/bin/
+        %VULKAN_SDK%/bin/vulkaninfoSDK.exe
         echo "!!!"
         reg add "HKLM\\SOFTWARE\\Khronos\\Vulkan\\Drivers" /v "%CD%/mesa/x64/lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f
