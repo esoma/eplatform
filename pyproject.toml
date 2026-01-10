@@ -1,6 +1,6 @@
 [project]
 name = "eplatform"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 version = "0.19.1"
 description = "Operating System Library"
 authors = [
@@ -18,7 +18,7 @@ generate-setup-file = false
 script = "buildscript.py"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.14"
 emath = "^0"
 eevent = "^0"
 egeometry = "^0"
@@ -54,7 +54,10 @@ repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.0'
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
-before-all = "apk add samurai"
+before-all = [
+    "apk add samurai libxcursor-dev libxfixes-dev libx11-dev libxext-dev libxrandr-dev libxi-dev",
+    "apk add libxscrnsaver-dev libxtst-dev vulkan-headers vulkan-loader-dev",
+]
 
 [tool.cibuildwheel.windows]
 before-all = [
@@ -69,4 +72,4 @@ repair-wheel-command = ""
 
 [tool.cibuildwheel]
 enable = ["cpython-prerelease"]
-skip = ["cp3??t-*"]
+skip = ["cp3??t-*", "*-win32"]

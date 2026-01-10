@@ -1,0 +1,25 @@
+name: 'Install Software Renderer'
+description: 'Install Software Renderer'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Mesa Linux
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install mesa-utils mesa-utils-extra
+        sudo apt-get install libgl1-mesa-dri libglx-mesa0
+        sudo apt-get install mesa-vulkan-drivers vulkan-tools
+
+    - name: Install Swiftshader MacOS
+      if: runner.os == 'macOS'
+      uses: ./.github/actions/install-swiftshader
+
+    - name: Install Mesa Windows
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        curl -L -o mesa.7z https://github.com/pal1000/mesa-dist-win/releases/download/25.3.3/mesa3d-25.3.3-release-msvc.7z
+        7z x mesa.7z -oC:\mesa
+        reg add "HKLM\SOFTWARE\Khronos\Vulkan\Drivers" /v "C:\mesa\x64\lvp_icd.x86_64.json" /t REG_DWORD /d 0 /f

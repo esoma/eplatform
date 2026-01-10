@@ -34,14 +34,9 @@ jobs:
       run: |
         git submodule update --init --recursive
 
-    - name: Install Vulkan SDK
-      uses: jakoch/install-vulkan-sdk-action@v1
-      with:
-        vulkan_version: 1.4.335.0
-        install_runtime: true
-        cache: true
-        stripdown: true
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Setup Vulkan
+      id: vulkan-sdk
+      uses: ./.github/actions/install-vulkan-sdk
 
     - name: Setup MSVC
       if: runner.os == 'Windows'
@@ -53,6 +48,7 @@ jobs:
       uses: pypa/cibuildwheel@v3.3.0
       env:
         CIBW_ARCHS: ${{ matrix.ciwb-arch }}
+        VULKAN_SDK: ${{ steps.vulkan-sdk.outputs.path }}
 
     - name: Upload Github Wheel Release Artifact
       if: github.event_name == 'release'

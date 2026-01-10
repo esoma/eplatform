@@ -1,0 +1,32 @@
+name: 'Install Swiftshader'
+description: 'Install Swiftshader'
+runs:
+  using: 'composite'
+  steps:
+    - name: restore cache
+      id: swiftshader-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: swiftshader/build
+        key: ${{ runner.os }}-swiftshader
+
+    - name: build
+      if: steps.swiftshader-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone https://github.com/google/swiftshader.git
+        cd swiftshader/build
+        cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        cmake --build .
+
+    - name: save cache
+      if: steps.swiftshader-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: swiftshader/build
+        key: ${{ runner.os }}-swiftshader
+
+    - name: setup
+      shell: bash
+      run: |
+        echo "VK_ICD_FILENAMES=$PWD/swiftshader/build/Darwin/vk_swiftshader_icd.json" >> $GITHUB_ENV

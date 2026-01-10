@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.12', '3.13', '3.14']
+        python-version: ['3.14']
         arch: [x64]
 
     steps:
@@ -36,7 +36,10 @@ jobs:
         architecture: ${{ matrix.arch }}
 
     - name: Setup Vulkan
-      uses: ./.github/workflows/vulkan-sdk.yml
+      uses: ./.github/actions/install-vulkan-sdk
+
+    - name: Setup Software Renderer
+      uses: ./.github/actions/install-software-renderer
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
@@ -50,10 +53,6 @@ jobs:
         sudo apt-get install libxtst-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev
         sudo apt-get install libgles2-mesa-dev libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev
         sudo apt-get install libudev-dev libthai-dev
-
-    - name: Install Mesa Windows
-      if: runner.os == 'Windows'
-      uses: ssciwr/setup-mesa-dist-win@v2
 
     - name: Install ninja
       uses: seanmiddleditch/gha-setup-ninja@v5
@@ -73,16 +72,6 @@ jobs:
       env:
         EPLATFORM_BUILD_WITH_COVERAGE: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
 
-    - name: Vulkan Info
-      if: runner.os != 'Windows'
-      run: |
-        ls $HOME
-        ls $HOME/lavapipe
-        ls $HOME/lavapipe/share
-        ls $HOME/lavapipe/share/vulkan
-        ls $HOME/lavapipe/share/vulkan/icd.d
-        vulkaninfo --summary
-
     - name: Test Window
       if: runner.os == 'Windows'
       run: |
@@ -94,7 +83,7 @@ jobs:
     - name: Test Mac
       if: runner.os == 'macOS'
       run: |
-        export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$DYLD_LIBRARY_PATH
+        export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH
         poetry run python .github/info.py
         poetry run pytest --cov=eplatform --cov-report=xml --disruptive
       env:
@@ -126,7 +115,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.12
+        python-version: 3.14
         architecture: x64
 
     - name: Install Poetry
