@@ -35,6 +35,7 @@ jobs:
         git submodule update --init --recursive
 
     - name: Setup Vulkan
+      if: runner.os == 'Windows'
       id: vulkan-sdk
       uses: ./.github/actions/install-vulkan-sdk
 
