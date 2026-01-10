@@ -56,6 +56,7 @@ repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude 'libSDL3.so.0'
 select = "*-musllinux*"
 before-all = [
     "apk add samurai libxcursor-dev libx11-dev libxext-dev libxrandr-dev libxi-dev"
+    "apk add libxscrnsaver-dev"
 ]
 
 [tool.cibuildwheel.windows]
