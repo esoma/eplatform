@@ -5,6 +5,10 @@ inputs:
     description: 'Vulkan SDK version to install'
     required: false
     default: '1.4.335.0'
+outputs:
+  path:
+    description: 'Path to the Vulkan SDK directory'
+    value: ${{ steps.set-output.outputs.path }}
 runs:
   using: 'composite'
   steps:
@@ -29,6 +33,9 @@ runs:
         key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
 
     - name: set vulkan sdk env vars
+      id: set-output
       shell: bash
       run: |
-        echo "VULKAN_SDK=${PWD}/vulkan-sdk" >> $GITHUB_ENV
+        VULKAN_SDK_PATH="${PWD}/vulkan-sdk"
+        echo "VULKAN_SDK=${VULKAN_SDK_PATH}" >> $GITHUB_ENV
+        echo "path=${VULKAN_SDK_PATH}" >> $GITHUB_OUTPUT
