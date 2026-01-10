@@ -11,7 +11,7 @@ runs:
         key: ${{ runner.os }}-swiftshader
 
     - name: build
-      if: steps.swiftshader-cacheoutputs.cache-hit != 'true'
+      if: steps.swiftshader-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         git clone https://github.com/google/swiftshader.git
