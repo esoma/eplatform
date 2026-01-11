@@ -3,6 +3,7 @@
 #include <Python.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
 #include "emath.h"
@@ -62,8 +63,45 @@ normalize_sdl_joystick_axis_value_(Sint16 value)
 
 typedef struct ModuleState
 {
-    int dummy;
+    int vulkan_ref_count;
+    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
 } ModuleState;
+
+static int
+load_vulkan_functions(ModuleState *state)
+{
+    if (state->vulkan_ref_count == 0)
+    {
+        if (!SDL_Vulkan_LoadLibrary(0)){ RAISE_SDL_ERROR(); }
+
+        state->vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)SDL_Vulkan_GetVkGetInstanceProcAddr();
+        if (!state->vkGetInstanceProcAddr)
+        {
+            SDL_Vulkan_UnloadLibrary();
+            RAISE_SDL_ERROR();
+        }
+    }
+
+    state->vulkan_ref_count += 1;
+
+    return 1;
+error:
+    return 0;
+}
+
+static void
+unload_vulkan_functions(ModuleState *state)
+{
+    if (state->vulkan_ref_count > 0)
+    {
+        state->vulkan_ref_count -= 1;
+        if (state->vulkan_ref_count == 0)
+        {
+            SDL_Vulkan_UnloadLibrary();
+            state->vkGetInstanceProcAddr = 0;
+        }
+    }
+}
 
 static PyObject *
 reset_module_state(PyObject *module, PyObject *unused)
@@ -71,6 +109,9 @@ reset_module_state(PyObject *module, PyObject *unused)
     ModuleState *state = (ModuleState *)PyModule_GetState(module);
     CHECK_UNEXPECTED_PYTHON_ERROR();
     if (!state){ Py_RETURN_NONE; }
+
+    state->vulkan_ref_count = 0;
+    state->vkGetInstanceProcAddr = 0;
 
     Py_RETURN_NONE;
 error:
@@ -101,6 +142,11 @@ static PyObject *
 create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     SDL_Window *sdl_window = 0;
+    PyObject *py_sdl_window = 0;
+
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
 
     CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
 
@@ -150,19 +196,25 @@ create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
     int y;
     if (!SDL_GetWindowPosition(sdl_window, &x, &y)){ RAISE_SDL_ERROR(); }
 
-    PyObject *py_sdl_window = PyCapsule_New(sdl_window, "_eplatform.SDL_Window", 0);
+    py_sdl_window = PyCapsule_New(sdl_window, "_eplatform.SDL_Window", 0);
     if (!py_sdl_window){ goto error; }
     return Py_BuildValue("(Oii)", py_sdl_window, x, y);
 error:
     if (sdl_window){ SDL_DestroyWindow(sdl_window); }
+    Py_XDECREF(py_sdl_window);
     return 0;
 }
 
 static PyObject *
 delete_sdl_window(PyObject *module, PyObject *py_sdl_window)
 {
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
+
     SDL_Window *sdl_window = PyCapsule_GetPointer(py_sdl_window, "_eplatform.SDL_Window");
     if (!sdl_window){ goto error; }
+
     SDL_DestroyWindow(sdl_window);
     Py_RETURN_NONE;
 error:
@@ -1521,6 +1573,7 @@ static PyObject *
 create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     VkInstance vk_instance = 0;
+    bool vk_functions_loaded = false;
     const char **enabled_layer_names = 0;
     const char **enabled_extension_names = 0;
     const char *const *sdl_extensions = 0;
@@ -1528,6 +1581,13 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
     Py_ssize_t extension_count = 0;
     Py_ssize_t sdl_extension_count = 0;
     Uint32 sdl_extension_count_uint = 0;
+
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
+
+    if (!load_vulkan_functions(state)){ goto error; }
+    vk_functions_loaded = true;
 
     CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
 
@@ -1590,6 +1650,13 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
     create_info.ppEnabledExtensionNames = enabled_extension_names;
     create_info.pNext = 0;
 
+    PFN_vkCreateInstance vkCreateInstance = (PFN_vkCreateInstance)state->vkGetInstanceProcAddr(0, "vkCreateInstance");
+    if (!vkCreateInstance)
+    {
+        PyErr_Format(PyExc_RuntimeError, "unable to get vkCreateInstance function pointer");
+        goto error;
+    }
+
     VkResult result = vkCreateInstance(&create_info, 0, &vk_instance);
     if (result != VK_SUCCESS)
     {
@@ -1607,9 +1674,17 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
 error:
     PyMem_Free((void *)enabled_layer_names);
     PyMem_Free((void *)enabled_extension_names);
-    if (vk_instance)
+    if (vk_instance && state->vkGetInstanceProcAddr)
     {
-        vkDestroyInstance(vk_instance, 0);
+        PFN_vkDestroyInstance vkDestroyInstance = (PFN_vkDestroyInstance)state->vkGetInstanceProcAddr(vk_instance, "vkDestroyInstance");
+        if (vkDestroyInstance)
+        {
+            vkDestroyInstance(vk_instance, 0);
+        }
+    }
+    if (vk_functions_loaded)
+    {
+        unload_vulkan_functions(state);
     }
     return 0;
 }
@@ -1617,9 +1692,28 @@ error:
 static PyObject *
 delete_vulkan_instance(PyObject *module, PyObject *py_vk_instance)
 {
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
+
     VkInstance vk_instance = (VkInstance)PyLong_AsVoidPtr(py_vk_instance);
     CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    if (!state->vkGetInstanceProcAddr)
+    {
+        PyErr_Format(PyExc_RuntimeError, "Vulkan functions not loaded");
+        goto error;
+    }
+
+    PFN_vkDestroyInstance vkDestroyInstance = (PFN_vkDestroyInstance)state->vkGetInstanceProcAddr(vk_instance, "vkDestroyInstance");
+    if (!vkDestroyInstance)
+    {
+        PyErr_Format(PyExc_RuntimeError, "unable to get vkDestroyInstance function pointer");
+        goto error;
+    }
+
     vkDestroyInstance(vk_instance, 0);
+    unload_vulkan_functions(state);
     Py_RETURN_NONE;
 error:
     return 0;
