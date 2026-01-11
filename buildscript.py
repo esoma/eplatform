@@ -34,6 +34,13 @@ _eplatform = Extension(
     extra_link_args=_coverage_links_args,
 )
 
+if system() == "Darwin":
+    brew_prefix = subprocess.run(
+        ["brew", "--prefix"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    _eplatform.library_dirs.append(str(Path(brew_prefix) / "lib"))
+    _eplatform.include_dirs.append(str(Path(brew_prefix) / "include"))
+
 try:
     vulkan_sdk_path = os.environ["VULKAN_SDK"]
     if system() == "Windows":

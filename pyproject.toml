@@ -67,11 +67,6 @@ before-all = [
 [tool.cibuildwheel.macos]
 before-all = [
     "brew install ninja vulkan-loader vulkan-headers molten-vk",
-    "export C_INCLUDE_PATH=\"${C_INCLUDE_PATH:+${C_INCLUDE_PATH}:}$(brew --prefix)/include\"",
-    "export LIBRARY_PATH=\"${LIBRARY_PATH:+${LIBRARY_PATH}:}$(brew --prefix)/lib\"",
-    "ls \"$(brew --prefix)\"",
-    "ls \"$(brew --prefix)/include\"",
-    "ls \"$(brew --prefix)/lib\"",
 ]
 repair-wheel-command = ""
 
