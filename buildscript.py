@@ -27,7 +27,7 @@ if os.environ.get("EPLATFORM_BUILD_WITH_COVERAGE", "0") == "1":
 _eplatform = Extension(
     "eplatform._eplatform",
     library_dirs=["vendor/SDL"],
-    libraries=["vulkan-1" if system() == "Windows" else "vulkan", "SDL3"],
+    libraries=["SDL3"],
     include_dirs=["src/eplatform", "vendor/SDL/include", "vendor/emath/include"],
     sources=["src/eplatform/_eplatform.c"],
     extra_compile_args=_coverage_compile_args,
@@ -40,11 +40,10 @@ try:
         if not os.path.isdir(vulkan_sdk_path) and vulkan_sdk_path.startswith("/"):
             vulkan_sdk_path = f"{vulkan_sdk_path[1:2]}:/{vulkan_sdk_path[3:]}"
     print(f"Vulkan SDK: {vulkan_sdk_path}", file=sys.stderr)
-    _eplatform.library_dirs.append(str(Path(vulkan_sdk_path) / "lib"))
     _eplatform.include_dirs.append(str(Path(vulkan_sdk_path) / "include"))
 except KeyError:
     vulkan_sdk_path = None
-    print("VULKAN_SDK env var not set, linking may fail", file=sys.stderr)
+    print("VULKAN_SDK env var not set, Vulkan headers may not be found", file=sys.stderr)
 
 
 def _build_sdl() -> None:
