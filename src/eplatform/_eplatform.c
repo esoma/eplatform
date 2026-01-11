@@ -198,10 +198,6 @@ create_sdl_window(PyObject *module, PyObject **args, Py_ssize_t nargs)
 
     py_sdl_window = PyCapsule_New(sdl_window, "_eplatform.SDL_Window", 0);
     if (!py_sdl_window){ goto error; }
-    if (graphics_library == GRAPHICS_LIBRARY_VULKAN)
-    {
-        if (!load_vulkan_functions(state)){ goto error; }
-    }
     return Py_BuildValue("(Oii)", py_sdl_window, x, y);
 error:
     if (sdl_window){ SDL_DestroyWindow(sdl_window); }
@@ -218,11 +214,6 @@ delete_sdl_window(PyObject *module, PyObject *py_sdl_window)
 
     SDL_Window *sdl_window = PyCapsule_GetPointer(py_sdl_window, "_eplatform.SDL_Window");
     if (!sdl_window){ goto error; }
-
-    if (SDL_GetWindowFlags(sdl_window) & SDL_WINDOW_VULKAN)
-    {
-        unload_vulkan_functions(state);
-    }
 
     SDL_DestroyWindow(sdl_window);
     Py_RETURN_NONE;
@@ -1581,11 +1572,8 @@ error:
 static PyObject *
 create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
-    ModuleState *state = (ModuleState *)PyModule_GetState(module);
-    CHECK_UNEXPECTED_PYTHON_ERROR();
-    if (!state){ goto error; }
-
     VkInstance vk_instance = 0;
+    bool vk_functions_loaded = false;
     const char **enabled_layer_names = 0;
     const char **enabled_extension_names = 0;
     const char *const *sdl_extensions = 0;
@@ -1593,6 +1581,13 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
     Py_ssize_t extension_count = 0;
     Py_ssize_t sdl_extension_count = 0;
     Uint32 sdl_extension_count_uint = 0;
+
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
+
+    if (!load_vulkan_functions(state)){ goto error; }
+    vk_functions_loaded = true;
 
     CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
 
@@ -1687,6 +1682,10 @@ error:
             vkDestroyInstance(vk_instance, 0);
         }
     }
+    if (vk_functions_loaded)
+    {
+        unload_vulkan_functions(state);
+    }
     return 0;
 }
 
@@ -1714,6 +1713,7 @@ delete_vulkan_instance(PyObject *module, PyObject *py_vk_instance)
     }
 
     vkDestroyInstance(vk_instance, 0);
+    unload_vulkan_functions(state);
     Py_RETURN_NONE;
 error:
     return 0;
