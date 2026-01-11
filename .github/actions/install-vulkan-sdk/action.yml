@@ -45,7 +45,7 @@ runs:
       shell: bash
       run: |
         echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layer.d" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH="${VULKAN_SDK}/lib" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib" >> $GITHUB_ENV
 
     - name: set vulkan sdk macos
       if: runner.os == 'macOS'
