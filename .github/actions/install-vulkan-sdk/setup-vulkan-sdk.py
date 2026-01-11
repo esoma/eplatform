@@ -1,5 +1,7 @@
 import os
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from platform import system
 
@@ -10,17 +12,20 @@ with open(os.environ["GITHUB_ENV"], "w", encoding="utf-8") as env:
     print(f"VK_SDK_PATH={VULKAN_SDK}", file=env)
 
     if system() == "Windows":
-        subprocess.run(
-            [
-                str(VULKAN_SDK / "install.exe"),
-                "--root",
-                str(VULKAN_SDK),
-                "--accept-licenses",
-                "--confirm-command",
-                "install",
-            ],
-            check=True,
-        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            shutil.copyfile(str(VULKAN_SDK / "install.exe"), Path(temp_dir) / "install.exe")
+            (VULKAN_SDK / "install.exe").unlink()
+            subprocess.run(
+                [
+                    str(Path(temp_dir) / "install.exe"),
+                    "--root",
+                    str(VULKAN_SDK),
+                    "--accept-licenses",
+                    "--confirm-command",
+                    "install",
+                ],
+                check=True,
+            )
 
     if system() != "Windows":
         try:
