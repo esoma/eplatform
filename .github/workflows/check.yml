@@ -84,7 +84,6 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         export DYLD_LIBRARY_PATH=$PWD/vendor/SDL:$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH
-        ls $VULKAN_SDK/lib
         export SDL_VULKAN_LIBRARY=$VULKAN_SDK/lib/libvulkan.1.dylib
         poetry run python .github/info.py
         poetry run pytest test/ --cov=eplatform --cov-report=xml --disruptive
