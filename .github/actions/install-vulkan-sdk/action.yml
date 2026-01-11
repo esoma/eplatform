@@ -45,13 +45,13 @@ runs:
       shell: bash
       run: |
         echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layer.d" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
     - name: set vulkan sdk macos
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        echo "VK_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layers.d" >> $GITHUB_ENV
+        echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layers.d" >> $GITHUB_ENV
         echo "SDL_VULKAN_LIBRARY=$VULKAN_SDK/lib/libvulkan.1.dylib" >> $GITHUB_ENV
         echo "DYLD_LIBRARY_PATH=$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
 
@@ -59,11 +59,4 @@ runs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        echo "VK_LAYER_PATH=${VULKAN_SDK}/bin" >> $GITHUB_ENV
-
-    - name: set vulkan sdk windows registry
-      if: runner.os == 'Windows'
-      shell: cmd
-      run: |
-        reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\Vulkan\ExplicitLayers"
-        reg delete "HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\Vulkan\ImplicitLayers"
+        echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/bin" >> $GITHUB_ENV
