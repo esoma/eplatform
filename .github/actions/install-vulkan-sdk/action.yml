@@ -21,8 +21,17 @@ runs:
 
     - name: install vulkan sdk
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
+      shell: python
       run: |
-        python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
+        from subprocess import run
+        import os
+        import sys
+        from pathlib import Path
+        run([
+          sys.executable,
+          Path(os.environ["GITHUB_ACTION_PATH"]) / "install-vulkan-sdk.py",
+          "${{ inputs.version }}"
+        ], check=True)
 
     - name: save vulkan sdk cache
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
@@ -34,4 +43,12 @@ runs:
     - name: setup vulkan sdk
       id: setup
       run: |
-        python "$GITHUB_ACTION_PATH/setup-vulkan-sdk.py"
+        from subprocess import run
+        import os
+        import sys
+        from pathlib import Path
+        run([
+          sys.executable,
+          Path(os.environ["GITHUB_ACTION_PATH"]) / "setup-vulkan-sdk.py",
+          "${{ inputs.version }}"
+        ], check=True)
