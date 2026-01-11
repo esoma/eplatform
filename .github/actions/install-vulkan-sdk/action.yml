@@ -32,11 +32,30 @@ runs:
         path: vulkan-sdk
         key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
 
-    - name: set vulkan sdk env vars
+    - name: set vulkan sdk
       id: set-output
       shell: bash
       run: |
         VULKAN_SDK_PATH="${PWD}/vulkan-sdk"
-        echo "VK_LAYER_PATH=${VULKAN_SDK_PATH}/bin" >> $GITHUB_ENV
         echo "VULKAN_SDK=${VULKAN_SDK_PATH}" >> $GITHUB_ENV
         echo "path=${VULKAN_SDK_PATH}" >> $GITHUB_OUTPUT
+
+    - name: set vulkan sdk linux
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo "VK_LAYER_PATH=${VULKAN_SDK}/lib/vulkan/layers" >> $GITHUB_ENV
+
+    - name: set vulkan sdk macos
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        echo "VK_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layers.d" >> $GITHUB_ENV
+        echo "SDL_VULKAN_LIBRARY=$VULKAN_SDK/lib/libvulkan.1.dylib" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+
+    - name: set vulkan sdk windows
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        echo "VK_LAYER_PATH=${VULKAN_SDK}/bin" >> $GITHUB_ENV
