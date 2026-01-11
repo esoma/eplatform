@@ -13,6 +13,7 @@ __all__ = [
     "SdlMouseButton",
     "SdlScancode",
     "SdlWindow",
+    "VkDebugUtilsMessenger",
     "VkInstance",
     "VkSurface",
 ]
@@ -33,5 +34,6 @@ SdlGamepadAxis = NewType("SdlGamepadAxis", int)
 SdlGamepadBindingType = NewType("SdlGamepadBindingType", int)
 SdlHat = NewType("SdlHat", int)
 SdlGamepadType = NewType("SdlGamepadType", int)
+VkDebugUtilsMessenger = NewType("VkDebugUtilsMessenger", int)
 VkInstance = NewType("VkInstance", int)
 VkSurface = NewType("VkSurface", int)

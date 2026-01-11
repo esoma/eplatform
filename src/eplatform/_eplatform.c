@@ -1569,6 +1569,55 @@ error:
     return 0;
 }
 
+VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_messenger_callback
+(
+    VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+    VkDebugUtilsMessageTypeFlagsEXT types,
+    const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
+    void* userData
+)
+{
+    PyGILState_STATE py_gil_state = PyGILState_Ensure();
+    PyObject *py_exception = 0;
+    PyObject *py_severity = 0;
+    PyObject *py_types = 0;
+    PyObject *py_message = 0;
+
+    py_exception = PyErr_GetRaisedException();
+    if (userData)
+    {
+        PyObject *py_callback = (PyObject *)userData;
+        py_severity = PyLong_FromUnsignedLong((unsigned long)severity);
+        if (!py_severity){ goto error; }
+        py_types = PyLong_FromUnsignedLong((unsigned long)types);
+        if (!py_types){ goto error; }
+        py_message = PyUnicode_FromString(callbackData->pMessage);
+        if (!py_message){ goto error; }
+
+        PyObject *result = PyObject_CallFunctionObjArgs(py_callback, py_severity, py_types, py_message, 0);
+        Py_DECREF(py_severity);
+        py_severity = 0;
+        Py_DECREF(py_types);
+        py_types = 0;
+        Py_DECREF(py_message);
+        py_message = 0;
+        if (!result){ goto error; }
+        Py_DECREF(result);
+    }
+
+    PyErr_SetRaisedException(py_exception);
+    PyGILState_Release(py_gil_state);
+    return VK_FALSE;
+error:
+    Py_XDECREF(py_severity);
+    Py_XDECREF(py_types);
+    Py_XDECREF(py_message);
+    PyErr_WriteUnraisable(0);
+    PyErr_SetRaisedException(py_exception);
+    PyGILState_Release(py_gil_state);
+    return VK_TRUE;
+}
+
 static PyObject *
 create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
@@ -1589,18 +1638,24 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
     if (!load_vulkan_functions(state)){ goto error; }
     vk_functions_loaded = true;
 
-    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(3);
 
     PyObject *py_enabled_layers = args[0];
     PyObject *py_enabled_extensions = args[1];
+    PyObject *py_message_callback = args[2];
 
-    layer_count = PySequence_Length(py_enabled_layers);
+    Py_ssize_t user_layer_count = PySequence_Length(py_enabled_layers);
     CHECK_UNEXPECTED_PYTHON_ERROR();
+    layer_count = user_layer_count;
+    if (py_message_callback != Py_None)
+    {
+        layer_count += 1;
+    }
     if (layer_count > 0)
     {
         enabled_layer_names = (const char **)PyMem_Malloc(layer_count * sizeof(const char *));
         if (!enabled_layer_names){ goto error; }
-        for (Py_ssize_t i = 0; i < layer_count; i++)
+        for (Py_ssize_t i = 0; i < user_layer_count; i++)
         {
             PyObject *py_layer = PySequence_GetItem(py_enabled_layers, i);
             CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -1608,6 +1663,10 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
             CHECK_UNEXPECTED_PYTHON_ERROR();
             enabled_layer_names[i] = layer;
             Py_DECREF(py_layer);
+        }
+        if (py_message_callback != Py_None)
+        {
+            enabled_layer_names[user_layer_count] = "VK_LAYER_KHRONOS_validation";
         }
     }
 
@@ -1619,8 +1678,13 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
         RAISE_SDL_ERROR();
     }
     sdl_extension_count = (Py_ssize_t)sdl_extension_count_uint;
-    extension_count = PySequence_Length(py_enabled_extensions);
+    Py_ssize_t user_extension_count = PySequence_Length(py_enabled_extensions);
     CHECK_UNEXPECTED_PYTHON_ERROR();
+    extension_count = user_extension_count;
+    if (py_message_callback != Py_None)
+    {
+        extension_count += 1;
+    }
     Py_ssize_t total_extension_count = sdl_extension_count + extension_count;
     if (total_extension_count > 0)
     {
@@ -1630,7 +1694,7 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
         {
             enabled_extension_names[i] = sdl_extensions[i];
         }
-        for (Py_ssize_t i = 0; i < extension_count; i++)
+        for (Py_ssize_t i = 0; i < user_extension_count; i++)
         {
             PyObject *py_extension = PySequence_GetItem(py_enabled_extensions, i);
             CHECK_UNEXPECTED_PYTHON_ERROR();
@@ -1639,6 +1703,29 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
             enabled_extension_names[sdl_extension_count + i] = extension;
             Py_DECREF(py_extension);
         }
+        if (py_message_callback != Py_None)
+        {
+            enabled_extension_names[sdl_extension_count + user_extension_count] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+        }
+    }
+
+    VkDebugUtilsMessengerCreateInfoEXT debug_messenger_create_info = {0};
+    if (py_message_callback != Py_None)
+    {
+        debug_messenger_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debug_messenger_create_info.messageSeverity = (
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+        );
+        debug_messenger_create_info.messageType = (
+            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+        );
+        debug_messenger_create_info.pfnUserCallback = vulkan_messenger_callback;
+        debug_messenger_create_info.pUserData = (void *)py_message_callback;
     }
 
     VkInstanceCreateInfo create_info = {0};
@@ -1649,6 +1736,10 @@ create_vulkan_instance(PyObject *module, PyObject **args, Py_ssize_t nargs)
     create_info.enabledExtensionCount = (uint32_t)total_extension_count;
     create_info.ppEnabledExtensionNames = enabled_extension_names;
     create_info.pNext = 0;
+    if (py_message_callback != Py_None)
+    {
+        create_info.pNext = &debug_messenger_create_info;
+    }
 
     PFN_vkCreateInstance vkCreateInstance = (PFN_vkCreateInstance)state->vkGetInstanceProcAddr(0, "vkCreateInstance");
     if (!vkCreateInstance)
@@ -1720,6 +1811,100 @@ error:
 }
 
 static PyObject *
+create_vulkan_debug_messenger(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    VkDebugUtilsMessengerCreateInfoEXT create_info = {0};
+    VkDebugUtilsMessengerEXT vk_debug_messenger = 0;
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
+
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    VkInstance vk_instance = (VkInstance)PyLong_AsVoidPtr(args[0]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    PyObject *py_message_callback = args[1];
+
+    if (!state->vkGetInstanceProcAddr)
+    {
+        PyErr_Format(PyExc_RuntimeError, "Vulkan functions not loaded");
+        goto error;
+    }
+
+    PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)state->vkGetInstanceProcAddr(vk_instance, "vkCreateDebugUtilsMessengerEXT");
+    if (!vkCreateDebugUtilsMessengerEXT)
+    {
+        PyErr_Format(PyExc_RuntimeError, "unable to get vkCreateDebugUtilsMessengerEXT function pointer");
+        goto error;
+    }
+
+    create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    create_info.messageSeverity = (
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
+    );
+    create_info.messageType = (
+        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
+    );
+    create_info.pfnUserCallback = vulkan_messenger_callback;
+    Py_INCREF(py_message_callback);
+    create_info.pUserData = (void *)py_message_callback;
+
+    VkResult result = vkCreateDebugUtilsMessengerEXT(vk_instance, &create_info, 0, &vk_debug_messenger);
+    if (result != VK_SUCCESS)
+    {
+        PyErr_Format(PyExc_RuntimeError, "vkCreateDebugUtilsMessengerEXT failed with result: %d", result);
+        goto error;
+    }
+
+    return PyLong_FromVoidPtr((void *)vk_debug_messenger);
+
+error:
+    Py_XDECREF(create_info.pUserData);
+    return 0;
+}
+
+static PyObject *
+delete_vulkan_debug_messenger(PyObject *module, PyObject **args, Py_ssize_t nargs)
+{
+    ModuleState *state = (ModuleState *)PyModule_GetState(module);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+    if (!state){ goto error; }
+
+    CHECK_UNEXPECTED_ARG_COUNT_ERROR(2);
+
+    VkInstance vk_instance = (VkInstance)PyLong_AsVoidPtr(args[0]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    VkDebugUtilsMessengerEXT vk_debug_messenger = (VkDebugUtilsMessengerEXT)PyLong_AsVoidPtr(args[1]);
+    CHECK_UNEXPECTED_PYTHON_ERROR();
+
+    if (!state->vkGetInstanceProcAddr)
+    {
+        PyErr_Format(PyExc_RuntimeError, "Vulkan functions not loaded");
+        goto error;
+    }
+
+    PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)state->vkGetInstanceProcAddr(vk_instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (!vkDestroyDebugUtilsMessengerEXT)
+    {
+        PyErr_Format(PyExc_RuntimeError, "unable to get vkDestroyDebugUtilsMessengerEXT function pointer");
+        goto error;
+    }
+
+    vkDestroyDebugUtilsMessengerEXT(vk_instance, vk_debug_messenger, 0);
+    Py_RETURN_NONE;
+
+error:
+    return 0;
+}
+
+static PyObject *
 create_sdl_vulkan_surface(PyObject *module, PyObject **args, Py_ssize_t nargs)
 {
     VkSurfaceKHR vk_surface = 0;
@@ -1785,8 +1970,10 @@ static PyMethodDef module_PyMethodDef[] = {
     {"create_sdl_gl_context", create_sdl_gl_context, METH_O, 0},
     {"create_sdl_vulkan_surface", (PyCFunction)create_sdl_vulkan_surface, METH_FASTCALL, 0},
     {"create_vulkan_instance", (PyCFunction)create_vulkan_instance, METH_FASTCALL, 0},
+    {"create_vulkan_debug_messenger", (PyCFunction)create_vulkan_debug_messenger, METH_FASTCALL, 0},
     {"delete_sdl_gl_context", delete_sdl_gl_context, METH_O, 0},
     {"delete_sdl_vulkan_surface", (PyCFunction)delete_sdl_vulkan_surface, METH_FASTCALL, 0},
+    {"delete_vulkan_debug_messenger", (PyCFunction)delete_vulkan_debug_messenger, METH_FASTCALL, 0},
     {"delete_vulkan_instance", delete_vulkan_instance, METH_O, 0},
     {"get_gl_attrs", get_gl_attrs, METH_NOARGS, 0},
     {"set_clipboard", set_clipboard, METH_O, 0},

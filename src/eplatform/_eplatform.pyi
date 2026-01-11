@@ -1,5 +1,6 @@
 __all__ = []
 
+from typing import Callable
 from typing import Collection
 
 from emath import IVector2
@@ -18,6 +19,7 @@ from ._type import SdlJoystickId
 from ._type import SdlMouseButton
 from ._type import SdlScancode
 from ._type import SdlWindow
+from ._type import VkDebugUtilsMessenger
 from ._type import VkInstance
 from ._type import VkSurface
 from ._window_icon import WindowIcon
@@ -66,10 +68,19 @@ def get_gl_attrs() -> tuple[int, int, int, int, int, int]: ...
 
 # vulkan
 def create_sdl_vulkan_surface(sdl_window: SdlWindow, vk_instance: VkInstance, /) -> VkSurface: ...
+def create_vulkan_debug_messenger(
+    vk_instance: VkInstance, callback: Callable[[int, int, str], None] | None, /
+) -> VkDebugUtilsMessenger: ...
 def create_vulkan_instance(
-    enabled_layer_names: Collection[str], enabled_extension_names: Collection[str], /
+    enabled_layer_names: Collection[str],
+    enabled_extension_names: Collection[str],
+    message_callback: Callable[[int, int, str], None] | None,
+    /,
 ) -> VkInstance: ...
 def delete_sdl_vulkan_surface(vk_instance: VkInstance, vk_surface: VkSurface, /) -> None: ...
+def delete_vulkan_debug_messenger(
+    vk_instance: VkInstance, vk_debug_messenger: VkDebugUtilsMessenger, /
+) -> None: ...
 def delete_vulkan_instance(vk_instance: VkInstance, /) -> None: ...
 
 # clipboard

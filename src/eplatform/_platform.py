@@ -11,7 +11,9 @@ __all__ = [
     "set_clipboard",
 ]
 
+import logging
 import os
+from enum import IntFlag
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
@@ -19,6 +21,7 @@ from typing import ClassVar
 from typing import Final
 from typing import Generator
 from typing import Self
+from typing import Sequence
 
 from emath import IVector2
 
@@ -35,16 +38,19 @@ from ._eplatform import clear_sdl_events
 from ._eplatform import create_sdl_gl_context
 from ._eplatform import create_sdl_vulkan_surface
 from ._eplatform import create_sdl_window
+from ._eplatform import create_vulkan_debug_messenger
 from ._eplatform import create_vulkan_instance
 from ._eplatform import deinitialize_sdl
 from ._eplatform import delete_sdl_gl_context
 from ._eplatform import delete_sdl_vulkan_surface
+from ._eplatform import delete_vulkan_debug_messenger
 from ._eplatform import delete_vulkan_instance
 from ._eplatform import get_clipboard as _get_clipboard
 from ._eplatform import get_gl_attrs
 from ._eplatform import initialize_sdl
 from ._eplatform import set_clipboard as _set_clipboard
 from ._keyboard import Keyboard
+from ._type import VkDebugUtilsMessenger
 from ._type import VkInstance
 from ._type import VkSurface
 from ._window import OpenGlWindow
@@ -71,6 +77,37 @@ _GL_VERSIONS: Final[tuple[tuple[int, int], ...]] = (
 )
 
 
+class VulkanMessageSeverity(IntFlag):
+    VERBOSE = 0x00000001
+    INFO = 0x00000010
+    WARNING = 0x00000100
+    ERROR = 0x00001000
+
+
+class VulkanMessageType(IntFlag):
+    GENERAL = 0x00000001
+    VALIDATION = 0x00000002
+    PERFORMANCE = 0x00000004
+
+
+def log_vulkan_message(severity: int, type: int, message: str) -> None:
+    if severity & VulkanMessageSeverity.ERROR.value:
+        log_level = logging.ERROR
+    elif severity & VulkanMessageSeverity.WARNING.value:
+        log_level = logging.WARNING
+    elif severity & VulkanMessageSeverity.INFO.value:
+        log_level = logging.INFO
+    else:
+        log_level = logging.DEBUG
+    if type & VulkanMessageType.PERFORMANCE.value:
+        log = logging.getLogger("e16.vulkan.performance")
+    elif type & VulkanMessageType.VALIDATION.value:
+        log = logging.getLogger("e16.vulkan.validation")
+    else:
+        log = logging.getLogger("e16.vulkan")
+    log.log(log_level, message)
+
+
 class Platform:
     _deactivate_callbacks: ClassVar[list[Callable[[], None]]] = []
     _singleton: ClassVar[Self | None] = None
@@ -84,6 +121,7 @@ class Platform:
     _stencil_bits: int | None = None
     _vk_instance: VkInstance | None = None
     _vk_surface: VkSurface | None = None
+    _vk_debug_messenger: VkDebugUtilsMessenger | None = None
 
     def __init__(
         self,
@@ -91,9 +129,18 @@ class Platform:
         window_cls: type[Window] | None = None,
         mouse_cls: type[Mouse] | None = None,
         keyboard_cls: type[Keyboard] | None = None,
+        vulkan_layers: Sequence[str] = (),
+        vulkan_extensions: Sequence[str] = (),
+        vulkan_message_callback: Callable[[int, int, str], None] | None = None,
         open_gl_version_min: tuple[int, int] = _GL_VERSIONS[-1],
         open_gl_version_max: tuple[int, int] = _GL_VERSIONS[0],
     ) -> None:
+        if __debug__ and vulkan_message_callback is None:
+            vulkan_message_callback = log_vulkan_message
+
+        self._vulkan_layers = vulkan_layers
+        self._vulkan_extensions = vulkan_extensions
+        self._vulkan_message_callback = vulkan_message_callback
         self._gl_version_min = open_gl_version_min
         self._gl_version_max = open_gl_version_max
 
@@ -196,7 +243,13 @@ class Platform:
         assert self._window is not None
         if not isinstance(self._window, VulkanWindow):
             return
-        self._vk_instance = create_vulkan_instance([], [])
+        self._vk_instance = create_vulkan_instance(
+            self._vulkan_layers, self._vulkan_extensions, self._vulkan_message_callback
+        )
+        if self._vulkan_message_callback:
+            self._vk_debug_messenger = create_vulkan_debug_messenger(
+                self._vk_instance, self._vulkan_message_callback
+            )
         sdl_window = get_sdl_window(self._window)
         self._vk_surface = create_sdl_vulkan_surface(sdl_window, self._vk_instance)
 
@@ -204,6 +257,9 @@ class Platform:
         if self._vk_surface is not None and self._vk_instance is not None:
             delete_sdl_vulkan_surface(self._vk_instance, self._vk_surface)
             self._vk_surface = None
+        if self._vk_debug_messenger is not None:
+            assert self._vk_instance is not None
+            delete_vulkan_debug_messenger(self._vk_instance, self._vk_debug_messenger)
         if self._vk_instance is not None:
             delete_vulkan_instance(self._vk_instance)
             self._vk_instance = None
