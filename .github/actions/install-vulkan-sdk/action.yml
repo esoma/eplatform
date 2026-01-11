@@ -8,7 +8,7 @@ inputs:
 outputs:
   path:
     description: 'Path to the Vulkan SDK directory'
-    value: ${{ steps.set-output.outputs.path }}
+    value: ${{ steps.setup.outputs.path }}
 runs:
   using: 'composite'
   steps:
@@ -21,7 +21,6 @@ runs:
 
     - name: install vulkan sdk
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
-      shell: bash
       run: |
         python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
 
@@ -32,31 +31,7 @@ runs:
         path: vulkan-sdk
         key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
 
-    - name: set vulkan sdk
-      id: set-output
-      shell: bash
+    - name: setup vulkan sdk
+      id: setup
       run: |
-        VULKAN_SDK_PATH="${PWD}/vulkan-sdk"
-        echo "VULKAN_SDK=${VULKAN_SDK_PATH}" >> $GITHUB_ENV
-        echo "path=${VULKAN_SDK_PATH}" >> $GITHUB_OUTPUT
-
-    - name: set vulkan sdk linux
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layer.d" >> $GITHUB_ENV
-        echo "LD_LIBRARY_PATH=${VULKAN_SDK}/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-
-    - name: set vulkan sdk macos
-      if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/share/vulkan/explicit_layers.d" >> $GITHUB_ENV
-        echo "SDL_VULKAN_LIBRARY=$VULKAN_SDK/lib/libvulkan.1.dylib" >> $GITHUB_ENV
-        echo "DYLD_LIBRARY_PATH=$VULKAN_SDK/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-
-    - name: set vulkan sdk windows env
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        echo "VK_ADD_LAYER_PATH=${VULKAN_SDK}/bin" >> $GITHUB_ENV
+        python "$GITHUB_ACTION_PATH/setup-vulkan-sdk.py"
