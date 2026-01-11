@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path
 from platform import system
 
@@ -9,19 +10,16 @@ with open(os.environ["GITHUB_ENV"], "w", encoding="utf-8") as env:
     print(f"VK_SDK_PATH={VULKAN_SDK}", file=env)
 
     if system() == "Windows":
-        try:
-            PATH = ";" + os.environ["PATH"]
-        except KeyError:
-            PATH = ""
-        print(f"PATH={VULKAN_SDK / 'bin'}{PATH}", file=env)
-
-        import subprocess
-
         subprocess.run(
-            ["reg", "query", r"HKLM\SOFTWARE\Khronos\Vulkan\ExplicitLayers"], check=True
-        )
-        subprocess.run(
-            ["reg", "query", r"HKLM\SOFTWARE\Khronos\Vulkan\ImplicitLayers"], check=True
+            [
+                VULKAN_SDK / "install.exe",
+                "--root",
+                VULKAN_SDK,
+                "--accept-licenses",
+                "--confirm-command",
+                "install",
+            ],
+            check=True,
         )
 
     if system() != "Windows":
