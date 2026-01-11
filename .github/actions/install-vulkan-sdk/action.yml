@@ -42,6 +42,7 @@ runs:
 
     - name: setup vulkan sdk
       id: setup
+      shell: python
       run: |
         from subprocess import run
         import os
