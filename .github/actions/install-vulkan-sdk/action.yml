@@ -37,5 +37,6 @@ runs:
       shell: bash
       run: |
         VULKAN_SDK_PATH="${PWD}/vulkan-sdk"
+        echo "VK_LAYER_PATH=${VULKAN_SDK_PATH}/bin" >> $GITHUB_ENV
         echo "VULKAN_SDK=${VULKAN_SDK_PATH}" >> $GITHUB_ENV
         echo "path=${VULKAN_SDK_PATH}" >> $GITHUB_OUTPUT
