@@ -17,8 +17,12 @@ with open(os.environ["GITHUB_ENV"], "w", encoding="utf-8") as env:
 
         import subprocess
 
-        subprocess.run(["reg", "query", "HKLM\SOFTWARE\Khronos\Vulkan\ExplicitLayers"], check=True)
-        subprocess.run(["reg", "query", "HKLM\SOFTWARE\Khronos\Vulkan\ImplicitLayers"], check=True)
+        subprocess.run(
+            ["reg", "query", r"HKLM\SOFTWARE\Khronos\Vulkan\ExplicitLayers"], check=True
+        )
+        subprocess.run(
+            ["reg", "query", r"HKLM\SOFTWARE\Khronos\Vulkan\ImplicitLayers"], check=True
+        )
 
     if system() != "Windows":
         try:
