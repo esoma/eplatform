@@ -8,7 +8,7 @@ inputs:
 outputs:
   path:
     description: 'Path to the Vulkan SDK directory'
-    value: ${{ steps.set-output.outputs.path }}
+    value: ${{ steps.setup.outputs.path }}
 runs:
   using: 'composite'
   steps:
@@ -21,9 +21,17 @@ runs:
 
     - name: install vulkan sdk
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: python
       run: |
-        python "$GITHUB_ACTION_PATH/install-vulkan-sdk.py" ${{ inputs.version }}
+        from subprocess import run
+        import os
+        import sys
+        from pathlib import Path
+        run([
+          sys.executable,
+          Path(os.environ["GITHUB_ACTION_PATH"]) / "install-vulkan-sdk.py",
+          "${{ inputs.version }}"
+        ], check=True)
 
     - name: save vulkan sdk cache
       if: steps.vulkan-sdk-cache.outputs.cache-hit != 'true'
@@ -32,11 +40,16 @@ runs:
         path: vulkan-sdk
         key: ${{ runner.os }}-vulkan-sdk-${{ inputs.version }}
 
-    - name: set vulkan sdk env vars
-      id: set-output
-      shell: bash
+    - name: setup vulkan sdk
+      id: setup
+      shell: python
       run: |
-        VULKAN_SDK_PATH="${PWD}/vulkan-sdk"
-        echo "VK_LAYER_PATH=${VULKAN_SDK_PATH}/bin" >> $GITHUB_ENV
-        echo "VULKAN_SDK=${VULKAN_SDK_PATH}" >> $GITHUB_ENV
-        echo "path=${VULKAN_SDK_PATH}" >> $GITHUB_OUTPUT
+        from subprocess import run
+        import os
+        import sys
+        from pathlib import Path
+        run([
+          sys.executable,
+          Path(os.environ["GITHUB_ACTION_PATH"]) / "setup-vulkan-sdk.py",
+          "${{ inputs.version }}"
+        ], check=True)

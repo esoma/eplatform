@@ -25,17 +25,7 @@ sdk_file_name, _ = urlretrieve(SDK_URI)
 os.mkdir("vulkan-sdk")
 
 if system() == "Windows":
-    subprocess.run(
-        [
-            sdk_file_name,
-            "--root",
-            os.path.abspath("vulkan-sdk"),
-            "--accept-licenses",
-            "--confirm-command",
-            "install",
-        ],
-        check=True,
-    )
+    shutil.copyfile(sdk_file_name, "vulkan-sdk/install.exe")
 elif system() == "Linux":
     subprocess.run(
         [
