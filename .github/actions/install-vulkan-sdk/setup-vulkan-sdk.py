@@ -12,9 +12,9 @@ with open(os.environ["GITHUB_ENV"], "w", encoding="utf-8") as env:
     if system() == "Windows":
         subprocess.run(
             [
-                VULKAN_SDK / "install.exe",
+                str(VULKAN_SDK / "install.exe"),
                 "--root",
-                VULKAN_SDK,
+                str(VULKAN_SDK),
                 "--accept-licenses",
                 "--confirm-command",
                 "install",
