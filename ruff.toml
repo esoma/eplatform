@@ -4,8 +4,8 @@ line-length = 99
 skip-magic-trailing-comma = true
 
 [lint]
-fixable = ["I"]
-select = ["I"]
+fixable = ["I", "F401", "F822", "RUF022"]
+select = ["I", "F401", "F822", "RUF022"]
 
 [lint.isort]
 force-single-line = true

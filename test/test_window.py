@@ -3,13 +3,10 @@ from unittest.mock import patch
 
 import pytest
 from egeometry import IRectangle
-from emath import FMatrix4
 from emath import IVector2
 from emath import U8Vector4
 from emath import U8Vector4Array
 
-from eplatform import OpenGlWindow
-from eplatform import VulkanWindow
 from eplatform import Window
 from eplatform import WindowBufferSynchronization
 from eplatform import WindowDestroyedError

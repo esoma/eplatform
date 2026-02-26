@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 __all__ = [
-    "change_mouse_button",
-    "change_mouse_position",
     "Mouse",
     "MouseButton",
     "MouseButtonChanged",
@@ -10,14 +8,14 @@ __all__ = [
     "MouseMoved",
     "MouseScrolled",
     "MouseScrolledDirection",
+    "change_mouse_button",
+    "change_mouse_position",
     "scroll_mouse_wheel",
 ]
 
 from enum import StrEnum
 from typing import Final
-from typing import Literal
 from typing import Mapping
-from typing import TypeAlias
 from typing import TypedDict
 
 from eevent import Event
@@ -26,7 +24,6 @@ from emath import IVector2
 from . import _eplatform
 from ._eplatform import hide_cursor
 from ._eplatform import show_cursor
-from ._platform import get_window
 from ._type import SdlMouseButton
 
 

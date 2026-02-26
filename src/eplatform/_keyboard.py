@@ -1,15 +1,11 @@
-__all__ = ["change_key", "Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyLocation"]
+__all__ = ["Keyboard", "KeyboardKey", "KeyboardKeyChanged", "KeyboardKeyLocation", "change_key"]
 
 from enum import IntFlag
 from enum import StrEnum
 from enum import auto
-from inspect import get_annotations
 from typing import Final
-from typing import Literal
 from typing import Mapping
-from typing import TypeAlias
 from typing import TypedDict
-from typing import get_args
 
 from eevent import Event
 

@@ -1,14 +1,12 @@
-__all__ = ["idle", "EventLoop"]
+__all__ = ["EventLoop", "idle"]
 
 from asyncio import SelectorEventLoop
 from selectors import SelectSelector
 from time import time
 from typing import Any
 from typing import Callable
-from typing import Collection
 from typing import Final
 from typing import Mapping
-from typing import get_args
 
 from eevent import Event
 from emath import IVector2
@@ -26,7 +24,6 @@ from ._display import change_display_size
 from ._display import connect_display
 from ._display import disconnect_display
 from ._eplatform import get_sdl_event
-from ._keyboard import KeyboardKeyLocation
 from ._keyboard import change_key
 from ._mouse import change_mouse_button
 from ._mouse import change_mouse_position

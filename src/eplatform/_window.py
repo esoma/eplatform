@@ -1,6 +1,15 @@
 from __future__ import annotations
 
 __all__ = [
+    "OpenGlWindow",
+    "VulkanWindow",
+    "Window",
+    "WindowBufferSynchronization",
+    "WindowDestroyedError",
+    "WindowMoved",
+    "WindowResized",
+    "WindowTextInputted",
+    "WindowVisibilityChanged",
     "blur_window",
     "close_window",
     "delete_window",
@@ -10,31 +19,19 @@ __all__ = [
     "input_window_text",
     "maximize_window",
     "move_window",
-    "OpenGlWindow",
     "resize_window",
     "show_window",
     "unmaximize_window",
-    "VulkanWindow",
-    "Window",
-    "WindowBufferSynchronization",
-    "WindowDestroyedError",
-    "WindowMoved",
-    "WindowResized",
-    "WindowTextInputted",
-    "WindowVisibilityChanged",
 ]
 
 from contextlib import contextmanager
 from enum import Enum
 from typing import Collection
-from typing import Final
 from typing import Generator
 from typing import TypedDict
 
 from eevent import Event
 from egeometry import IRectangle
-from emath import FMatrix4
-from emath import FVector4
 from emath import IVector2
 
 from ._display import Display

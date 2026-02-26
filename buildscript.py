@@ -8,7 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 from platform import system
-from warnings import warn
 
 from setuptools import Distribution
 from setuptools import Extension

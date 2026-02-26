@@ -1,4 +1,3 @@
-from typing import get_args
 from unittest.mock import MagicMock
 from unittest.mock import patch
 

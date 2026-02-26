@@ -1,5 +1,4 @@
 __all__ = [
-    "connect_controller",
     "Controller",
     "ControllerAnalogInput",
     "ControllerAnalogInputChanged",
@@ -20,6 +19,7 @@ __all__ = [
     "ControllerTriggerChanged",
     "ControllerTriggerName",
     "ControllerType",
+    "connect_controller",
     "controller_change_axis",
     "controller_change_button",
     "controller_change_hat",
@@ -39,7 +39,6 @@ from typing import Generator
 from typing import Generic
 from typing import Literal
 from typing import Mapping
-from typing import NamedTuple
 from typing import TypeAlias
 from typing import TypedDict
 from typing import TypeVar

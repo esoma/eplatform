@@ -1,9 +1,6 @@
 from math import isclose
-from unittest.mock import ANY
-from uuid import uuid4
 
 import pytest
-from emath import DVector2
 
 from eplatform import Controller
 from eplatform import ControllerAnalogInput
@@ -19,10 +16,6 @@ from eplatform import ControllerTriggerName
 from eplatform import ControllerType
 from eplatform import Platform
 from eplatform import get_controllers
-from eplatform._eplatform import SDL_HAT_DOWN
-from eplatform._eplatform import SDL_HAT_LEFT
-from eplatform._eplatform import SDL_HAT_RIGHT
-from eplatform._eplatform import SDL_HAT_UP
 from eplatform._eplatform import add_sdl_gamepad_mapping
 from eplatform._eplatform import connect_virtual_joystick
 from eplatform._eplatform import disconnect_virtual_joystick

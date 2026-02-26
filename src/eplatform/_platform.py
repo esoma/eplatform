@@ -12,7 +12,6 @@ __all__ = [
 ]
 
 import logging
-import os
 from enum import IntFlag
 from typing import TYPE_CHECKING
 from typing import Any
@@ -23,8 +22,6 @@ from typing import Generator
 from typing import Self
 from typing import Sequence
 
-from emath import IVector2
-
 from ._controller import Controller
 from ._controller import discover_controllers
 from ._controller import forget_controllers
@@ -33,11 +30,9 @@ from ._display import Display
 from ._display import discover_displays
 from ._display import forget_displays
 from ._display import get_displays as _get_displays
-from ._eplatform import GRAPHICS_LIBRARY_OPEN_GL
 from ._eplatform import clear_sdl_events
 from ._eplatform import create_sdl_gl_context
 from ._eplatform import create_sdl_vulkan_surface
-from ._eplatform import create_sdl_window
 from ._eplatform import create_vulkan_debug_messenger
 from ._eplatform import create_vulkan_instance
 from ._eplatform import deinitialize_sdl

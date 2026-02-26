@@ -1,11 +1,8 @@
-from typing import get_args
 from unittest.mock import MagicMock
-from unittest.mock import PropertyMock
 from unittest.mock import patch
 
 import pytest
 from eevent import Event
-from emath import FMatrix4
 from emath import IVector2
 
 from eplatform import MouseButton
