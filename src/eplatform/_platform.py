@@ -100,11 +100,11 @@ def log_vulkan_message(severity: int, type: int, message: str) -> None:
     else:
         log_level = logging.DEBUG
     if type & VulkanMessageType.PERFORMANCE.value:
-        log = logging.getLogger("e16.vulkan.performance")
+        log = logging.getLogger("eplatform.vulkan.performance")
     elif type & VulkanMessageType.VALIDATION.value:
-        log = logging.getLogger("e16.vulkan.validation")
+        log = logging.getLogger("eplatform.vulkan.validation")
     else:
-        log = logging.getLogger("e16.vulkan")
+        log = logging.getLogger("eplatform.vulkan")
     log.log(log_level, message)
 
 
