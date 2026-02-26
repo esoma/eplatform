@@ -12,7 +12,10 @@ from eplatform import _eplatform
 from eplatform import get_displays
 from eplatform._eplatform import clear_sdl_events
 from eplatform._eplatform import push_sdl_event
+from eplatform._event_loop import _noop_poll
 from eplatform._event_loop import _Selector
+
+MOCK = MagicMock()
 
 
 @pytest.fixture
@@ -38,7 +41,11 @@ def mock_window():
 
 @patch("eplatform._event_loop._Selector")
 @patch("eplatform._event_loop.SelectorEventLoop.__init__")
-def test_event_loop(super_init, selector_cls_mock):
+@pytest.mark.parametrize(
+    "kwargs, expected_poll",
+    [({}, _noop_poll), ({"poll": None}, _noop_poll), ({"poll": MOCK}, MOCK)],
+)
+def test_event_loop(super_init, selector_cls_mock, kwargs, expected_poll):
     ready_callbacks = MagicMock()
 
     def _(*args, **kwargs):
@@ -50,73 +57,107 @@ def test_event_loop(super_init, selector_cls_mock):
 
     super_init.side_effect = _
 
-    el = EventLoop()
+    el = EventLoop(**kwargs)
     el._closed = True
     super_init.assert_called_once()
-    selector_cls_mock.assert_called_once_with()
-    assert selector_cls_mock.return_value._ready_callbacks is ready_callbacks
+    selector_cls_mock.assert_called_once_with(expected_poll)
+    assert selector_cls_mock.return_value._EPlatformSelector_ready_callbacks is ready_callbacks
+
+
+def test_noop_poll():
+    assert not _noop_poll()
 
 
 def test_selector_select():
-    selector = _Selector()
-    selector._ready_callbacks = []
+    poll = MagicMock(return_value=False)
+
+    selector = _Selector(poll)
+    selector._EPlatformSelector_ready_callbacks = []
     # no events
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
-        patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
+        patch.object(
+            selector, "_EPlatformSelector__poll_sdl_events", return_value=False
+        ) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
     ):
         assert selector.select(0.5) == []
         poll_sdl_events.assert_called_with()
         super_select.assert_called_with(-1)
+        poll.assert_called_once_with()
         idle.assert_called_once_with(None)
-    # no events, but ready callbacks
-    selector._ready_callbacks = [1]
+    poll.reset_mock()
+    # no events, but poll
+    poll.return_value = True
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
-        patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
+        patch.object(
+            selector, "_EPlatformSelector__poll_sdl_events", return_value=False
+        ) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
     ):
         assert selector.select(0.5) == []
         poll_sdl_events.assert_called_with()
         super_select.assert_called_with(-1)
+        poll.assert_called_once_with()
         idle.assert_not_called()
-    selector._ready_callbacks.clear()
+    poll.reset_mock()
+    # no events, but ready callbacks
+    selector._EPlatformSelector_ready_callbacks = [1]
+    with (
+        patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
+        patch.object(
+            selector, "_EPlatformSelector__poll_sdl_events", return_value=False
+        ) as poll_sdl_events,
+        patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
+    ):
+        assert selector.select(0.5) == []
+        poll_sdl_events.assert_called_with()
+        super_select.assert_called_with(-1)
+        poll.assert_not_called()
+        idle.assert_not_called()
+    selector._EPlatformSelector_ready_callbacks.clear()
     # sdl events
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
-        patch.object(selector, "_poll_sdl_events", return_value=True) as poll_sdl_events,
+        patch.object(
+            selector, "_EPlatformSelector__poll_sdl_events", return_value=True
+        ) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[]) as super_select,
     ):
         assert selector.select() == []
         poll_sdl_events.assert_called_once_with()
         super_select.assert_not_called()
+        poll.assert_not_called()
         idle.assert_not_called()
     # select events
     with (
         patch("eplatform._event_loop.idle", new=MagicMock()) as idle,
-        patch.object(selector, "_poll_sdl_events", return_value=False) as poll_sdl_events,
+        patch.object(
+            selector, "_EPlatformSelector__poll_sdl_events", return_value=False
+        ) as poll_sdl_events,
         patch("eplatform._event_loop.SelectSelector.select", return_value=[True]) as super_select,
     ):
         assert selector.select() == [True]
         poll_sdl_events.assert_called_once_with()
         super_select.assert_called_once_with(-1)
+        poll.assert_not_called()
         idle.assert_not_called()
 
 
 def test_selector_poll_sdl_events_no_platform():
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert not selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert not selector._EPlatformSelector__poll_sdl_events()
     assert handle_sdl_event.call_count == 0
 
 
 def test_selector_poll_sdl_events_none(platform):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert not selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert not selector._EPlatformSelector__poll_sdl_events()
     assert handle_sdl_event.call_count == 0
 
 
@@ -133,11 +174,11 @@ def test_selector_poll_sdl_events_none(platform):
     ],
 )
 def test_selector_poll_sdl_events_default(platform, event_type):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type)
 
 
@@ -145,11 +186,11 @@ def test_selector_poll_sdl_events_default(platform, event_type):
 @pytest.mark.parametrize("position", [IVector2(0, 1), IVector2(99, 75)])
 @pytest.mark.parametrize("delta", [IVector2(1, 2), IVector2(-1, -2)])
 def test_selector_poll_sdl_events_mouse_motion(platform, event_type, position, delta):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, *position, *delta)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, position, delta)
 
 
@@ -159,11 +200,11 @@ def test_selector_poll_sdl_events_mouse_motion(platform, event_type, position, d
     "delta", [IVector2(1, 2), IVector2(-1, -2), IVector2(0, 1), IVector2(1, 0)]
 )
 def test_selector_poll_sdl_events_mouse_wheel(platform, event_type, flipped, delta):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, flipped, *delta)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, delta * (-1 if flipped else 1))
 
 
@@ -173,11 +214,11 @@ def test_selector_poll_sdl_events_mouse_wheel(platform, event_type, flipped, del
 @pytest.mark.parametrize("button", [0, 1, 100])
 @pytest.mark.parametrize("is_pressed", [False, True])
 def test_selector_poll_sdl_events_mouse_button(platform, event_type, button, is_pressed):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, button, is_pressed)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, button, is_pressed)
 
 
@@ -188,44 +229,44 @@ def test_selector_poll_sdl_events_mouse_button(platform, event_type, button, is_
 @pytest.mark.parametrize("is_pressed", [False, True])
 @pytest.mark.parametrize("is_repeat", [False, True])
 def test_selector_poll_sdl_events_key(platform, event_type, scancode, is_pressed, is_repeat):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, scancode, is_pressed, is_repeat)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, scancode, is_pressed, is_repeat)
 
 
 @pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_TEXT_INPUT])
 @pytest.mark.parametrize("text", ["a", "hello world"])
 def test_selector_poll_sdl_events_text_input(platform, event_type, text):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, text)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, text)
 
 
 @pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_WINDOW_RESIZED])
 @pytest.mark.parametrize("size", [IVector2(2, 1), IVector2(99, 75)])
 def test_selector_poll_sdl_events_window_resized(platform, event_type, size):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, size.x, size.y)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, size)
 
 
 @pytest.mark.parametrize("event_type", [_eplatform.SDL_EVENT_WINDOW_MOVED])
 @pytest.mark.parametrize("position", [IVector2(2, 1), IVector2(99, 75)])
 def test_selector_poll_sdl_events_window_moved(platform, event_type, position):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, position.x, position.y)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, position)
 
 
@@ -234,11 +275,11 @@ def test_selector_poll_sdl_events_window_moved(platform, event_type, position):
 )
 @pytest.mark.parametrize("sdl_display", [1, 100])
 def test_selector_poll_sdl_events_display_added_removed(platform, event_type, sdl_display):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, sdl_display)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, sdl_display)
 
 
@@ -248,11 +289,11 @@ def test_selector_poll_sdl_events_display_added_removed(platform, event_type, sd
 def test_selector_poll_sdl_events_display_orientation(
     platform, event_type, sdl_display, orientation
 ):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     push_sdl_event(event_type, sdl_display, orientation)
-    with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-        assert selector._poll_sdl_events()
+    with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+        assert selector._EPlatformSelector__poll_sdl_events()
     handle_sdl_event.assert_called_once_with(event_type, sdl_display, orientation)
 
 
@@ -316,11 +357,11 @@ def test_selector_poll_sdl_events_display_moved(platform):
     bottom_right_display = sorted(other_displays, key=lambda d: d.bounds.extent)[-1]
     position = bottom_right_display.bounds.extent + IVector2(0, -1)
 
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     with move_display(display_to_move, position):
-        with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-            selector._poll_sdl_events()
+        with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+            selector._EPlatformSelector__poll_sdl_events()
         handle_sdl_event.assert_called_once_with(
             _eplatform.SDL_EVENT_DISPLAY_MOVED, display_to_move._sdl_display, position
         )
@@ -407,11 +448,11 @@ def test_selector_poll_sdl_events_mode_changed(platform):
     display = displays[0]
     different_mode = [m for m in display.modes if m.size != display.bounds.size][0]
 
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     clear_sdl_events()
     with change_display_mode(display, different_mode.size, different_mode.refresh_rate):
-        with patch.object(selector, "_handle_sdl_event") as handle_sdl_event:
-            while selector._poll_sdl_events():
+        with patch.object(selector, "_EPlatformSelector__handle_sdl_event") as handle_sdl_event:
+            while selector._EPlatformSelector__poll_sdl_events():
                 pass
         handle_sdl_event.assert_any_call(
             _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED,
@@ -424,53 +465,80 @@ def test_selector_poll_sdl_events_mode_changed(platform):
 @pytest.mark.parametrize(
     "event_type, handler_name",
     [
-        (_eplatform.SDL_EVENT_QUIT, "_handle_sdl_event_quit"),
-        (_eplatform.SDL_EVENT_MOUSE_MOTION, "_handle_sdl_event_mouse_motion"),
-        (_eplatform.SDL_EVENT_MOUSE_WHEEL, "_handle_sdl_event_mouse_wheel"),
-        (_eplatform.SDL_EVENT_MOUSE_BUTTON_DOWN, "_handle_sdl_event_mouse_button_changed"),
-        (_eplatform.SDL_EVENT_MOUSE_BUTTON_UP, "_handle_sdl_event_mouse_button_changed"),
-        (_eplatform.SDL_EVENT_KEY_DOWN, "_handle_sdl_event_key_changed"),
-        (_eplatform.SDL_EVENT_KEY_UP, "_handle_sdl_event_key_changed"),
-        (_eplatform.SDL_EVENT_TEXT_INPUT, "_handle_sdl_event_text_input"),
-        (_eplatform.SDL_EVENT_WINDOW_RESIZED, "_handle_sdl_event_window_resized"),
-        (_eplatform.SDL_EVENT_WINDOW_SHOWN, "_handle_sdl_event_window_shown"),
-        (_eplatform.SDL_EVENT_WINDOW_HIDDEN, "_handle_sdl_event_window_hidden"),
-        (_eplatform.SDL_EVENT_WINDOW_MOVED, "_handle_sdl_event_window_moved"),
-        (_eplatform.SDL_EVENT_WINDOW_FOCUS_GAINED, "_handle_sdl_event_window_focus_gained"),
-        (_eplatform.SDL_EVENT_WINDOW_FOCUS_LOST, "_handle_sdl_event_window_focus_lost"),
-        (_eplatform.SDL_EVENT_DISPLAY_ADDED, "_handle_sdl_event_display_added"),
-        (_eplatform.SDL_EVENT_DISPLAY_REMOVED, "_handle_sdl_event_display_removed"),
-        (_eplatform.SDL_EVENT_DISPLAY_ORIENTATION, "_handle_sdl_event_display_orientation"),
-        (_eplatform.SDL_EVENT_DISPLAY_MOVED, "_handle_sdl_event_display_moved"),
+        (_eplatform.SDL_EVENT_QUIT, "_EPlatformSelector__handle_sdl_event_quit"),
+        (_eplatform.SDL_EVENT_MOUSE_MOTION, "_EPlatformSelector__handle_sdl_event_mouse_motion"),
+        (_eplatform.SDL_EVENT_MOUSE_WHEEL, "_EPlatformSelector__handle_sdl_event_mouse_wheel"),
+        (
+            _eplatform.SDL_EVENT_MOUSE_BUTTON_DOWN,
+            "_EPlatformSelector__handle_sdl_event_mouse_button_changed",
+        ),
+        (
+            _eplatform.SDL_EVENT_MOUSE_BUTTON_UP,
+            "_EPlatformSelector__handle_sdl_event_mouse_button_changed",
+        ),
+        (_eplatform.SDL_EVENT_KEY_DOWN, "_EPlatformSelector__handle_sdl_event_key_changed"),
+        (_eplatform.SDL_EVENT_KEY_UP, "_EPlatformSelector__handle_sdl_event_key_changed"),
+        (_eplatform.SDL_EVENT_TEXT_INPUT, "_EPlatformSelector__handle_sdl_event_text_input"),
+        (
+            _eplatform.SDL_EVENT_WINDOW_RESIZED,
+            "_EPlatformSelector__handle_sdl_event_window_resized",
+        ),
+        (_eplatform.SDL_EVENT_WINDOW_SHOWN, "_EPlatformSelector__handle_sdl_event_window_shown"),
+        (_eplatform.SDL_EVENT_WINDOW_HIDDEN, "_EPlatformSelector__handle_sdl_event_window_hidden"),
+        (_eplatform.SDL_EVENT_WINDOW_MOVED, "_EPlatformSelector__handle_sdl_event_window_moved"),
+        (
+            _eplatform.SDL_EVENT_WINDOW_FOCUS_GAINED,
+            "_EPlatformSelector__handle_sdl_event_window_focus_gained",
+        ),
+        (
+            _eplatform.SDL_EVENT_WINDOW_FOCUS_LOST,
+            "_EPlatformSelector__handle_sdl_event_window_focus_lost",
+        ),
+        (_eplatform.SDL_EVENT_DISPLAY_ADDED, "_EPlatformSelector__handle_sdl_event_display_added"),
+        (
+            _eplatform.SDL_EVENT_DISPLAY_REMOVED,
+            "_EPlatformSelector__handle_sdl_event_display_removed",
+        ),
+        (
+            _eplatform.SDL_EVENT_DISPLAY_ORIENTATION,
+            "_EPlatformSelector__handle_sdl_event_display_orientation",
+        ),
+        (_eplatform.SDL_EVENT_DISPLAY_MOVED, "_EPlatformSelector__handle_sdl_event_display_moved"),
         (
             _eplatform.SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED,
-            "_handle_sdl_event_current_mode_changed",
+            "_EPlatformSelector__handle_sdl_event_current_mode_changed",
         ),
-        (_eplatform.SDL_EVENT_WINDOW_MAXIMIZED, "_handle_sdl_event_window_maximized"),
-        (_eplatform.SDL_EVENT_WINDOW_RESTORED, "_handle_sdl_event_window_restored"),
+        (
+            _eplatform.SDL_EVENT_WINDOW_MAXIMIZED,
+            "_EPlatformSelector__handle_sdl_event_window_maximized",
+        ),
+        (
+            _eplatform.SDL_EVENT_WINDOW_RESTORED,
+            "_EPlatformSelector__handle_sdl_event_window_restored",
+        ),
     ],
 )
 @pytest.mark.parametrize("return_value", [False, True])
 @pytest.mark.parametrize("args", [[], [0], [1, 2, 3, 4]])
 def test_selector_handle_sdl_event(event_type, handler_name, args, return_value):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     assert _Selector._SDL_EVENT_DISPATCH[event_type] is getattr(_Selector, handler_name)
 
     handler = MagicMock(return_value=return_value)
     with patch.dict(f"eplatform._event_loop._Selector._SDL_EVENT_DISPATCH", {event_type: handler}):
-        assert selector._handle_sdl_event(event_type, *args) == return_value
+        assert selector._EPlatformSelector__handle_sdl_event(event_type, *args) == return_value
     handler.assert_called_once_with(selector, *args)
 
 
 def test_selector_handle_sdl_event_unexpected():
-    selector = _Selector()
-    assert not selector._handle_sdl_event(0)
+    selector = _Selector(_noop_poll)
+    assert not selector._EPlatformSelector__handle_sdl_event(0)
 
 
 def test_selector_handle_sdl_event_quit(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.close_window") as close_window:
-        assert selector._handle_sdl_event_quit()
+        assert selector._EPlatformSelector__handle_sdl_event_quit()
     close_window.assert_called_once_with(mock_window)
 
 
@@ -479,157 +547,165 @@ def test_selector_handle_sdl_event_quit(mock_window):
 @pytest.mark.parametrize("xrel", [0, -1, 1])
 @pytest.mark.parametrize("yrel", [0, -1, 1])
 def test_selector_handle_sdl_event_mouse_motion(mock_mouse, x, y, xrel, yrel):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     position = IVector2(x, y)
     delta = IVector2(xrel, yrel)
     with patch("eplatform._event_loop.change_mouse_position") as change_mouse_position:
-        assert selector._handle_sdl_event_mouse_motion(position, delta)
+        assert selector._EPlatformSelector__handle_sdl_event_mouse_motion(position, delta)
     change_mouse_position.assert_called_once_with(mock_mouse, position, delta)
 
 
 @pytest.mark.parametrize("x", [0, -1, 1])
 @pytest.mark.parametrize("y", [0, -1, 1])
 def test_selector_handle_sdl_event_mouse_wheel(mock_mouse, x, y):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     delta = IVector2(x, y)
     with patch("eplatform._event_loop.scroll_mouse_wheel") as scroll_mouse_wheel:
-        assert selector._handle_sdl_event_mouse_wheel(delta)
+        assert selector._EPlatformSelector__handle_sdl_event_mouse_wheel(delta)
     scroll_mouse_wheel.assert_called_once_with(mock_mouse, delta)
 
 
 @pytest.mark.parametrize("is_pressed", (False, True))
 def test_selector_handle_sdl_mouse_button_changed(mock_mouse, is_pressed):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     sdl_button = MagicMock()
     with patch("eplatform._event_loop.change_mouse_button") as change_mouse_button:
-        assert selector._handle_sdl_event_mouse_button_changed(sdl_button, is_pressed)
+        assert selector._EPlatformSelector__handle_sdl_event_mouse_button_changed(
+            sdl_button, is_pressed
+        )
     change_mouse_button.assert_called_once_with(mock_mouse, sdl_button, is_pressed)
 
 
 @pytest.mark.parametrize("is_pressed", (False, True))
 @pytest.mark.parametrize("is_repeat", [False, True])
 def test_selector_handle_sdl_event_key_changed(mock_keyboard, is_pressed, is_repeat):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     sdl_scancode = MagicMock()
     with patch("eplatform._event_loop.change_key") as change_key:
-        result = selector._handle_sdl_event_key_changed(sdl_scancode, is_pressed, is_repeat)
+        result = selector._EPlatformSelector__handle_sdl_event_key_changed(
+            sdl_scancode, is_pressed, is_repeat
+        )
     change_key.assert_called_once_with(mock_keyboard, sdl_scancode, is_pressed, is_repeat)
     assert result == change_key.return_value
 
 
 @pytest.mark.parametrize("text", ["", "hello", "私"])
 def test_selector_handle_sdl_event_text_input(mock_window, text):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.input_window_text") as input_window_text:
-        assert selector._handle_sdl_event_text_input(text)
+        assert selector._EPlatformSelector__handle_sdl_event_text_input(text)
     input_window_text.assert_called_once_with(mock_window, text)
 
 
 @pytest.mark.parametrize("x", [25, 45])
 @pytest.mark.parametrize("y", [10, 100])
 def test_selector_handle_sdl_event_window_resized(mock_window, x, y):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     size = IVector2(x, y)
     with patch("eplatform._event_loop.resize_window") as resize_window:
-        assert selector._handle_sdl_event_window_resized(size)
+        assert selector._EPlatformSelector__handle_sdl_event_window_resized(size)
     resize_window.assert_called_once_with(mock_window, size)
 
 
 @pytest.mark.parametrize("w", [25, 45])
 @pytest.mark.parametrize("h", [10, 100])
 def test_selector_handle_sdl_event_window_moved(mock_window, w, h):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     position = IVector2(w, h)
     with patch("eplatform._event_loop.move_window") as move_window:
-        assert selector._handle_sdl_event_window_moved(position)
+        assert selector._EPlatformSelector__handle_sdl_event_window_moved(position)
     move_window.assert_called_once_with(mock_window, position)
 
 
 def test_selector_handle_sdl_event_window_shown(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.show_window") as show_window:
-        assert selector._handle_sdl_event_window_shown()
+        assert selector._EPlatformSelector__handle_sdl_event_window_shown()
     show_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_window_hidden(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.hide_window") as hide_window:
-        assert selector._handle_sdl_event_window_hidden()
+        assert selector._EPlatformSelector__handle_sdl_event_window_hidden()
     hide_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_window_focus_gained(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.focus_window") as focus_window:
-        assert selector._handle_sdl_event_window_focus_gained()
+        assert selector._EPlatformSelector__handle_sdl_event_window_focus_gained()
     focus_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_window_focus_lost(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.blur_window") as blur_window:
-        assert selector._handle_sdl_event_window_focus_lost()
+        assert selector._EPlatformSelector__handle_sdl_event_window_focus_lost()
     blur_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_display_added():
     sdl_display = MagicMock()
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.connect_display") as connect_display:
-        assert selector._handle_sdl_event_display_added(sdl_display)
+        assert selector._EPlatformSelector__handle_sdl_event_display_added(sdl_display)
     connect_display.assert_called_once_with(sdl_display)
 
 
 def test_selector_handle_sdl_event_display_removed():
     sdl_display = MagicMock()
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.disconnect_display") as disconnect_display:
-        assert selector._handle_sdl_event_display_removed(sdl_display)
+        assert selector._EPlatformSelector__handle_sdl_event_display_removed(sdl_display)
     disconnect_display.assert_called_once_with(sdl_display)
 
 
 def test_selector_handle_sdl_event_display_orientation():
     sdl_display = MagicMock()
     sdl_display_orientation = MagicMock()
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.change_display_orientation") as change_display_orientation:
-        assert selector._handle_sdl_event_display_orientation(sdl_display, sdl_display_orientation)
+        assert selector._EPlatformSelector__handle_sdl_event_display_orientation(
+            sdl_display, sdl_display_orientation
+        )
     change_display_orientation.assert_called_once_with(sdl_display, sdl_display_orientation)
 
 
 def test_selector_handle_sdl_event_display_moved():
     sdl_display = MagicMock()
     position = MagicMock()
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.change_display_position") as change_display_position:
-        assert selector._handle_sdl_event_display_moved(sdl_display, position)
+        assert selector._EPlatformSelector__handle_sdl_event_display_moved(sdl_display, position)
     change_display_position.assert_called_once_with(sdl_display, position)
 
 
-def test_handle_sdl_event_current_mode_changed():
+def test_EPlatformSelector__handle_sdl_event_current_mode_changed():
     sdl_display = MagicMock()
     size = MagicMock()
     refresh_rate = MagicMock()
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with (
         patch("eplatform._event_loop.change_display_size") as change_display_size,
         patch("eplatform._event_loop.change_display_refresh_rate") as change_display_refresh_rate,
     ):
-        assert selector._handle_sdl_event_current_mode_changed(sdl_display, size, refresh_rate)
+        assert selector._EPlatformSelector__handle_sdl_event_current_mode_changed(
+            sdl_display, size, refresh_rate
+        )
     change_display_size.assert_called_once_with(sdl_display, size)
     change_display_refresh_rate.assert_called_once_with(sdl_display, refresh_rate)
 
 
 def test_selector_handle_sdl_event_window_maximized(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.maximize_window") as maximize_window:
-        assert selector._handle_sdl_event_window_maximized()
+        assert selector._EPlatformSelector__handle_sdl_event_window_maximized()
     maximize_window.assert_called_once_with(mock_window)
 
 
 def test_selector_handle_sdl_event_window_restored(mock_window):
-    selector = _Selector()
+    selector = _Selector(_noop_poll)
     with patch("eplatform._event_loop.unmaximize_window") as unmaximize_window:
-        assert selector._handle_sdl_event_window_restored()
+        assert selector._EPlatformSelector__handle_sdl_event_window_restored()
     unmaximize_window.assert_called_once_with(mock_window)
