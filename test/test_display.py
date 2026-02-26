@@ -158,5 +158,5 @@ def test_change_display_refresh_rate(connected_display, refresh_rate):
 def test_display_mode_repr(size, refresh_rate):
     display_mode = DisplayMode(size, refresh_rate)
     assert repr(display_mode) == (
-        f"<DisplayMode " f"{size.x!r}x{size.y}px " f"@ {refresh_rate:.1f} hertz" f">"
+        f"<DisplayMode {size.x!r}x{size.y}px @ {refresh_rate:.1f} hertz>"
     )

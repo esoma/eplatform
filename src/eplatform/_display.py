@@ -55,12 +55,7 @@ class DisplayMode:
         self._refresh_rate = refresh_rate
 
     def __repr__(self) -> str:
-        return (
-            f"<DisplayMode "
-            f"{self._size.x!r}x{self._size.y}px "
-            f"@ {self._refresh_rate:.1f} hertz"
-            f">"
-        )
+        return f"<DisplayMode {self._size.x!r}x{self._size.y}px @ {self._refresh_rate:.1f} hertz>"
 
     @property
     def size(self) -> IVector2:
